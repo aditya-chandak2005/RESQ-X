@@ -26,34 +26,69 @@ interface InteractiveMapProps {
   center?: [number, number];
 }
 
-// Custom DivIcons for tactical appearance
-const createCustomIcon = (bgColor: string, borderColor: string, label: string, isPulsing: boolean = false) => {
+// Custom Tactical DivIcons with glowing halos
+const createCustomIcon = (
+  bgColor: string,
+  borderColor: string,
+  label: string,
+  isPulsing: boolean = false,
+  badgeText?: string
+) => {
   return L.divIcon({
-    className: 'custom-map-marker',
+    className: 'custom-tactical-marker',
     html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        ${isPulsing ? `<div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background-color: ${bgColor}; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>` : ''}
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        ${isPulsing ? `
+          <div style="
+            position: absolute; 
+            top: 0;
+            width: 34px; 
+            height: 34px; 
+            border-radius: 50%; 
+            background-color: ${bgColor}; 
+            opacity: 0.5; 
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+          "></div>
+        ` : ''}
         <div style="
-          width: 20px; 
-          height: 20px; 
+          width: 24px; 
+          height: 24px; 
           border-radius: 50%; 
           background-color: ${bgColor}; 
           border: 2px solid ${borderColor}; 
-          box-shadow: 0 0 10px ${borderColor};
+          box-shadow: 0 0 12px ${borderColor};
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: monospace;
-          font-size: 9px;
-          font-weight: bold;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          font-weight: 800;
           color: white;
+          z-index: 10;
         ">
           ${label}
         </div>
+        ${badgeText ? `
+          <div style="
+            margin-top: 2px;
+            background: rgba(7, 11, 20, 0.85);
+            border: 1px solid ${borderColor};
+            color: #f1f5f9;
+            font-size: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            font-weight: bold;
+            text-transform: uppercase;
+          ">
+            ${badgeText}
+          </div>
+        ` : ''}
       </div>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [34, 44],
+    iconAnchor: [17, 17],
   });
 };
 
@@ -79,6 +114,46 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onSelectItem,
   center = [30.4950, 79.6200],
 }) => {
+  // Determine tile layer URL, attribution, and class based on selected basemap
+  const basemap = layers.basemap || (layers.satellite ? 'satellite' : 'satellite');
+
+  const getTileConfig = () => {
+    switch (basemap) {
+      case 'satellite':
+        return {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attribution: '&copy; ESRI World Imagery, Earthstar Geographics, Maxar',
+          className: 'satellite-tiles',
+          maxZoom: 19,
+        };
+      case 'topo':
+        return {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+          attribution: '&copy; ESRI World Topo, USGS, Garmin',
+          className: 'topo-tiles',
+          maxZoom: 19,
+        };
+      case 'street':
+        return {
+          url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          attribution: '&copy; OpenStreetMap contributors',
+          className: '',
+          maxZoom: 19,
+        };
+      case 'tactical-dark':
+      default:
+        // Uses standard OSM tiles with tactical high-contrast dark filter (100% free, zero watermark!)
+        return {
+          url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          attribution: '&copy; OpenStreetMap contributors | RESQ-X Tactical HUD',
+          className: 'tactical-dark-tiles',
+          maxZoom: 19,
+        };
+    }
+  };
+
+  const tileConfig = getTileConfig();
+
   return (
     <div className="w-full h-full relative">
       <MapContainer
@@ -89,22 +164,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       >
         <RecenterMap center={center} />
 
-        {/* Tactical Dark / Satellite Base Tiles */}
-        {layers.satellite ? (
-          <TileLayer
-            attribution='&copy; ESRI World Imagery, Copernicus'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={18}
-          />
-        ) : (
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a> Dark Matter'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            maxZoom={18}
-          />
+        {/* LAYER 1: BASE TERRAIN TILE LAYER (Zero watermark, 100% Free) */}
+        <TileLayer
+          key={basemap}
+          attribution={tileConfig.attribution}
+          url={tileConfig.url}
+          className={tileConfig.className}
+          maxZoom={tileConfig.maxZoom}
+        />
+
+        {/* LAYER 2: COPERNICUS DEM DOWNSTREAM FLOW CORRIDOR */}
+        {layers.floodPath && floodPathCoordinates && floodPathCoordinates.length > 0 && (
+          <Polyline
+            positions={floodPathCoordinates.map(([lon, lat]) => [lat, lon] as [number, number])}
+            pathOptions={{
+              color: '#facc15',
+              weight: 6,
+              opacity: 0.9,
+              dashArray: '10, 8',
+            }}
+          >
+            <Tooltip direction="top" opacity={0.95}>
+              <div className="text-xs font-mono">
+                <span className="font-bold text-yellow-400">🌊 Copernicus DEM Downstream Surge Axis</span>
+                <br />
+                Flow Gradient: 8.4% Average Valley Slope
+              </div>
+            </Tooltip>
+          </Polyline>
         )}
 
-        {/* 1. Flood Extent / Severity Polygons */}
+        {/* LAYER 3: SATELLITE AI FLOOD INUNDATION POLYGONS */}
         {layers.floodExtent &&
           floodPolygons.map((poly) => {
             const coords = poly.geometry_geojson.coordinates[0].map(([lon, lat]) => [lat, lon] as [number, number]);
@@ -112,13 +202,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             let strokeColor = '#0284c7';
             if (poly.severity === 'critical') {
               fillColor = '#ef4444';
-              strokeColor = '#b91c1c';
+              strokeColor = '#dc2626';
             } else if (poly.severity === 'high') {
               fillColor = '#f97316';
-              strokeColor = '#c2410c';
+              strokeColor = '#ea580c';
             } else if (poly.severity === 'medium') {
               fillColor = '#eab308';
-              strokeColor = '#a16207';
+              strokeColor = '#ca8a04';
             }
 
             return (
@@ -129,45 +219,27 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   color: strokeColor,
                   fillColor: fillColor,
                   fillOpacity: layers.floodSeverity ? 0.55 : 0.35,
-                  weight: 2,
+                  weight: 2.5,
                 }}
                 eventHandlers={{
                   click: () => onSelectItem({ type: 'polygon', data: poly }),
                 }}
               >
-                <Tooltip direction="top" opacity={0.9} sticky>
-                  <div className="text-xs font-mono">
-                    <span className="font-bold uppercase text-red-400">Flood Inundation Zone</span>
-                    <br />
-                    Severity: {poly.severity.toUpperCase()}
-                    <br />
-                    Depth Est: {poly.depth_estimate_m}m
+                <Tooltip direction="top" opacity={0.95} sticky>
+                  <div className="text-xs font-mono p-1">
+                    <div className="font-bold uppercase text-red-400 flex items-center gap-1">
+                      <span>⚠️ AI Flood Inundation Zone</span>
+                    </div>
+                    <div>Severity: <strong className="text-white">{poly.severity.toUpperCase()}</strong></div>
+                    <div>Estimated Surge Depth: <strong className="text-cyan-300">{poly.depth_estimate_m}m</strong></div>
+                    <div>Confidence: <strong className="text-emerald-400">{(poly.confidence * 100).toFixed(0)}%</strong></div>
                   </div>
                 </Tooltip>
               </Polygon>
             );
           })}
 
-        {/* 2. Downstream Flood Path (DEM gradient simulation) */}
-        {layers.floodPath && floodPathCoordinates && floodPathCoordinates.length > 0 && (
-          <Polyline
-            positions={floodPathCoordinates.map(([lon, lat]) => [lat, lon] as [number, number])}
-            pathOptions={{
-              color: '#eab308',
-              weight: 5,
-              opacity: 0.85,
-              dashArray: '8, 8',
-            }}
-          >
-            <Tooltip direction="top" opacity={0.9}>
-              <span className="font-mono text-xs font-bold text-yellow-400">
-                Copernicus 30m DEM Downstream Surge Corridor
-              </span>
-            </Tooltip>
-          </Polyline>
-        )}
-
-        {/* 3. Road Segments */}
+        {/* LAYER 4: ROAD INFRASTRUCTURE NETWORK */}
         {layers.roads &&
           roads.map((r) => {
             const isBlocked = r.is_blocked;
@@ -180,9 +252,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 positions={positions}
                 pathOptions={{
                   color: isBlocked ? '#ef4444' : '#0284c7',
-                  weight: isBlocked ? 4 : 2.5,
+                  weight: isBlocked ? 4.5 : 2.5,
                   dashArray: isBlocked ? '6, 6' : undefined,
-                  opacity: isBlocked ? 0.95 : 0.6,
+                  opacity: isBlocked ? 0.95 : 0.7,
                 }}
                 eventHandlers={{
                   click: () => onSelectItem({ type: 'road', data: r }),
@@ -193,46 +265,48 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     <span className="font-bold">{r.name}</span>
                     <br />
                     Status: <span className={isBlocked ? 'text-red-400 font-bold' : 'text-emerald-400'}>{r.status.toUpperCase()}</span>
-                    {r.blockage_reason && <><br />Reason: {r.blockage_reason}</>}
+                    {r.blockage_reason && <><br /><span className="text-red-300">Hazard: {r.blockage_reason}</span></>}
                   </div>
                 </Tooltip>
               </Polyline>
             );
           })}
 
-        {/* 4. Rescue Routes (Primary & Alternate) */}
+        {/* LAYER 5: RESCUE EVACUATION ROUTES */}
         {routes.map((rt) => {
           if (!layers.routes && !rt.is_alternate) return null;
           if (!layers.alternateRoutes && rt.is_alternate) return null;
 
           const positions = rt.waypoints_geojson.coordinates.map(([lon, lat]) => [lat, lon] as [number, number]);
+          const isCompromised = rt.is_compromised;
+
           return (
             <Polyline
               key={rt.id}
               positions={positions}
               pathOptions={{
-                color: rt.is_compromised ? '#ef4444' : (rt.is_alternate ? '#10b981' : '#38bdf8'),
+                color: isCompromised ? '#ef4444' : (rt.is_alternate ? '#10b981' : '#38bdf8'),
                 weight: 5,
                 opacity: 0.9,
-                dashArray: rt.is_alternate ? '8, 6' : (rt.is_compromised ? '4, 4' : undefined),
+                dashArray: rt.is_alternate ? '8, 6' : (isCompromised ? '4, 4' : undefined),
               }}
             >
               <Tooltip direction="top">
                 <div className="text-xs font-mono">
-                  <span className="font-bold">{rt.dest_name}</span>
+                  <span className="font-bold text-slate-100">{rt.dest_name}</span>
                   <br />
-                  Vector: {rt.is_alternate ? 'ALTERNATE EVACUATION' : 'PRIMARY ROUTE'}
+                  Vector: <span className="font-bold text-cyan-300">{rt.is_alternate ? 'ALTERNATE EVACUATION' : 'PRIMARY VALLEY ROUTE'}</span>
                   <br />
                   ETA: {rt.eta_minutes} mins ({rt.distance_km} km)
                   <br />
-                  Safety Score: {rt.safety_score}%
+                  Safety Score: <strong className={isCompromised ? 'text-red-400' : 'text-emerald-400'}>{rt.safety_score}%</strong>
                 </div>
               </Tooltip>
             </Polyline>
           );
         })}
 
-        {/* 5. Bridges */}
+        {/* LAYER 6: RIVER BRIDGES & STRUCTURAL SPANS */}
         {layers.bridges &&
           bridges.map((b) => {
             const isCrit = b.status === 'destroyed' || b.status === 'critical';
@@ -240,7 +314,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               isCrit ? '#ef4444' : '#10b981',
               isCrit ? '#f87171' : '#34d399',
               'B',
-              isCrit
+              isCrit,
+              isCrit ? 'COLLAPSED' : 'OPEN'
             );
 
             return (
@@ -253,19 +328,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 }}
               >
                 <Popup className="tactical-popup">
-                  <div className="text-xs p-1">
-                    <h4 className="font-bold font-mono text-slate-900">{b.name}</h4>
-                    <p className="text-[11px] text-slate-700">Connecting: {b.road_name}</p>
-                    <p className="font-mono text-[11px] mt-1">
-                      Status: <span className={isCrit ? 'text-red-600 font-bold' : 'text-emerald-600'}>{b.status.toUpperCase()}</span>
-                    </p>
+                  <div className="text-xs p-1 font-mono">
+                    <h4 className="font-bold text-slate-100">{b.name}</h4>
+                    <p className="text-slate-300 text-[11px] mt-0.5">Connecting: {b.road_name}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span>Status:</span>
+                      <span className={isCrit ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+                        {b.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1">
+                      Clearance: {b.water_clearance_m}m | Verification: {b.verification_status}
+                    </div>
                   </div>
                 </Popup>
               </Marker>
             );
           })}
 
-        {/* 6. Settlements */}
+        {/* LAYER 7: SETTLEMENTS & VILLAGES */}
         {layers.settlements &&
           settlements.map((s) => {
             if (layers.isolatedOnly && !s.is_isolated) return null;
@@ -273,7 +354,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               s.is_isolated ? '#dc2626' : '#059669',
               s.is_isolated ? '#fca5a5' : '#6ee7b7',
               s.name[0],
-              s.is_isolated
+              s.is_isolated,
+              s.is_isolated ? 'ISOLATED' : `POP ${s.estimated_population}`
             );
 
             return (
@@ -287,47 +369,28 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               >
                 <Tooltip direction="top" opacity={0.95} offset={[0, -10]}>
                   <div className="text-xs font-mono">
-                    <span className="font-bold text-slate-900">{s.name}</span>
+                    <span className="font-bold text-slate-100">{s.name}</span>
                     <br />
-                    Pop: ~{s.estimated_population.toLocaleString()}
+                    Population: ~{s.estimated_population.toLocaleString()} civilians
                     <br />
-                    Status: <span className={s.is_isolated ? 'text-red-600 font-bold' : 'text-emerald-600'}>
-                      {s.is_isolated ? 'ISOLATED' : 'ACCESSIBLE'}
+                    Connectivity: <span className={s.is_isolated ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+                      {s.is_isolated ? 'SEVERED / ISOLATED' : 'OPEN HIGHWAY'}
                     </span>
-                    {s.priority_score && <><br />Priority: {s.priority_score.toFixed(1)} ({s.priority_level})</>}
+                    {s.priority_score && (
+                      <div>
+                        Rescue Priority: <strong className="text-cyan-300">{s.priority_score.toFixed(1)} ({s.priority_level})</strong>
+                      </div>
+                    )}
                   </div>
                 </Tooltip>
               </Marker>
             );
           })}
 
-        {/* 7. Rescue Teams */}
-        {layers.rescueTeams &&
-          teams.map((t) => {
-            const icon = createCustomIcon('#8b5cf6', '#c084fc', 'SAR', true);
-            return (
-              <Marker
-                key={t.id}
-                position={[t.current_lat, t.current_lon]}
-                icon={icon}
-              >
-                <Tooltip direction="top">
-                  <div className="text-xs font-mono">
-                    <span className="font-bold">{t.name}</span>
-                    <br />
-                    Type: {t.team_type}
-                    <br />
-                    Status: {t.status.toUpperCase()}
-                  </div>
-                </Tooltip>
-              </Marker>
-            );
-          })}
-
-        {/* 8. Hospitals / Triage Assets */}
+        {/* LAYER 8: HOSPITALS & TRAUMA HUBS */}
         {layers.hospitals &&
           assets.filter(a => a.asset_type === 'hospital').map((h) => {
-            const icon = createCustomIcon('#0d9488', '#2dd4bf', '+');
+            const icon = createCustomIcon('#0d9488', '#2dd4bf', '+', false, 'TRAUMA');
             return (
               <Marker
                 key={h.id}
@@ -336,9 +399,32 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               >
                 <Tooltip direction="top">
                   <div className="text-xs font-mono">
-                    <span className="font-bold text-teal-400">{h.name}</span>
+                    <span className="font-bold text-teal-300">{h.name}</span>
                     <br />
-                    Trauma Level: District Emergency
+                    Facility: Level 2 Trauma & Staging Centre
+                  </div>
+                </Tooltip>
+              </Marker>
+            );
+          })}
+
+        {/* LAYER 9: RESCUE TEAMS (REAL-TIME GPS TELEMETRY) */}
+        {layers.rescueTeams &&
+          teams.map((t) => {
+            const icon = createCustomIcon('#8b5cf6', '#c084fc', 'SAR', true, t.name.split(' ')[0]);
+            return (
+              <Marker
+                key={t.id}
+                position={[t.current_lat, t.current_lon]}
+                icon={icon}
+              >
+                <Tooltip direction="top">
+                  <div className="text-xs font-mono">
+                    <span className="font-bold text-purple-300">{t.name}</span>
+                    <br />
+                    Unit: {t.team_type}
+                    <br />
+                    Status: <strong className="text-emerald-400">{t.status.toUpperCase()}</strong>
                   </div>
                 </Tooltip>
               </Marker>

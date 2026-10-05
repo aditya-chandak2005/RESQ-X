@@ -13,8 +13,7 @@ import {
   FileText,
   SlidersHorizontal,
   Flame,
-  LifeBuoy,
-  Database
+  LifeBuoy
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'command', label: 'Command Center', icon: Activity, badge: 'LIVE' },
-    { id: 'dataset', label: 'Dataset & SAR Ingest', icon: Database, badge: 'REAL DATA' },
     { id: 'analysis', label: 'Disaster Pipeline', icon: Layers },
     { id: 'settlements', label: 'Cut-Off Settlements', icon: AlertTriangle, badge: '3 ISOLATED' },
     { id: 'priority', label: 'Rescue Priority', icon: ShieldAlert },

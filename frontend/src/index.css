@@ -50,3 +50,16 @@
   border-radius: 4px !important;
   font-family: inherit !important;
 }
+
+/* Tactical Dark Tile Filter - No external API keys needed, zero watermark */
+.leaflet-tile-pane .tactical-dark-tiles {
+  filter: brightness(0.65) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.25) !important;
+}
+
+.leaflet-tile-pane .topo-tiles {
+  filter: contrast(1.1) brightness(0.95);
+}
+
+.leaflet-tile-pane .satellite-tiles {
+  filter: contrast(1.15) brightness(1.05) saturate(1.1);
+}

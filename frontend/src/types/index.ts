@@ -178,7 +178,10 @@ export interface Resource {
   base_location_name: string;
 }
 
+export type BasemapType = 'satellite' | 'tactical-dark' | 'topo' | 'street';
+
 export interface LayerVisibility {
+  basemap: BasemapType;
   satellite: boolean;
   floodExtent: boolean;
   floodSeverity: boolean;

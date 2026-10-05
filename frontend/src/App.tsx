@@ -47,7 +47,8 @@ export const App: React.FC = () => {
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
 
   const [layers, setLayers] = useState<LayerVisibility>({
-    satellite: false,
+    basemap: 'satellite',
+    satellite: true,
     floodExtent: true,
     floodSeverity: true,
     settlements: true,
