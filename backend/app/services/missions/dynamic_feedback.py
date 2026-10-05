@@ -77,7 +77,7 @@ class DynamicResponseLoop:
         # 3. Dynamic Rerouting of Active / En-Route Missions
         active_missions = db.query(Mission).filter(
             Mission.disaster_id == disaster_id,
-            Mission.status.in_(["assigned", "en_route", "pending"])
+            Mission.status.notin_(["completed", "aborted"])
         ).all()
 
         for m in active_missions:

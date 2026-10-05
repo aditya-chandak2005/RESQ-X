@@ -13,6 +13,7 @@ import { FloodPathAnalysis } from './pages/FloodPathAnalysis';
 import { PreparednessPage } from './pages/PreparednessPage';
 import { AICopilotModal } from './pages/AICopilotModal';
 import { SituationReportModal } from './pages/SituationReportModal';
+import { DatasetProcessingView } from './pages/DatasetProcessingView';
 import { api } from './services/api';
 import {
   DashboardKpis,
@@ -137,6 +138,12 @@ export const App: React.FC = () => {
                   setCurrentTab('rerouting');
                 }}
               />
+            </div>
+          )}
+
+          {currentTab === 'dataset' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <DatasetProcessingView />
             </div>
           )}
 
