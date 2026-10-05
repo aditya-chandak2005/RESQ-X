@@ -113,6 +113,24 @@ export const api = {
     return res.json();
   },
 
+  async getQuickReview(disasterId: number = 1, reviewType: string = 'executive'): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/quick-review/${disasterId}?review_type=${reviewType}`);
+    if (!res.ok) throw new Error('Failed to fetch quick review');
+    return res.json();
+  },
+
+  async getDisasterKnowledge(): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/disaster-knowledge`);
+    if (!res.ok) throw new Error('Failed to fetch disaster knowledge catalog');
+    return res.json();
+  },
+
+  async getDisasterKnowledgeDetail(topic: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/disaster-knowledge/${topic}`);
+    if (!res.ok) throw new Error(`Failed to fetch disaster knowledge for ${topic}`);
+    return res.json();
+  },
+
   async getSituationReport(disasterId: number = 1): Promise<any> {
     const res = await fetch(`${API_BASE}/reports/${disasterId}`);
     if (!res.ok) throw new Error('Failed to generate situation report');
@@ -132,6 +150,22 @@ export const api = {
       body: JSON.stringify(params),
     });
     if (!res.ok) throw new Error('Failed to calculate downstream flood path');
+    return res.json();
+  },
+
+  async assessLocation(params: { latitude: number; longitude: number; disaster_id?: number; location_label?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/intelligence/assess-location`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to assess location');
+    return res.json();
+  },
+
+  async geocode(query: string): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/intelligence/geocode?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('Geocoding failed');
     return res.json();
   }
 };

@@ -14,6 +14,8 @@ import { PreparednessPage } from './pages/PreparednessPage';
 import { AICopilotModal } from './pages/AICopilotModal';
 import { SituationReportModal } from './pages/SituationReportModal';
 import { DatasetProcessingView } from './pages/DatasetProcessingView';
+import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { LocationRiskInspector } from './components/LocationRiskInspector';
 import { api } from './services/api';
 import {
   DashboardKpis,
@@ -27,6 +29,7 @@ import {
   Mission,
   Resource,
   LayerVisibility,
+  LocationAssessment,
 } from './types';
 
 export const App: React.FC = () => {
@@ -45,6 +48,11 @@ export const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<{ type: any; data: any } | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
+
+  // Individual location inspection state
+  const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [isInspectMode, setIsInspectMode] = useState<boolean>(false);
+  const [currentAssessment, setCurrentAssessment] = useState<LocationAssessment | null>(null);
 
   const [layers, setLayers] = useState<LayerVisibility>({
     basemap: 'satellite',
@@ -97,6 +105,21 @@ export const App: React.FC = () => {
   }, []);
 
   const allRoutes = missions.flatMap((m) => m.routes || []);
+  const handleMapClick = async (lat: number, lng: number) => {
+    const label = `Pinned Point [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
+    setInspectedPoint({ lat, lng, label });
+    try {
+      const assessment = await api.assessLocation({
+        latitude: lat,
+        longitude: lng,
+        disaster_id: 1,
+        location_label: label,
+      });
+      setCurrentAssessment(assessment);
+    } catch (err) {
+      console.error('Map click assessment error:', err);
+    }
+  };
 
   return (
     <div className="flex h-screen w-screen bg-[#070b14] overflow-hidden font-sans select-none text-slate-100">
@@ -117,6 +140,19 @@ export const App: React.FC = () => {
         <main className="flex-1 relative overflow-hidden flex">
           {currentTab === 'command' && (
             <div className="flex-1 h-full relative flex">
+              {/* Floating Quick Location Risk Inspector Overlay */}
+              <div className="absolute top-3 left-4 right-4 sm:left-72 sm:right-auto z-[990] sm:max-w-xl pointer-events-auto">
+                <LocationRiskInspector
+                  onLocationSelected={(lat, lng, label) => {
+                    setInspectedPoint({ lat, lng, label });
+                  }}
+                  isInspectMode={isInspectMode}
+                  setIsInspectMode={setIsInspectMode}
+                  currentAssessment={currentAssessment}
+                  setCurrentAssessment={setCurrentAssessment}
+                />
+              </div>
+
               <InteractiveMap
                 floodPolygons={floodResult?.polygons || []}
                 settlements={settlements}
@@ -127,6 +163,9 @@ export const App: React.FC = () => {
                 assets={assets}
                 layers={layers}
                 onSelectItem={setSelectedItem}
+                inspectedPoint={inspectedPoint}
+                onMapClick={handleMapClick}
+                isInspectMode={isInspectMode}
               />
               <LayerControl layers={layers} setLayers={setLayers} />
               <ContextPanel
@@ -140,6 +179,20 @@ export const App: React.FC = () => {
                 }}
               />
             </div>
+          )}
+
+          {currentTab === 'location-check' && (
+            <CitizenLocationCheckView
+              floodResult={floodResult}
+              settlements={settlements}
+              bridges={bridges}
+              roads={roads}
+              teams={teams}
+              routes={allRoutes}
+              assets={assets}
+              layers={layers}
+              onSelectItem={setSelectedItem}
+            />
           )}
 
           {currentTab === 'dataset' && (

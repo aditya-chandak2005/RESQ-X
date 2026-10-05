@@ -197,3 +197,136 @@ export interface LayerVisibility {
   alternateRoutes: boolean;
   floodPath: boolean;
 }
+
+export interface LocationAssessment {
+  query: {
+    latitude: number;
+    longitude: number;
+    location_label: string;
+    timestamp: string;
+  };
+  overall_status: {
+    risk_tier: string;
+    safety_score: number;
+    status_heading: string;
+    status_color: string;
+    is_inundated: boolean;
+    water_depth_est_m: number;
+    distance_to_flood_m: number;
+    is_isolated: boolean;
+    isolation_reason?: string;
+  };
+  multi_source_comparison: {
+    sar_satellite_ai: {
+      sensor: string;
+      resolution: string;
+      inundation_detected: boolean;
+      confidence: string;
+      severity: string;
+      distance_to_water_m: number;
+      method: string;
+    };
+    copernicus_dem_topography: {
+      elevation_m: number;
+      in_drainage_corridor: boolean;
+      distance_to_dem_hydro_path_m: number;
+      slope_hazard: string;
+      terrain_profile: string;
+    };
+    open_meteo_live_hydro: {
+      source: string;
+      live_river_discharge_m3s: number;
+      forecast_3day_m3s: number[];
+      forecast_dates: string[];
+      elevation_from_gauge_m: number;
+      trend: string;
+      status: string;
+    };
+    infrastructure_connectivity: {
+      nearest_settlement: {
+        name: string;
+        distance_km: number;
+        is_isolated: boolean;
+      };
+      nearest_hospital: {
+        name: string;
+        distance_km: number;
+        accessible: boolean;
+      };
+      nearest_shelter: {
+        name: string;
+        distance_km: number;
+        elevation_m: number;
+        status: string;
+      };
+      nearest_bridge: {
+        name: string;
+        status: string;
+        distance_km: number;
+      };
+      nearest_road: {
+        name: string;
+        is_blocked: boolean;
+        distance_km: number;
+      };
+    };
+  };
+  evacuation_advisory: {
+    recommended_action: string;
+    target_refuge_name: string;
+    target_refuge_distance_km: number;
+    target_refuge_elevation_m: number;
+    action_advisories: string[];
+  };
+}
+
+export interface GeocodeResult {
+  name: string;
+  formatted_address: string;
+  latitude: number;
+  longitude: number;
+  type: string;
+  source: string;
+}
+
+export interface QuickReviewData {
+  review_type: string;
+  disaster_id: number;
+  title: string;
+  status_badge: string;
+  status_color: string;
+  generated_at: string;
+  summary: string;
+  metrics?: any;
+  key_findings?: any[];
+  critical_red_flags?: any[];
+  recommended_actions?: any[];
+  recommended_command_directives?: any[];
+  settlement_breakdown?: any[];
+  teams_status?: any[];
+  resources_status?: any[];
+  phases?: any[];
+}
+
+export interface DisasterKnowledgeItem {
+  id: string;
+  name: string;
+  title?: string;
+  category: string;
+  summary: string;
+  description?: string;
+  trigger_mechanisms?: string[];
+  precursors: string[];
+  immediate_dos: string[];
+  immediate_donts: string[];
+  critical_donts?: string[];
+  historical_precedents?: string[];
+  essential_survival_kit?: string[];
+  rescue_protocols: string[];
+  medical_guidance?: string[];
+  medical_field_guidelines: string[];
+}
+
+
+
+

@@ -79,3 +79,30 @@ def test_field_feedback_dynamic_reroute():
     res = response.json()
     assert res["applied_to_graph"] is True
     assert res["dynamic_reroute_triggered"] is True
+
+
+def test_location_assessment():
+    payload = {
+        "disaster_id": 1,
+        "latitude": 30.4905,
+        "longitude": 79.6830,
+        "location_label": "Raini Village Test"
+    }
+    response = client.post("/api/intelligence/assess-location", json=payload)
+    assert response.status_code == 200
+    res = response.json()
+    assert "overall_status" in res
+    assert "safety_score" in res["overall_status"]
+    assert "multi_source_comparison" in res
+    assert "sar_satellite_ai" in res["multi_source_comparison"]
+    assert "open_meteo_live_hydro" in res["multi_source_comparison"]
+    assert "evacuation_advisory" in res
+
+def test_geocode_endpoint():
+    response = client.get("/api/intelligence/geocode?q=Tapovan")
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) >= 1
+    assert "latitude" in items[0]
+    assert "longitude" in items[0]
+

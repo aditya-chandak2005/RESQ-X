@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from backend.app.db.session import get_db
-from backend.app.schemas.schemas import SimulationRequest, CopilotQueryRequest, CopilotQueryResponse
+from backend.app.schemas.schemas import SimulationRequest, CopilotQueryRequest, CopilotQueryResponse, LocationAssessmentRequest
 from backend.app.services.simulation.what_if import WhatIfSimulator
 from backend.app.services.copilot.copilot import ResqCopilot
 from backend.app.services.reports.situation_report import SituationReportService
+from backend.app.services.gis.location_assessment import LocationAssessmentService
 
 router = APIRouter()
 
@@ -118,3 +119,25 @@ def calculate_downstream_flood_path(payload: Dict[str, Any]):
             "Helang Alaknanda Steel Suspension Bridge"
         ]
     }
+
+@router.post("/assess-location")
+def assess_individual_location(payload: LocationAssessmentRequest, db: Session = Depends(get_db)):
+    """Assess flood safety, water depth, and evacuation options for an individual exact coordinate
+
+    comparing Sentinel-1 SAR AI, Copernicus DEM topography, and Open-Meteo live hydro forecasting.
+    """
+    return LocationAssessmentService.assess_location(
+        db=db,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        disaster_id=payload.disaster_id or 1,
+        location_label=payload.location_label
+    )
+
+@router.get("/geocode")
+def geocode_location(q: str):
+    """Geocode an address, landmark, or village to exact coordinates."""
+    if not q or len(q.strip()) < 2:
+        return []
+    return LocationAssessmentService.geocode(q)
+

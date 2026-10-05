@@ -230,12 +230,34 @@ class SimulationRequest(BaseModel):
 class CopilotQueryRequest(BaseModel):
     disaster_id: Optional[int] = 1
     query: str
+    category: Optional[str] = None
+    conversation_history: Optional[List[Dict[str, str]]] = None
 
 class CopilotQueryResponse(BaseModel):
     query: str
     response: str
     grounded_data: Dict[str, Any]
+    quick_review: Optional[Dict[str, Any]] = None
+    suggested_queries: Optional[List[str]] = None
     timestamp: datetime
+
+class QuickReviewResponse(BaseModel):
+    review_type: str
+    disaster_id: int
+    title: str
+    status_badge: str
+    status_color: str
+    generated_at: str
+    summary: str
+    metrics: Optional[Dict[str, Any]] = None
+    key_findings: Optional[List[str]] = None
+    critical_red_flags: Optional[List[str]] = None
+    recommended_actions: Optional[List[str]] = None
+    recommended_command_directives: Optional[List[str]] = None
+    settlement_breakdown: Optional[List[Dict[str, Any]]] = None
+    teams_status: Optional[List[Dict[str, Any]]] = None
+    resources_status: Optional[List[Dict[str, Any]]] = None
+    phases: Optional[List[Dict[str, Any]]] = None
 
 # Summary / KPI Schema
 class DashboardKpis(BaseModel):
@@ -247,3 +269,10 @@ class DashboardKpis(BaseModel):
     isolated_settlements: int
     critical_priority_zones: int
     active_rescue_missions: int
+
+class LocationAssessmentRequest(BaseModel):
+    latitude: float
+    longitude: float
+    disaster_id: Optional[int] = 1
+    location_label: Optional[str] = None
+

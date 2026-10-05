@@ -13,7 +13,8 @@ import {
   FileText,
   SlidersHorizontal,
   Flame,
-  LifeBuoy
+  LifeBuoy,
+  MapPin
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'command', label: 'Command Center', icon: Activity, badge: 'LIVE' },
+    { id: 'location-check', label: 'Individual Flood Check', icon: MapPin, badge: 'EXACT GPS' },
+    { id: 'chatbot', label: 'Disaster AI Chat & Review', icon: Bot, badge: 'AI REVIEW' },
     { id: 'analysis', label: 'Disaster Pipeline', icon: Layers },
     { id: 'settlements', label: 'Cut-Off Settlements', icon: AlertTriangle, badge: '3 ISOLATED' },
     { id: 'priority', label: 'Rescue Priority', icon: ShieldAlert },
