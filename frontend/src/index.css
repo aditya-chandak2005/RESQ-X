@@ -105,3 +105,18 @@
 .animate-radar {
   animation: radar-pulse 2s infinite;
 }
+
+/* Tactical Disaster Pin Popup */
+.tactical-disaster-popup .leaflet-popup-content {
+  margin: 10px 12px !important;
+  line-height: 1.4 !important;
+}
+
+.tactical-disaster-popup .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  padding: 6px 8px !important;
+}
+
+.tactical-disaster-popup .leaflet-popup-close-button:hover {
+  color: #ef4444 !important;
+}

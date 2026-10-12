@@ -22,6 +22,7 @@ import {
   LayerVisibility,
   InfrastructureAsset,
   DisasterEvent,
+  LocationAssessment,
 } from '../types';
 import {
   INDIA_STATE_BOUNDARIES_GEOJSON,
@@ -56,7 +57,10 @@ interface InteractiveMapProps {
   zoom?: number;
   activeIncident?: DisasterEvent | null;
   inspectedPoint?: { lat: number; lng: number; label?: string } | null;
+  setInspectedPoint?: (point: { lat: number; lng: number; label: string } | null) => void;
+  currentAssessment?: LocationAssessment | null;
   onMapClick?: (lat: number, lng: number) => void;
+  onMapDoubleClick?: (lat: number, lng: number) => void;
   isInspectMode?: boolean;
 }
 
@@ -149,18 +153,244 @@ const MapController: React.FC<{
   return null;
 };
 
-// Map Click Handler for Dropping Inspection Pins
-const MapClickHandler: React.FC<{ onMapClick?: (lat: number, lng: number) => void }> = ({
-  onMapClick,
-}) => {
+// Map Events Handler: ONLY double click drops the pin, or single click if in crosshair inspect mode
+const MapEventsHandler: React.FC<{
+  onMapDoubleClick?: (lat: number, lng: number) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  isInspectMode?: boolean;
+}> = ({ onMapDoubleClick, onMapClick, isInspectMode }) => {
   useMapEvents({
+    dblclick(e) {
+      // Double click ALWAYS drops pin and assesses location!
+      L.DomEvent.stopPropagation(e.originalEvent);
+      if (onMapDoubleClick) {
+        onMapDoubleClick(e.latlng.lat, e.latlng.lng);
+      } else if (onMapClick) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
     click(e) {
-      if (onMapClick) {
+      // Single click drops pin ONLY if user explicitly enabled target crosshair Inspect Mode
+      if (isInspectMode && onMapClick) {
         onMapClick(e.latlng.lat, e.latlng.lng);
       }
     },
   });
   return null;
+};
+
+// Rich Disaster Assessment Pin Marker Component with Auto-Opening Tactical Popup
+const InspectPinMarker: React.FC<{
+  point: { lat: number; lng: number; label?: string };
+  assessment?: LocationAssessment | null;
+  onClear?: () => void;
+}> = ({ point, assessment, onClear }) => {
+  const markerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.openPopup();
+    }
+  }, [point.lat, point.lng, assessment]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[point.lat, point.lng]}
+      icon={L.divIcon({
+        className: 'custom-inspect-marker',
+        html: `
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px dashed #06b6d4; opacity: 0.8; animation: spin 4s linear infinite;"></div>
+            <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background-color: #06b6d4; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="
+              width: 26px; 
+              height: 26px; 
+              border-radius: 50%; 
+              background-color: #0891b2; 
+              border: 2px solid #a5f3fc; 
+              box-shadow: 0 0 16px #06b6d4;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: monospace;
+              font-size: 12px;
+              font-weight: bold;
+              color: white;
+            ">
+              📍
+            </div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+      })}
+    >
+      <Popup className="tactical-disaster-popup" maxWidth={360} minWidth={290} autoPan={true}>
+        <div className="p-2.5 font-mono text-xs select-text text-slate-100">
+          {/* Top Title & Pin Dismiss */}
+          <div className="flex items-start justify-between border-b border-slate-700/80 pb-2 mb-2">
+            <div className="min-w-0 pr-2">
+              <div className="flex items-center space-x-1.5 text-cyan-300 font-bold text-[12px] truncate">
+                <span>📍</span>
+                <span className="truncate">{point.label || 'Target Location'}</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                GPS: [{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E]
+              </div>
+            </div>
+            {onClear && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClear();
+                }}
+                className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-red-950 hover:text-red-300 text-slate-400 text-[10px] border border-slate-700 transition-all shrink-0 cursor-pointer"
+                title="Remove Location Pin"
+              >
+                Clear Pin
+              </button>
+            )}
+          </div>
+
+          {/* Disaster Assessment Details */}
+          {assessment ? (
+            <div className="space-y-2">
+              {/* Overall Status Banner */}
+              <div
+                className={`p-2 rounded-lg border flex items-center justify-between ${
+                  assessment.overall_status.is_inundated
+                    ? 'bg-red-950/70 border-red-500/60 text-red-200'
+                    : assessment.overall_status.risk_tier === 'high' ||
+                      assessment.overall_status.risk_tier === 'moderate'
+                    ? 'bg-amber-950/70 border-amber-500/60 text-amber-200'
+                    : 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200'
+                }`}
+              >
+                <div>
+                  <div className="font-bold text-[11px] uppercase tracking-wide flex items-center space-x-1">
+                    <span>
+                      {assessment.overall_status.is_inundated ? '🚨 ' : '🛡️ '}
+                      {assessment.overall_status.status_heading}
+                    </span>
+                  </div>
+                  <div className="text-[10px] opacity-90 mt-0.5">
+                    {assessment.overall_status.is_inundated
+                      ? `Est. Water Depth: ~${assessment.overall_status.water_depth_est_m}m`
+                      : `Distance to Flood Extent: ~${assessment.overall_status.distance_to_flood_m}m`}
+                  </div>
+                </div>
+                <div className="text-right shrink-0 pl-2 border-l border-white/10 ml-2">
+                  <div className="text-[15px] font-extrabold">
+                    {assessment.overall_status.safety_score}%
+                  </div>
+                  <div className="text-[8px] uppercase tracking-tighter opacity-80">Safety Index</div>
+                </div>
+              </div>
+
+              {/* 2x2 Disaster Signals Matrix */}
+              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                {/* SAR AI Inundation */}
+                <div className="p-1.5 rounded bg-slate-900/90 border border-slate-800">
+                  <div className="text-slate-400 font-semibold flex items-center justify-between">
+                    <span>SAR SATELLITE</span>
+                    <span
+                      className={
+                        assessment.multi_source_comparison.sar_satellite_ai.inundation_detected
+                          ? 'text-red-400 font-bold'
+                          : 'text-emerald-400 font-bold'
+                      }
+                    >
+                      {assessment.multi_source_comparison.sar_satellite_ai.inundation_detected
+                        ? 'INUNDATED'
+                        : 'CLEAR'}
+                    </span>
+                  </div>
+                  <div className="text-slate-300 mt-0.5">
+                    Severity: {assessment.multi_source_comparison.sar_satellite_ai.severity.toUpperCase()}
+                  </div>
+                </div>
+
+                {/* DEM Topography */}
+                <div className="p-1.5 rounded bg-slate-900/90 border border-slate-800">
+                  <div className="text-slate-400 font-semibold flex items-center justify-between">
+                    <span>DEM ELEVATION</span>
+                    <span className="text-cyan-300 font-bold">
+                      {assessment.multi_source_comparison.copernicus_dem_topography.elevation_m}m
+                    </span>
+                  </div>
+                  <div className="text-slate-300 mt-0.5">
+                    Slope: {assessment.multi_source_comparison.copernicus_dem_topography.slope_hazard}
+                  </div>
+                </div>
+
+                {/* Road Ingress & Isolation */}
+                <div className="p-1.5 rounded bg-slate-900/90 border border-slate-800">
+                  <div className="text-slate-400 font-semibold flex items-center justify-between">
+                    <span>ROAD INGRESS</span>
+                    <span
+                      className={
+                        assessment.overall_status.is_isolated
+                          ? 'text-red-400 font-bold'
+                          : 'text-emerald-400 font-bold'
+                      }
+                    >
+                      {assessment.overall_status.is_isolated ? 'CUT-OFF' : 'OPEN'}
+                    </span>
+                  </div>
+                  <div className="text-slate-300 mt-0.5 truncate">
+                    Hamlet: {assessment.multi_source_comparison.infrastructure_connectivity.nearest_settlement.name}
+                  </div>
+                </div>
+
+                {/* Hospital Access */}
+                <div className="p-1.5 rounded bg-slate-900/90 border border-slate-800">
+                  <div className="text-slate-400 font-semibold flex items-center justify-between">
+                    <span>HOSPITAL</span>
+                    <span className="text-teal-300 font-bold">
+                      {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital.distance_km}km
+                    </span>
+                  </div>
+                  <div className="text-slate-300 mt-0.5 truncate">
+                    {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital.name}
+                  </div>
+                </div>
+              </div>
+
+              {/* Evacuation Advisory Callout */}
+              <div className="p-2 rounded bg-cyan-950/40 border border-cyan-800/60 text-[10px]">
+                <div className="text-cyan-300 font-bold flex items-center space-x-1">
+                  <span>🚨 EVACUATION ADVISORY:</span>
+                  <span className="text-white">{assessment.overall_status.risk_tier.toUpperCase()}</span>
+                </div>
+                <div className="text-slate-300 mt-0.5 leading-tight">
+                  {assessment.evacuation_advisory.recommended_action}
+                </div>
+                <div className="text-slate-400 mt-1 flex items-center justify-between text-[9px]">
+                  <span>
+                    Safe Ground: {assessment.evacuation_advisory.target_refuge_name} ({assessment.evacuation_advisory.target_refuge_distance_km}km)
+                  </span>
+                  <span className="text-cyan-400 font-bold">
+                    Alt: {assessment.evacuation_advisory.target_refuge_elevation_m}m
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 text-center space-y-2">
+              <div className="flex items-center justify-center space-x-2 text-cyan-400">
+                <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                <span className="font-bold text-[11px]">EVALUATING MULTI-SENSOR DISASTER TELEMETRY...</span>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Querying Sentinel-1 SAR AI extent, Copernicus DEM, and hydro discharge models.
+              </p>
+            </div>
+          )}
+        </div>
+      </Popup>
+    </Marker>
+  );
 };
 
 // Map Sub-component for interactive Zoom Controls
@@ -220,7 +450,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   zoom = 12,
   activeIncident,
   inspectedPoint,
+  setInspectedPoint,
+  currentAssessment,
   onMapClick,
+  onMapDoubleClick,
   isInspectMode,
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
@@ -334,9 +567,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoom={mapZoom}
         className="w-full h-full bg-[#070b14]"
         zoomControl={false}
+        doubleClickZoom={false}
       >
         <MapController center={mapCenter} zoom={mapZoom} activeIncidentId={activeIncident?.id} />
-        <MapClickHandler onMapClick={onMapClick} />
+        <MapEventsHandler
+          onMapDoubleClick={onMapDoubleClick}
+          onMapClick={onMapClick}
+          isInspectMode={isInspectMode}
+        />
         <CustomZoomControls
           onRecenter={() => {
             if (activeIncident) {
@@ -744,48 +982,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
         {/* Pinned Individual Inspection Target */}
         {inspectedPoint && (
-          <Marker
-            position={[inspectedPoint.lat, inspectedPoint.lng]}
-            icon={L.divIcon({
-              className: 'custom-inspect-marker',
-              html: `
-                <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-                  <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px dashed #06b6d4; opacity: 0.8; animation: spin 4s linear infinite;"></div>
-                  <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background-color: #06b6d4; opacity: 0.4; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-                  <div style="
-                    width: 26px; 
-                    height: 26px; 
-                    border-radius: 50%; 
-                    background-color: #0891b2; 
-                    border: 2px solid #a5f3fc; 
-                    box-shadow: 0 0 16px #06b6d4;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-family: monospace;
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: white;
-                  ">
-                    📍
-                  </div>
-                </div>
-              `,
-              iconSize: [44, 44],
-              iconAnchor: [22, 22],
-            })}
-          >
-            <Popup className="tactical-popup">
-              <div className="p-1 font-mono text-xs">
-                <div className="font-bold text-cyan-400 uppercase tracking-wide">
-                  📍 {inspectedPoint.label || 'Target GPS Position'}
-                </div>
-                <div className="text-slate-300 mt-1">
-                  Coordinates: [{inspectedPoint.lat.toFixed(4)}, {inspectedPoint.lng.toFixed(4)}]
-                </div>
-              </div>
-            </Popup>
-          </Marker>
+          <InspectPinMarker
+            point={inspectedPoint}
+            assessment={currentAssessment}
+            onClear={setInspectedPoint ? () => setInspectedPoint(null) : undefined}
+          />
         )}
       </MapContainer>
 

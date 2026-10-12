@@ -122,7 +122,10 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             }
             activeIncident={activeIncident}
             inspectedPoint={inspectedPoint}
+            setInspectedPoint={setInspectedPoint}
+            currentAssessment={currentAssessment}
             onMapClick={handleMapClick}
+            onMapDoubleClick={handleMapClick}
             isInspectMode={isInspectMode}
           />
 

@@ -117,6 +117,7 @@ export const App: React.FC = () => {
   const handleMapClick = async (lat: number, lng: number) => {
     const label = `Pinned Point [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
     setInspectedPoint({ lat, lng, label });
+    setCurrentAssessment(null);
     try {
       const assessment = await api.assessLocation({
         latitude: lat,
