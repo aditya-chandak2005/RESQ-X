@@ -322,16 +322,16 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans select-none">
       
-      {/* 1. Main Operational Ribbon */}
-      <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/60 text-xs">
+      {/* 1. Main Operational Ribbon - Rigid Single-Row Responsive Layout */}
+      <div className="relative px-3 sm:px-4 h-13 min-h-[52px] flex items-center justify-between border-b border-slate-800/80 text-xs overflow-visible">
         
         {/* Left Operational Controls: Sidebar Toggle + Incident Selector */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0 z-10">
           {/* Navigation Sidebar Toggle Button */}
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className={`px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm ${
+              className={`px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm ${
                 isSidebarHidden
                   ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
                   : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500'
@@ -339,7 +339,7 @@ export const Header: React.FC<HeaderProps> = ({
               title={isSidebarHidden ? 'Show Navigation Sidebar (Ctrl+B)' : 'Hide Navigation Sidebar (Ctrl+B)'}
             >
               {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400" /> : <PanelLeftClose className="w-4 h-4" />}
-              <span className="font-semibold text-[11px] hidden sm:inline">
+              <span className="font-semibold text-[11px] hidden md:inline">
                 {isSidebarHidden ? 'Show Nav' : 'Hide Nav'}
               </span>
             </button>
@@ -349,11 +349,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
-              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm"
             >
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[10px] text-slate-400 font-mono uppercase">INCIDENT:</span>
-              <span className="text-white font-mono truncate max-w-[150px] sm:max-w-xs">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+              <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline">INCIDENT:</span>
+              <span className="text-white font-mono truncate max-w-[110px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[260px]">
                 {activeIncident?.name || 'Assam Barak Valley Inundation'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -409,10 +409,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* ========================================================= */}
-        {/* CENTER: OMNIBAR SEARCH & LOCATION INSPECTOR (POP ON DEMAND)*/}
+        {/* CENTER: TRUE CENTER OMNIBAR SEARCH (LOCKED AT EXACT 50%) */}
         {/* ========================================================= */}
-        <div ref={searchContainerRef} className="relative flex-1 max-w-lg min-w-[240px]">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+        <div
+          ref={searchContainerRef}
+          className="absolute left-1/2 -translate-x-1/2 w-[34%] min-w-[200px] max-w-xs sm:max-w-md lg:max-w-lg z-20 pointer-events-auto"
+        >
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
             <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
             <input
               ref={searchInputRef}
@@ -420,8 +423,8 @@ export const Header: React.FC<HeaderProps> = ({
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="Search location, village, coords, or hotspots... (Ctrl+K)"
-              className="w-full pl-8 pr-20 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono"
+              placeholder="Search place, coords, or hotspots... (Ctrl+K)"
+              className="w-full pl-8 pr-16 sm:pr-20 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner"
             />
             {isSearching && (
               <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-16" />
@@ -591,11 +594,11 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Active Assessment Pill (if an area is inspected) + Operational Actions */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-2 shrink-0 z-10 ml-auto">
           
           {/* Active Location Inspection Intel Pill */}
           {currentAssessment && (
-            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono">
+            <div className="flex items-center space-x-1 sm:space-x-1.5 px-2 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   currentAssessment.overall_status.is_inundated
@@ -603,7 +606,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-emerald-400 animate-pulse'
                 }`}
               />
-              <span className="font-bold text-cyan-300 truncate max-w-[100px] sm:max-w-[130px]">
+              <span className="font-bold text-cyan-300 truncate max-w-[80px] sm:max-w-[120px] hidden md:inline">
                 {currentAssessment.query.location_label}
               </span>
               <span
@@ -617,10 +620,10 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <button
                 onClick={() => setIsIntelModalOpen(true)}
-                className="px-2 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
+                className="px-1.5 sm:px-2 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
                 title="Open Multi-Source SAR/DEM/GloFAS Intelligence Report"
               >
-                Intel Report ▾
+                <span className="hidden sm:inline">Intel </span>Report ▾
               </button>
               {onClearAssessment && (
                 <button
@@ -639,13 +642,13 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
+              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
               title="Change Map Display Mode"
             >
               {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400" />}
               {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300" />}
               {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400" />}
-              <span className="font-semibold text-[11px] hidden sm:inline">
+              <span className="font-semibold text-[11px] hidden md:inline">
                 {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
               </span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -739,11 +742,12 @@ export const Header: React.FC<HeaderProps> = ({
           {onRunAnalysis && (
             <button
               onClick={onRunAnalysis}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer"
               title="Run AI Flood Segmentation Pipeline"
             >
               <Play className="w-3 h-3 fill-current" />
-              <span className="hidden lg:inline">RUN PIPELINE</span>
+              <span className="hidden sm:inline">RUN</span>
+              <span className="hidden lg:inline">PIPELINE</span>
             </button>
           )}
 
@@ -751,10 +755,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenCopilot && (
             <button
               onClick={onOpenCopilot}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              title="Open RESQ AI Disaster Copilot"
             >
               <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">COPILOT</span>
+              <span className="hidden md:inline">COPILOT</span>
             </button>
           )}
 
@@ -762,10 +767,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenSitrep && (
             <button
               onClick={onOpenSitrep}
-              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              className="hidden sm:flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              title="View NDMA Official Situation Report"
             >
               <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>SITREP</span>
+              <span className="hidden lg:inline">SITREP</span>
             </button>
           )}
 
@@ -773,16 +779,19 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenGuide && (
             <button
               onClick={onOpenGuide}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
-              title="Citizen Guide"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+              title="Citizen Survival Guide"
             >
               <HelpCircle className="w-4 h-4 text-cyan-300" />
             </button>
           )}
 
-          {/* UTC Clock */}
-          <div className="hidden xl:flex items-center space-x-1 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+          {/* Live Operational Status & UTC Clock */}
+          <div className="hidden xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">LIVE</span>
+            <span className="text-slate-500">|</span>
+            <Clock className="w-3 h-3 text-cyan-400" />
             <span>{time}</span>
           </div>
         </div>
