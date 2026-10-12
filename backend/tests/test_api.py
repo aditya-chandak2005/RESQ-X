@@ -106,3 +106,49 @@ def test_geocode_endpoint():
     assert "latitude" in items[0]
     assert "longitude" in items[0]
 
+
+def test_get_official_alerts():
+    response = client.get("/api/alerts")
+    assert response.status_code == 200
+    alerts = response.json()
+    assert len(alerts) >= 1
+    red_alerts = [a for a in alerts if a["alert_level"] == "RED"]
+    assert len(red_alerts) >= 1
+    assert "NDMA" in red_alerts[0]["authority"] or "CWC" in red_alerts[0]["authority"]
+
+
+def test_get_disaster_news():
+    response = client.get("/api/news")
+    assert response.status_code == 200
+    news = response.json()
+    assert len(news) >= 1
+    assert any("NDRF" in n["headline"] or "Bridge" in n["headline"] for n in news)
+
+
+def test_knowledge_rag_query():
+    payload = {"query": "GLOF bridge failure evacuation protocol", "top_k": 2}
+    response = client.post("/api/knowledge/query", json=payload)
+    assert response.status_code == 200
+    res = response.json()
+    assert res["results_count"] >= 1
+    assert len(res["citations"]) >= 1
+    assert "relevance_score" in res["citations"][0]
+
+
+def test_export_situation_report_pdf():
+    response = client.get("/api/reports/1/pdf")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert len(response.content) > 1000
+    assert response.content.startswith(b"%PDF")
+
+
+def test_validation_benchmark():
+    response = client.get("/api/validation/benchmark")
+    assert response.status_code == 200
+    data = response.json()
+    assert "validation_policy" in data
+    assert "EMSR927" in data["validation_policy"]["strict_rule"]
+    assert data["test_split_metrics"]["intersection_over_union_iou"] > 0.8
+
+

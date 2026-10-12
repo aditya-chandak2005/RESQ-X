@@ -319,3 +319,126 @@ class AuditLog(Base):
     entity_id = Column(Integer, nullable=True)
     details = Column(JSON, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class AreaOfInterest(Base):
+    __tablename__ = "areas_of_interest"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    name = Column(String(200), nullable=False)
+    bbox_coordinates = Column(JSON, nullable=True)
+    geometry_geojson = Column(JSON, nullable=True)
+    area_sqkm = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class ProcessingJob(Base):
+    __tablename__ = "processing_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    job_type = Column(String(100), nullable=False) # satellite_acquisition, sar_segmentation, osm_intersection, graph_connectivity
+    status = Column(String(50), default="pending", index=True) # pending, running, completed, failed
+    progress_pct = Column(Integer, default=0)
+    stage_name = Column(String(200), nullable=True)
+    stage_details = Column(JSON, default=dict)
+    error_message = Column(Text, nullable=True)
+    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class PopulationExposure(Base):
+    __tablename__ = "population_exposures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    settlement_id = Column(Integer, ForeignKey("settlements.id"), index=True)
+    exposed_population = Column(Integer, default=0)
+    uncertainty_min = Column(Integer, default=0)
+    uncertainty_max = Column(Integer, default=0)
+    methodology = Column(String(100), default="LandScan + Building Footprints")
+    risk_tier = Column(String(50), default="HIGH")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class ConnectivityResult(Base):
+    __tablename__ = "connectivity_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    settlement_id = Column(Integer, ForeignKey("settlements.id"), index=True)
+    is_isolated = Column(Boolean, default=False)
+    isolation_reason = Column(String(255), nullable=True)
+    hospital_reachable = Column(Boolean, default=True)
+    nearest_hospital_dist_km = Column(Float, default=0.0)
+    estimated_transit_minutes = Column(Float, default=0.0)
+    graph_metrics = Column(JSON, default=dict)
+    evaluated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class NewsItem(Base):
+    __tablename__ = "news_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), nullable=True, index=True)
+    source = Column(String(150), nullable=False) # PIB, DD News, Disaster Watch
+    original_url = Column(String(500), nullable=True)
+    headline = Column(String(300), nullable=False)
+    summary = Column(Text, nullable=False)
+    hazard_category = Column(String(100), default="Flood")
+    location_tag = Column(String(150), default="Uttarakhand")
+    verification_status = Column(String(50), default="verified_media") # verified_official, verified_media, unconfirmed
+    published_at = Column(DateTime, default=datetime.datetime.utcnow)
+    retrieved_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class OfficialAlert(Base):
+    __tablename__ = "official_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), nullable=True, index=True)
+    authority = Column(String(100), nullable=False) # NDMA SACHET, IMD, CWC, SDMA
+    alert_level = Column(String(50), default="RED", index=True) # RED, ORANGE, YELLOW
+    headline = Column(String(300), nullable=False)
+    instruction = Column(Text, nullable=False)
+    effective_until = Column(DateTime, nullable=True)
+    source_url = Column(String(500), nullable=True)
+    verification_status = Column(String(50), default="official_verified")
+    published_at = Column(DateTime, default=datetime.datetime.utcnow)
+    retrieved_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class KnowledgeDocument(Base):
+    __tablename__ = "knowledge_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    category = Column(String(100), default="ndma_guideline") # ndma_guideline, sop_flood, glof_management
+    source_authority = Column(String(150), default="National Disaster Management Authority (NDMA)")
+    content_text = Column(Text, nullable=False)
+    metadata_json = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class SituationReport(Base):
+    __tablename__ = "situation_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    report_title = Column(String(255), nullable=False)
+    incident_version = Column(String(50), default="v1.0")
+    status = Column(String(50), default="draft_for_review") # draft_for_review, approved_official
+    generated_by = Column(String(100), default="RESQ-X Automated Situation Engine")
+    report_data_json = Column(JSON, nullable=False)
+    pdf_filename = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+# Aliases satisfying Section E model names
+DisasterIncident = DisasterEvent
+PriorityAssessment = RescuePriority
+ResourceInventory = Resource
+RescueMission = Mission
+RescueRoute = Route
+

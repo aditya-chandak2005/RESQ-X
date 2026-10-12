@@ -167,5 +167,62 @@ export const api = {
     const res = await fetch(`${API_BASE}/intelligence/geocode?q=${encodeURIComponent(query)}`);
     if (!res.ok) throw new Error('Geocoding failed');
     return res.json();
+  },
+
+  async getAlerts(disasterId?: number, alertLevel?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (disasterId) params.append('disaster_id', disasterId.toString());
+    if (alertLevel) params.append('alert_level', alertLevel);
+    const res = await fetch(`${API_BASE}/alerts?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch official alerts');
+    return res.json();
+  },
+
+  async getNews(disasterId?: number): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (disasterId) params.append('disaster_id', disasterId.toString());
+    const res = await fetch(`${API_BASE}/news?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch disaster news');
+    return res.json();
+  },
+
+  async syncAlerts(disasterId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/alerts/sync?disaster_id=${disasterId}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync alerts');
+    return res.json();
+  },
+
+  async syncNews(disasterId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/news/sync?disaster_id=${disasterId}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync news');
+    return res.json();
+  },
+
+  async getKnowledgeDocuments(category?: string): Promise<any[]> {
+    const url = category ? `${API_BASE}/knowledge?category=${encodeURIComponent(category)}` : `${API_BASE}/knowledge`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch knowledge documents');
+    return res.json();
+  },
+
+  async queryKnowledgeRag(query: string, topK: number = 3): Promise<any> {
+    const res = await fetch(`${API_BASE}/knowledge/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k: topK }),
+    });
+    if (!res.ok) throw new Error('Failed to query knowledge RAG');
+    return res.json();
+  },
+
+  async getValidationBenchmark(disasterId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/validation/benchmark?disaster_id=${disasterId}`);
+    if (!res.ok) throw new Error('Failed to fetch validation benchmark');
+    return res.json();
+  },
+
+  getSituationReportPdfUrl(disasterId: number = 1): string {
+    return `${API_BASE}/reports/${disasterId}/pdf`;
   }
 };
+

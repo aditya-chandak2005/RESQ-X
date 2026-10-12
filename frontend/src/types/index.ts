@@ -327,6 +327,28 @@ export interface DisasterKnowledgeItem {
   medical_field_guidelines: string[];
 }
 
+export interface OfficialAlert {
+  id: number;
+  disaster_id?: number;
+  authority: string;
+  alert_level: 'RED' | 'ORANGE' | 'YELLOW' | string;
+  headline: string;
+  instruction: string;
+  effective_until?: string;
+  source_url?: string;
+  verification_status: string;
+  published_at: string;
+}
 
-
-
+export interface NewsItem {
+  id: number;
+  disaster_id?: number;
+  source: string;
+  original_url?: string;
+  headline: string;
+  summary: string;
+  hazard_category: string;
+  location_tag: string;
+  verification_status: string;
+  published_at: string;
+}

@@ -15,6 +15,13 @@ from backend.app.models.models import (
     RescueTeam,
     Mission,
     Route,
+    AreaOfInterest,
+    OfficialAlert,
+    NewsItem,
+    KnowledgeDocument,
+    PopulationExposure,
+    ConnectivityResult,
+    SituationReport,
 )
 
 def init_database():
@@ -25,8 +32,11 @@ def init_database():
     # Check if baseline disaster already exists
     existing = db.query(DisasterEvent).filter(DisasterEvent.name == "Chamoli Flash Flood & Outburst").first()
     if existing:
+        d_id = existing.id
+        if db.query(OfficialAlert).count() == 0:
+            _seed_section_e_entities(db, d_id, existing)
         db.close()
-        return existing.id
+        return d_id
 
     # 1. Create Core Disaster Event
     disaster = DisasterEvent(
@@ -698,8 +708,198 @@ def init_database():
     )
     db.add_all([r1_primary, r1_alternate])
     db.commit()
+
+    _seed_section_e_entities(db, d_id, disaster)
+
     db.close()
     return d_id
+
+
+def _seed_section_e_entities(db, d_id: int, disaster):
+    """Seed Section E models: AOI, Official Alerts, News, Knowledge RAG, Exposures, Connectivity, SitRep."""
+    settlements = db.query(Settlement).filter(Settlement.disaster_id == d_id).all()
+    s1_id = settlements[0].id if settlements else 1
+    s2_id = settlements[1].id if len(settlements) > 1 else s1_id
+
+    # 10. Area of Interest (AOI)
+    aoi = AreaOfInterest(
+        disaster_id=d_id,
+        name="Chamoli & Upper Alaknanda Basin AOI",
+        bbox_coordinates=[[79.45, 30.38], [79.80, 30.38], [79.80, 30.65], [79.45, 30.65], [79.45, 30.38]],
+        geometry_geojson=disaster.aoi_geojson,
+        area_sqkm=845.2
+    )
+    db.add(aoi)
+
+    # 11. Official Disaster Alerts (NDMA SACHET, IMD, CWC)
+    alerts = [
+        OfficialAlert(
+            disaster_id=d_id,
+            authority="NDMA SACHET",
+            alert_level="RED",
+            headline="RED ALERT: Massive Flash Surge & Debris Flow along Dhauliganga Gorge",
+            instruction="Evacuate all settlements within 500m of Dhauliganga & Rishi Ganga riverbeds. Ascend immediately to designated ridge shelters above 2,000m contour.",
+            effective_until=datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+            source_url="https://sachet.ndma.gov.in/alerts/UK-CHM-2026-004",
+            verification_status="official_verified"
+        ),
+        OfficialAlert(
+            disaster_id=d_id,
+            authority="IMD Dehradun",
+            alert_level="ORANGE",
+            headline="Flash Flood Warning: High-altitude catchment runoff and severe silt-heavy river swelling",
+            instruction="Avoid crossing suspension bridges or low-water crossings. All pedestrian movement along NH-58 lower valley halted.",
+            effective_until=datetime.datetime.utcnow() + datetime.timedelta(hours=18),
+            source_url="https://mausam.imd.gov.in/warnings/uttarakhand",
+            verification_status="official_verified"
+        ),
+        OfficialAlert(
+            disaster_id=d_id,
+            authority="CWC Flood Cell",
+            alert_level="RED",
+            headline="Severe Hydrological Surge: Water level at Joshimath Gauge exceeds High Flood Level by 2.4m",
+            instruction="Hydro-electric project authorities at Vishnuprayag and Tapovan must keep sluice gates open; low-lying barracks evacuated.",
+            effective_until=datetime.datetime.utcnow() + datetime.timedelta(hours=12),
+            source_url="https://ffs.india-water.gov.in",
+            verification_status="official_verified"
+        )
+    ]
+    db.add_all(alerts)
+
+    # 12. Verified News Feeds (PIB, DD News, Disaster Watch)
+    news = [
+        NewsItem(
+            disaster_id=d_id,
+            source="Press Information Bureau (PIB) Uttarakhand",
+            original_url="https://pib.gov.in/PressReleasePage.aspx?PRID=1700201",
+            headline="NDRF & SDRF Columns Airlifted to Joshimath for Chamoli Flash Flood Operations",
+            summary="Three National Disaster Response Force teams and Indian Army columns have established forward staging bases at Joshimath Military Hospital with specialized cutting and winching gear.",
+            hazard_category="Glacial Flood",
+            location_tag="Chamoli / Joshimath",
+            verification_status="verified_official",
+            published_at=datetime.datetime.utcnow() - datetime.timedelta(hours=3)
+        ),
+        NewsItem(
+            disaster_id=d_id,
+            source="DD News National",
+            original_url="https://ddnews.gov.in/national/chamoli-flood-live-updates",
+            headline="Cabinet Secretary Chairs National Crisis Management Committee Review on Chamoli Flood",
+            summary="NCMC directs continuous aerial surveillance of glacial lake breach point and deployment of emergency Bailey bridge equipment to reconnect isolated Raini sector.",
+            hazard_category="Civil Defense",
+            location_tag="New Delhi / Uttarakhand",
+            verification_status="verified_official",
+            published_at=datetime.datetime.utcnow() - datetime.timedelta(hours=2)
+        ),
+        NewsItem(
+            disaster_id=d_id,
+            source="Disaster Watch India",
+            original_url="https://disasterwatch.in/reports/chamoli-flood-bridge-collapse",
+            headline="Satellite SAR Confirms Structural Failure of Raini Dhauliganga Bridge B-17",
+            summary="Multi-temporal radar analysis reveals bridge span washed away by high-velocity flood debris wave, cutting off surface transit to 3 villages.",
+            hazard_category="Infrastructure Impact",
+            location_tag="Raini Village",
+            verification_status="verified_media",
+            published_at=datetime.datetime.utcnow() - datetime.timedelta(hours=1)
+        )
+    ]
+    db.add_all(news)
+
+    # 13. Curated Disaster Management Knowledge Documents (RAG)
+    docs = [
+        KnowledgeDocument(
+            title="NDMA Guidelines for Management of Glacial Lake Outburst Floods (GLOFs)",
+            category="ndma_guideline",
+            source_authority="National Disaster Management Authority, Government of India",
+            content_text="Glacial Lake Outburst Floods (GLOFs) are sudden releases of water from lakes dammed by moraine or ice. Key mitigation priorities: 1. Continuous acoustic and satellite early warning; 2. Strict avoidance of downstream riverbed settlement; 3. Structural flow deflection spurs around critical bridges and power installations; 4. Immediate vertical evacuation above 2,000m contour upon sirens.",
+            metadata_json={"regulation": "NDMA Act 2005", "section": "GLOF Protocol", "year": 2024}
+        ),
+        KnowledgeDocument(
+            title="Standard Operating Procedure: Flash Flood Search & Rescue (SAR)",
+            category="sop_flood",
+            source_authority="National Disaster Response Force (NDRF)",
+            content_text="When bridge washouts sever road connectivity: 1. Deploy aerial drone survey to establish visual triage of isolated population pockets; 2. Dispatch forward paramedical teams via ridge high-ground bypasses; 3. Use winch cable-ways across severed river spans for emergency ration and medicine drop; 4. Never attempt wading or vehicle crossings through debris-laden water.",
+            metadata_json={"protocol": "NDRF SOP-12", "hazard": "Flash Flood & Debris", "rev": "2.1"}
+        ),
+        KnowledgeDocument(
+            title="Incident Response System (IRS) — Command & Logistics Protocol",
+            category="irs_protocol",
+            source_authority="National Institute of Disaster Management (NIDM)",
+            content_text="The Incident Commander at District EOC oversees Operations, Planning, and Logistics sections. Primary priorities in first 24 hours: 1. Life preservation and extraction of isolated communities; 2. Securing communication repeaters; 3. Maintaining uninterrupted power and medical triage at base hospitals.",
+            metadata_json={"framework": "NIDM Incident Command", "scope": "District Emergency Operations Center"}
+        )
+    ]
+    db.add_all(docs)
+
+    # 14. Population Exposure with Uncertainty
+    exposures = [
+        PopulationExposure(
+            disaster_id=d_id,
+            settlement_id=s1_id,
+            exposed_population=680,
+            uncertainty_min=610,
+            uncertainty_max=740,
+            methodology="LandScan 2024 + OpenStreetMap Building Counts",
+            risk_tier="CRITICAL"
+        ),
+        PopulationExposure(
+            disaster_id=d_id,
+            settlement_id=s2_id,
+            exposed_population=1250,
+            uncertainty_min=1100,
+            uncertainty_max=1400,
+            methodology="Hydro Project Staff Manifest + Census",
+            risk_tier="HIGH"
+        )
+    ]
+    db.add_all(exposures)
+
+    # 15. Connectivity Results
+    conn_results = [
+        ConnectivityResult(
+            disaster_id=d_id,
+            settlement_id=s1_id,
+            is_isolated=True,
+            isolation_reason="Bridge B-17 (Raini Dhauliganga Span) destroyed by flood debris wave",
+            hospital_reachable=False,
+            nearest_hospital_dist_km=22.4,
+            estimated_transit_minutes=120.0,
+            graph_metrics={"graph_nodes": 42, "cut_edges": 2, "bypass_available": True}
+        ),
+        ConnectivityResult(
+            disaster_id=d_id,
+            settlement_id=s2_id,
+            is_isolated=True,
+            isolation_reason="NH-58 link inundated; hydro barrage tunnel entrance blocked",
+            hospital_reachable=False,
+            nearest_hospital_dist_km=14.2,
+            estimated_transit_minutes=95.0,
+            graph_metrics={"graph_nodes": 42, "cut_edges": 1, "bypass_available": True}
+        )
+    ]
+    db.add_all(conn_results)
+
+    # 16. Situation Report (SitRep #01)
+    sitrep = SituationReport(
+        disaster_id=d_id,
+        report_title="Chamoli Flash Flood Emergency Situation Report #01",
+        incident_version="v1.0",
+        status="draft_for_review",
+        generated_by="RESQ-X Automated Disaster Intelligence Platform",
+        report_data_json={
+            "incident_name": "Chamoli Flash Flood & Outburst",
+            "state": "Uttarakhand, India",
+            "total_flooded_area_sqkm": 42.8,
+            "isolated_settlements": 3,
+            "critical_bridges_destroyed": 1,
+            "exposed_population": 19400,
+            "active_missions": 1,
+            "verification_status": "Satellite SAR Confirmed + Field Grounded"
+        },
+        pdf_filename="SITREP_CHAMOLI_2026_01.pdf"
+    )
+    db.add(sitrep)
+    db.commit()
+
 
 if __name__ == "__main__":
     disaster_id = init_database()

@@ -14,7 +14,8 @@ import {
   SlidersHorizontal,
   Flame,
   LifeBuoy,
-  MapPin
+  MapPin,
+  Newspaper
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'command', label: 'Command Center', icon: Activity, badge: 'LIVE' },
+    { id: 'alerts-news', label: 'Official Alerts & News', icon: Newspaper, badge: 'NDMA RED' },
     { id: 'location-check', label: 'Individual Flood Check', icon: MapPin, badge: 'EXACT GPS' },
     { id: 'chatbot', label: 'Disaster AI Chat & Review', icon: Bot, badge: 'AI REVIEW' },
     { id: 'analysis', label: 'Disaster Pipeline', icon: Layers },

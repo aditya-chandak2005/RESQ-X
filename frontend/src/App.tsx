@@ -15,6 +15,7 @@ import { AICopilotModal } from './pages/AICopilotModal';
 import { SituationReportModal } from './pages/SituationReportModal';
 import { DatasetProcessingView } from './pages/DatasetProcessingView';
 import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { OfficialAlertsNewsView } from './pages/OfficialAlertsNewsView';
 import { LocationRiskInspector } from './components/LocationRiskInspector';
 import { api } from './services/api';
 import {
@@ -178,6 +179,12 @@ export const App: React.FC = () => {
                   setCurrentTab('rerouting');
                 }}
               />
+            </div>
+          )}
+
+          {currentTab === 'alerts-news' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar flex">
+              <OfficialAlertsNewsView />
             </div>
           )}
 

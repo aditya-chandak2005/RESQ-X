@@ -40,12 +40,22 @@ export const SituationReportModal: React.FC<SituationReportModalProps> = ({
             </span>
           </div>
           <div className="flex items-center space-x-2">
+            <a
+              href={api.getSituationReportPdfUrl(disasterId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={`RESQX_SITREP_INCIDENT_${disasterId.toString().padStart(2, '0')}.pdf`}
+              className="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-[11px] font-semibold flex items-center space-x-1.5 shadow-sm transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Official PDF</span>
+            </a>
             <button
               onClick={() => window.print()}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-[11px] flex items-center space-x-1"
+              className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-[11px] flex items-center space-x-1"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print / PDF</span>
+              <span>Print View</span>
             </button>
             <button
               onClick={onClose}

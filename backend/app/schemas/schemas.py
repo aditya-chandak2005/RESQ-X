@@ -276,3 +276,75 @@ class LocationAssessmentRequest(BaseModel):
     disaster_id: Optional[int] = 1
     location_label: Optional[str] = None
 
+# Official Alerts & News Schemas
+class OfficialAlertCreate(BaseModel):
+    disaster_id: Optional[int] = 1
+    authority: str
+    alert_level: str = "RED" # RED, ORANGE, YELLOW
+    headline: str
+    instruction: str
+    source_url: Optional[str] = None
+    hours_valid: Optional[int] = 24
+
+class OfficialAlertResponse(BaseModel):
+    id: int
+    disaster_id: Optional[int]
+    authority: str
+    alert_level: str
+    headline: str
+    instruction: str
+    effective_until: Optional[datetime]
+    source_url: Optional[str]
+    verification_status: str
+    published_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class NewsItemResponse(BaseModel):
+    id: int
+    disaster_id: Optional[int]
+    source: str
+    original_url: Optional[str]
+    headline: str
+    summary: str
+    hazard_category: str
+    location_tag: str
+    verification_status: str
+    published_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Knowledge & RAG Schemas
+class KnowledgeQueryRequest(BaseModel):
+    query: str
+    top_k: Optional[int] = 3
+
+class KnowledgeDocumentResponse(BaseModel):
+    id: int
+    title: str
+    category: str
+    source_authority: str
+    content_text: str
+    metadata_json: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+# Situation Report Schemas
+class SituationReportResponse(BaseModel):
+    id: int
+    disaster_id: int
+    report_title: str
+    incident_version: str
+    status: str
+    generated_by: str
+    report_data_json: Dict[str, Any]
+    pdf_filename: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
