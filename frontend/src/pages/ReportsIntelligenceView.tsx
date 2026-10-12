@@ -440,3 +440,4 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
     </div>
   );
 };
+

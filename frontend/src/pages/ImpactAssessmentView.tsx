@@ -332,3 +332,4 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
     </div>
   );
 };
+

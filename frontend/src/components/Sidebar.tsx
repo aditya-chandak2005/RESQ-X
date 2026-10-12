@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   FileCheck2,
   Info,
+  Search,
 } from 'lucide-react';
 
 export type AppArea =
@@ -21,7 +22,8 @@ export type AppArea =
   | 'copilot'
   | 'disaster-watch'
   | 'reports'
-  | 'preparedness';
+  | 'preparedness'
+  | 'explore';
 
 interface SidebarProps {
   currentTab: string;
@@ -138,9 +140,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* 2. Navigation List: The 8 Mandated Areas */}
+        {/* 2. Navigation List: The 8 Mandated Areas + Explore Archive */}
         <nav className="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-210px)] custom-scrollbar">
+          {/* Explore Disasters — Historical Archive */}
           <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
+            <span>DISASTER ARCHIVE</span>
+            <span className="text-cyan-400 font-mono">SEARCH</span>
+          </div>
+
+          <button
+            onClick={() => setCurrentTab('explore')}
+            className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between group mb-2 ${
+              currentTab === 'explore'
+                ? 'bg-cyan-950/80 border-cyan-500/60 text-slate-100 shadow-sm'
+                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-900 hover:text-slate-100 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div
+                className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
+                  currentTab === 'explore'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                    : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-1.5">
+                  <span className={`text-xs font-semibold truncate ${currentTab === 'explore' ? 'text-cyan-300 font-bold' : ''}`}>
+                    Explore Disasters
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 truncate leading-tight">
+                  Historical search & archive
+                </p>
+              </div>
+            </div>
+
+            <span className="text-[8px] font-mono px-1 py-0.5 rounded uppercase font-bold border shrink-0 bg-cyan-950 text-cyan-300 border-cyan-800">
+              SEARCH
+            </span>
+          </button>
+
+          <div className="px-2.5 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between border-t border-slate-800/60">
             <span>OPERATIONAL WORKSPACES</span>
             <span className="text-slate-400">8 AREAS</span>
           </div>

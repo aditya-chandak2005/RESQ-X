@@ -32,6 +32,7 @@ interface HeaderProps {
   onOpenCopilot?: () => void;
   onOpenSitrep?: () => void;
   onOpenGuide?: () => void;
+  onOpenExplore?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCopilot,
   onOpenSitrep,
   onOpenGuide,
+  onOpenExplore,
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [searchVal, setSearchVal] = useState('');
@@ -197,6 +199,19 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </button>
               ))}
+
+              <div className="pt-2 border-t border-slate-800">
+                <button
+                  onClick={() => {
+                    setShowIncidentDropdown(false);
+                    if (onOpenExplore) onOpenExplore();
+                  }}
+                  className="w-full text-center py-1.5 px-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-300 font-mono text-[11px] font-semibold transition-all flex items-center justify-center space-x-1.5"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>EXPLORE ARCHIVE (ASSAM & INDIA)</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

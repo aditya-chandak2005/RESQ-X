@@ -10,6 +10,11 @@ import {
   RescueTeam,
   Mission,
   Resource,
+  IncidentDetail,
+  IncidentSearchResponse,
+  DataAvailability,
+  IncidentSource,
+  GeocodingPlace,
 } from '../types';
 
 const API_BASE = '/api';
@@ -223,6 +228,92 @@ export const api = {
 
   getSituationReportPdfUrl(disasterId: number = 1): string {
     return `${API_BASE}/reports/${disasterId}/pdf`;
+  },
+
+  async searchIncidents(filters: {
+    q?: string;
+    location?: string;
+    hazard_type?: string;
+    status?: string;
+    state?: string;
+    district?: string;
+    year_from?: number;
+    year_to?: number;
+    verification?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<IncidentSearchResponse> {
+    const params = new URLSearchParams();
+    if (filters.q) params.append('q', filters.q);
+    if (filters.location) params.append('location', filters.location);
+    if (filters.hazard_type && filters.hazard_type !== 'all') params.append('hazard_type', filters.hazard_type);
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters.state && filters.state !== 'all') params.append('state', filters.state);
+    if (filters.district && filters.district !== 'all') params.append('district', filters.district);
+    if (filters.year_from) params.append('year_from', filters.year_from.toString());
+    if (filters.year_to) params.append('year_to', filters.year_to.toString());
+    if (filters.verification && filters.verification !== 'all') params.append('verification', filters.verification);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    const res = await fetch(`${API_BASE}/incidents?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to search disaster incidents');
+    return res.json();
+  },
+
+  async getIncidentDetails(incidentId: number): Promise<IncidentDetail> {
+    const res = await fetch(`${API_BASE}/incidents/${incidentId}`);
+    if (!res.ok) throw new Error(`Failed to fetch incident ${incidentId}`);
+    return res.json();
+  },
+
+  async getIncidentDataAvailability(incidentId: number): Promise<DataAvailability> {
+    const res = await fetch(`${API_BASE}/incidents/${incidentId}/data-availability`);
+    if (!res.ok) throw new Error(`Failed to fetch data availability for incident ${incidentId}`);
+    return res.json();
+  },
+
+  async getIncidentSources(incidentId: number): Promise<IncidentSource[]> {
+    const res = await fetch(`${API_BASE}/incidents/${incidentId}/sources`);
+    if (!res.ok) throw new Error(`Failed to fetch incident sources for ${incidentId}`);
+    return res.json();
+  },
+
+  async spatialIncidentSearch(payload: any): Promise<IncidentDetail[]> {
+    const res = await fetch(`${API_BASE}/incidents/spatial-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to execute spatial incident search');
+    return res.json();
+  },
+
+  async searchGeocodingPlaces(query: string, limit: number = 8): Promise<{
+    query: string;
+    total_matches: number;
+    places: GeocodingPlace[];
+    provider_attribution: string;
+  }> {
+    const res = await fetch(`${API_BASE}/geocoding/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    if (!res.ok) throw new Error('Geocoding search failed');
+    return res.json();
+  },
+
+  async getPlaceDetails(placeId: string): Promise<GeocodingPlace> {
+    const res = await fetch(`${API_BASE}/places/${encodeURIComponent(placeId)}`);
+    if (!res.ok) throw new Error(`Place not found: ${placeId}`);
+    return res.json();
+  },
+
+  async resolvePlaceCoordinates(lat: number, lon: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/places/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude: lat, longitude: lon }),
+    });
+    if (!res.ok) throw new Error('Place resolution failed');
+    return res.json();
   }
 };
 

@@ -19,8 +19,31 @@ class DisasterEvent(Base):
     center_lat = Column(Float, default=30.40)
     center_lon = Column(Float, default=79.35)
     aoi_geojson = Column(JSON, nullable=True)
+
+    # Geographic and Administrative Context
+    state = Column(String(100), default="Uttarakhand", index=True)
+    district = Column(String(100), nullable=True, index=True)
+    place_name = Column(String(255), nullable=True)
+    country = Column(String(100), default="India")
+    alternative_names = Column(JSON, default=list)
+
+    # Severity and Timing
+    severity = Column(String(50), nullable=True) # critical, severe, moderate, low
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    date_precision = Column(String(50), default="day") # day, month, year
+
+    # Primary Provenance & Verification
+    source_org = Column(String(200), nullable=True) # Copernicus EMS, ASDMA, NDMA, CWC
+    source_url = Column(String(500), nullable=True)
+    source_record_id = Column(String(100), nullable=True) # EMSR580, ASDMA-2022-06
+    source_published_at = Column(DateTime, nullable=True)
+    verification_status = Column(String(50), default="verified", index=True) # verified, unverified, demo
+    data_availability = Column(JSON, default=dict)
+    known_limitations = Column(Text, nullable=True)
     
     # Relationships
+    sources = relationship("IncidentSource", back_populates="disaster", cascade="all, delete-orphan")
     scenes = relationship("SatelliteScene", back_populates="disaster", cascade="all, delete-orphan")
     flood_results = relationship("FloodResult", back_populates="disaster", cascade="all, delete-orphan")
     settlements = relationship("Settlement", back_populates="disaster", cascade="all, delete-orphan")
@@ -433,6 +456,23 @@ class SituationReport(Base):
     report_data_json = Column(JSON, nullable=False)
     pdf_filename = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class IncidentSource(Base):
+    __tablename__ = "incident_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_events.id"), index=True)
+    provider_name = Column(String(150), nullable=False) # Copernicus EMS, ASDMA, NDMA, CWC
+    record_identifier = Column(String(100), nullable=True) # EMSR580, ASDMA-2022-06
+    source_url = Column(String(500), nullable=True)
+    publication_date = Column(DateTime, nullable=True)
+    retrieval_timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    ingestion_status = Column(String(50), default="verified_ingested") # verified_ingested, partial, reference_only
+    coverage_limitations = Column(Text, nullable=True)
+    raw_metadata = Column(JSON, default=dict)
+
+    disaster = relationship("DisasterEvent", back_populates="sources")
 
 
 # Aliases satisfying Section E model names

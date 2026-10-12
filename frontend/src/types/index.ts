@@ -353,3 +353,90 @@ export interface NewsItem {
   verification_status: string;
   published_at: string;
 }
+
+export interface IncidentSource {
+  id: number;
+  provider_name: string;
+  record_identifier?: string;
+  source_url?: string;
+  publication_date?: string;
+  retrieval_timestamp?: string;
+  ingestion_status: string;
+  coverage_limitations?: string;
+  raw_metadata?: Record<string, any>;
+}
+
+export interface IncidentDetail {
+  id: number;
+  name: string;
+  alternative_names?: string[];
+  disaster_type: string;
+  status: string;
+  description?: string;
+  incident_date: string;
+  start_date?: string;
+  end_date?: string;
+  date_precision?: string;
+  state: string;
+  district?: string;
+  place_name?: string;
+  country: string;
+  center_lat: number;
+  center_lon: number;
+  aoi_geojson?: any;
+  severity?: string;
+  source_org?: string;
+  source_url?: string;
+  source_record_id?: string;
+  source_published_at?: string;
+  verification_status: 'verified' | 'unverified' | 'demo' | string;
+  data_availability?: Record<string, any>;
+  known_limitations?: string;
+  sources?: IncidentSource[];
+  scenes_count?: number;
+  has_flood_analysis?: boolean;
+  affected_settlements_count?: number;
+}
+
+export interface IncidentSearchResponse {
+  total_count: number;
+  page: number;
+  page_size: number;
+  items: IncidentDetail[];
+  year_distribution: Record<string, number>;
+  hazard_distribution: Record<string, number>;
+  applied_filters: Record<string, any>;
+}
+
+export interface DataAvailability {
+  incident_id: number;
+  incident_name: string;
+  verification_status: string;
+  source_status: string;
+  satellite_imagery: string;
+  flood_analysis: string;
+  infrastructure_data: string;
+  population_exposure: string;
+  report: string;
+  data_sources: string[];
+  limitations_summary?: string;
+}
+
+export interface GeocodingPlace {
+  place_id: string;
+  name: string;
+  display_name: string;
+  feature_type: string;
+  district?: string;
+  state?: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  bbox?: number[];
+  boundary_geojson?: any;
+  provider: string;
+  confidence: number;
+  is_ambiguous?: boolean;
+  alternate_matches?: any[];
+}
+

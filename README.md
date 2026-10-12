@@ -43,7 +43,14 @@ RESQ-X ingests **Copernicus Sentinel-1 SAR** and **Sentinel-2 optical** imagery,
 - Classifies terrain into: `LOW RISK`, `MODERATE RISK`, `HIGH RISK`, and `CRITICAL VULNERABILITY`.
 - *Scientific Disclaimer: This module provides susceptibility analysis and does NOT predict the exact temporal trigger of future events.*
 
-### 2.2 During & After Disaster: Tactical Intelligence Pipeline
+### 2.2 Historical Archive & Multi-District Search ("Explore Disasters")
+- **Assam-First & Pan-India Disaster Archive**: Search historical and active emergency events by ordinary place names (districts, sub-divisions, rivers, or landmarks) without requiring lat/long coordinates.
+- **Provider-Independent Geocoding**: Multi-tier resolution leveraging a curated offline registry (Survey of India / ASDMA), fallback to Photon/OSM, bounding-box calculation, and **proactive ambiguity detection** (e.g. distinguishing *Kamrup Metropolitan* vs *Kamrup Rural*).
+- **Multi-Source Provenance Citations**: Every historical record is backed by verifiable citations from **Copernicus Emergency Management Service (EMS)**, **Assam State Disaster Management Authority (ASDMA)**, **Central Water Commission (CWC)**, and **NDMA**.
+- **Honest Data Availability Matrix**: Rigorously reports whether satellite scenes, flood extent, infrastructure exposure, or population models are `verified`, `available`, or `unavailable`—strictly precluding fabricated zero values for unanalyzed sectors.
+- **Drill / Simulation Transparency**: Synthetic testbeds (such as Guwahati Silsako flash flood drills) are visibly tagged as `DEMO DATA` to distinguish them from verified historical disasters.
+
+### 2.3 During & After Disaster: Tactical Intelligence Pipeline
 1. **Acquire Satellite Scenes**: Pre-event reference and post-disaster SAR/Optical acquisitions.
 2. **AI Flood Segmentation**: Dual-polarization (`VV` + `VH`) specular reflection detection with Lee speckle filtering.
 3. **Vector Polygonization**: Flood boundary contours with severity gradients (`Critical`, `High`, `Medium`, `Low`).
@@ -158,7 +165,7 @@ docker compose up --build
 ## 8. Running Automated Tests
 
 ```bash
-# Run backend pytest suite (all 8 critical algorithm tests)
+# Run complete backend pytest suite (all 20 critical integration & search tests)
 python -m pytest -v
 ```
 
@@ -169,6 +176,12 @@ python -m pytest -v
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Health check & system status |
+| `GET` | `/api/incidents` | **Multi-criteria historical search & Assam disaster archive** |
+| `GET` | `/api/incidents/{id}` | Detailed incident record & multi-source citations |
+| `GET` | `/api/incidents/{id}/data-availability` | **Honest data availability matrix & uncertainty** |
+| `POST` | `/api/incidents/spatial-search` | Bounding-box and geographic radius search |
+| `GET` | `/api/geocoding/search` | **Place name geocoder with ambiguity detection** |
+| `GET` | `/api/places/resolve` | Bounding box, center coordinates, and feature lookup |
 | `GET` | `/api/disasters` | List all monitored disaster events |
 | `GET` | `/api/disasters/{id}/kpis` | Real-time command dashboard metrics |
 | `POST` | `/api/disasters/{id}/analyze` | Execute 9-stage satellite AI pipeline |

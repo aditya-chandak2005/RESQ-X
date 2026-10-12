@@ -10,6 +10,7 @@ import { PreparednessWorkspaceView } from './pages/PreparednessWorkspaceView';
 import { DisasterChatbotView } from './pages/DisasterChatbotView';
 import { OfficialAlertsNewsView } from './pages/OfficialAlertsNewsView';
 import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { ExploreDisastersView } from './pages/ExploreDisastersView';
 import { AICopilotModal } from './pages/AICopilotModal';
 import { SituationReportModal } from './pages/SituationReportModal';
 import { CitizenGuideModal } from './components/CitizenGuideModal';
@@ -163,6 +164,23 @@ export const App: React.FC = () => {
       handleNavigateToLocation(30.5284, 79.7431, 'Suraithota Hamlet');
     } else if (q.includes('helang')) {
       handleNavigateToLocation(30.5180, 79.5100, 'Helang Confluence Terrace');
+    } else if (
+      q.includes('assam') ||
+      q.includes('silchar') ||
+      q.includes('cachar') ||
+      q.includes('nagaon') ||
+      q.includes('barpeta') ||
+      q.includes('golaghat') ||
+      q.includes('kaziranga') ||
+      q.includes('brahmaputra') ||
+      q.includes('barak') ||
+      q.includes('kopili') ||
+      q.includes('archive') ||
+      q.includes('history') ||
+      q.includes('historical') ||
+      q.includes('chamoli')
+    ) {
+      setCurrentTab('explore');
     } else {
       // General question or search -> switch to Copilot
       setCurrentTab('copilot');
@@ -212,6 +230,7 @@ export const App: React.FC = () => {
           onOpenCopilot={() => setIsCopilotOpen(true)}
           onOpenSitrep={() => setIsSitrepOpen(true)}
           onOpenGuide={() => setIsCitizenGuideOpen(true)}
+          onOpenExplore={() => setCurrentTab('explore')}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
@@ -318,6 +337,20 @@ export const App: React.FC = () => {
             <PreparednessWorkspaceView
               onNavigateTab={(tab) => setCurrentTab(tab)}
             />
+          )}
+
+          {/* Explore Disasters — Historical Archive & Search */}
+          {currentTab === 'explore' && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <ExploreDisastersView
+                onSelectAndLaunchIncident={(id, targetTab) => {
+                  setSelectedIncidentId(id);
+                  loadAllTelemetry(id);
+                  setCurrentTab(targetTab || 'command');
+                }}
+                onNavigateTab={(tab) => setCurrentTab(tab)}
+              />
+            </div>
           )}
 
           {/* Secondary / Deep-Link Citizen View */}

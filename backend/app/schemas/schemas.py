@@ -349,3 +349,117 @@ class SituationReportResponse(BaseModel):
         from_attributes = True
 
 
+# Incident Exploration & Sources Schemas
+class IncidentSourceResponse(BaseModel):
+    id: int
+    provider_name: str
+    record_identifier: Optional[str] = None
+    source_url: Optional[str] = None
+    publication_date: Optional[datetime] = None
+    retrieval_timestamp: Optional[datetime] = None
+    ingestion_status: str
+    coverage_limitations: Optional[str] = None
+    raw_metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class IncidentDetailResponse(BaseModel):
+    id: int
+    name: str
+    alternative_names: List[str] = []
+    disaster_type: str
+    status: str
+    description: Optional[str] = None
+    incident_date: datetime
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    date_precision: str = "day"
+    state: str = "Uttarakhand"
+    district: Optional[str] = None
+    place_name: Optional[str] = None
+    country: str = "India"
+    center_lat: float
+    center_lon: float
+    aoi_geojson: Optional[Dict[str, Any]] = None
+    severity: Optional[str] = None
+    source_org: Optional[str] = None
+    source_url: Optional[str] = None
+    source_record_id: Optional[str] = None
+    source_published_at: Optional[datetime] = None
+    verification_status: str = "verified"
+    data_availability: Dict[str, Any] = {}
+    known_limitations: Optional[str] = None
+    sources: List[IncidentSourceResponse] = []
+    scenes_count: int = 0
+    has_flood_analysis: bool = False
+    affected_settlements_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class IncidentSearchResponse(BaseModel):
+    total_count: int
+    page: int
+    page_size: int
+    items: List[IncidentDetailResponse]
+    year_distribution: Dict[int, int] = {}
+    hazard_distribution: Dict[str, int] = {}
+    applied_filters: Dict[str, Any] = {}
+
+
+class DataAvailabilityResponse(BaseModel):
+    incident_id: int
+    incident_name: str
+    verification_status: str
+    source_status: str
+    satellite_imagery: str
+    flood_analysis: str
+    infrastructure_data: str
+    population_exposure: str
+    report: str
+    data_sources: List[str] = []
+    limitations_summary: Optional[str] = None
+
+
+# Geocoding & Place Resolution Schemas
+class GeocodingPlace(BaseModel):
+    place_id: str
+    name: str
+    display_name: str
+    feature_type: str
+    district: Optional[str] = None
+    state: Optional[str] = None
+    country: str = "India"
+    latitude: float
+    longitude: float
+    bbox: Optional[List[float]] = None
+    boundary_geojson: Optional[Dict[str, Any]] = None
+    provider: str
+    confidence: float = 1.0
+    is_ambiguous: bool = False
+    alternate_matches: List[Dict[str, Any]] = []
+
+
+class GeocodingSearchResponse(BaseModel):
+    query: str
+    total_matches: int
+    places: List[GeocodingPlace]
+    provider_attribution: str
+
+
+class PlaceResolveRequest(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class GeometrySearchRequest(BaseModel):
+    geometry: Dict[str, Any]
+    hazard_type: Optional[str] = None
+    status: Optional[str] = None
+    year_from: Optional[int] = None
+    year_to: Optional[int] = None
+
+
