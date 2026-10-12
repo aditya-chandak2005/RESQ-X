@@ -1,5 +1,5 @@
-import React from 'react';
-import { Layers, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layers, Eye, EyeOff, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
 import { LayerVisibility } from '../types';
 
 interface LayerControlProps {
@@ -8,15 +8,16 @@ interface LayerControlProps {
 }
 
 export const LayerControl: React.FC<LayerControlProps> = ({ layers, setLayers }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   const toggle = (key: keyof LayerVisibility) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const layerItems: { key: keyof LayerVisibility; label: string; color: string }[] = [
-    { key: 'satellite', label: 'Satellite Basemap', color: 'bg-slate-400' },
-    { key: 'stateBoundaries', label: 'State Borders & Labels', color: 'bg-indigo-400' },
+    { key: 'stateBoundaries', label: 'India State Borders & Labels', color: 'bg-indigo-400' },
     { key: 'floodExtent', label: 'Flood Inundation Extent', color: 'bg-cyan-500' },
-    { key: 'floodSeverity', label: 'Severity Gradients', color: 'bg-blue-600' },
+    { key: 'floodSeverity', label: 'Severity Gradients (SAR)', color: 'bg-blue-600' },
     { key: 'settlements', label: 'Settlements & Villages', color: 'bg-emerald-400' },
     { key: 'isolatedOnly', label: 'Highlight Cut-Off Zones', color: 'bg-red-500' },
     { key: 'bridges', label: 'River Bridges & Status', color: 'bg-amber-400' },
@@ -29,44 +30,82 @@ export const LayerControl: React.FC<LayerControlProps> = ({ layers, setLayers })
     { key: 'floodPath', label: 'Downstream DEM Corridor', color: 'bg-yellow-400' },
   ];
 
-  return (
-    <div className="absolute top-4 left-4 z-[1000] bg-command-bg/95 backdrop-blur-md border border-command-border/80 rounded-lg p-3 shadow-panel w-64 max-h-[calc(100vh-280px)] overflow-y-auto custom-scrollbar select-none text-xs">
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-command-border/60">
-        <div className="flex items-center space-x-1.5 font-bold text-slate-100 font-mono uppercase tracking-wide">
-          <Layers className="w-4 h-4 text-cyan-400" />
-          <span>Tactical Map Layers</span>
-        </div>
-        <span className="text-[10px] font-mono text-cyan-300">
-          {Object.values(layers).filter(Boolean).length} Active
-        </span>
-      </div>
+  const activeCount = Object.entries(layers).filter(
+    ([k, v]) => k !== 'basemap' && k !== 'satellite' && Boolean(v)
+  ).length;
 
-      <div className="space-y-1.5">
-        {layerItems.map((item) => {
-          const isActive = layers[item.key];
-          return (
-            <button
-              key={item.key}
-              onClick={() => toggle(item.key)}
-              className={`w-full flex items-center justify-between px-2 py-1.5 rounded transition-all text-left ${
-                isActive
-                  ? 'bg-command-card text-slate-100 border border-command-border'
-                  : 'text-slate-400 hover:bg-command-panel/60 hover:text-slate-200'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${item.color} ${isActive ? 'ring-2 ring-white/20' : 'opacity-40'}`} />
-                <span className="text-[11px] font-medium">{item.label}</span>
-              </div>
-              {isActive ? (
-                <Eye className="w-3.5 h-3.5 text-cyan-400" />
-              ) : (
-                <EyeOff className="w-3.5 h-3.5 text-slate-500" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+  return (
+    <div className="absolute top-16 left-4 z-[1000] select-none text-xs">
+      {!isOpen ? (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-[#0e1629]/95 hover:bg-slate-900 border border-cyan-500/50 hover:border-cyan-400 text-slate-100 font-mono shadow-2xl transition-all cursor-pointer backdrop-blur-md"
+          title="Toggle Tactical Layer Panel"
+        >
+          <Layers className="w-4 h-4 text-cyan-400" />
+          <span className="font-bold text-[11px] tracking-wide">MAP LAYERS</span>
+          <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-800 font-bold">
+            {activeCount}
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+        </button>
+      ) : (
+        <div className="bg-[#0a0f1d]/98 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl w-68 max-h-[calc(100vh-240px)] overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+            <div className="flex items-center space-x-2 font-bold text-slate-100 font-mono uppercase tracking-wide">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              <span>Tactical Map Layers</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-[10px] font-mono text-cyan-300 font-bold mr-1">
+                {activeCount} Active
+              </span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {layerItems.map((item) => {
+              const isActive = layers[item.key];
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => toggle(item.key)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all text-left ${
+                    isActive
+                      ? 'bg-cyan-950/70 text-slate-100 border border-cyan-500/40'
+                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${item.color} ${
+                        isActive ? 'ring-2 ring-white/30' : 'opacity-40'
+                      }`}
+                    />
+                    <span className="text-[11px] font-medium truncate font-mono">{item.label}</span>
+                  </div>
+                  {isActive ? (
+                    <Eye className="w-3.5 h-3.5 text-cyan-400 shrink-0 ml-1" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5 text-slate-600 shrink-0 ml-1" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400 px-1">
+            <span>State Borders: Active</span>
+            <span className="text-emerald-400">ESRI Hybrid</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

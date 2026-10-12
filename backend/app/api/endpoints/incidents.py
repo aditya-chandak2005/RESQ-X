@@ -90,3 +90,4 @@ def spatial_incident_search(payload: Dict[str, Any], db: Session = Depends(get_d
         year_from=year_from,
         year_to=year_to
     )
+

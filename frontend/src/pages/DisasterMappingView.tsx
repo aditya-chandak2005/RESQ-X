@@ -10,6 +10,7 @@ import {
   Route,
   InfrastructureAsset,
   LayerVisibility,
+  DisasterEvent,
 } from '../types';
 import {
   Layers,
@@ -42,6 +43,7 @@ interface DisasterMappingViewProps {
   setLayers: React.Dispatch<React.SetStateAction<LayerVisibility>>;
   onAnalysisComplete: () => void;
   onSelectItem: (item: { type: any; data: any } | null) => void;
+  activeIncident?: DisasterEvent | null;
 }
 
 export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
@@ -56,6 +58,7 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
   setLayers,
   onAnalysisComplete,
   onSelectItem,
+  activeIncident,
 }) => {
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(-1);
@@ -371,7 +374,10 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
           routes={routes}
           assets={assets}
           layers={layers}
+          setLayers={setLayers}
           onSelectItem={onSelectItem}
+          activeIncident={activeIncident}
+          center={activeIncident ? [activeIncident.center_lat, activeIncident.center_lon] : [24.8333, 92.7789]}
         />
         <LayerControl layers={layers} setLayers={setLayers} />
       </div>

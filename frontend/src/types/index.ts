@@ -5,9 +5,19 @@ export interface DisasterEvent {
   status: string;
   description?: string;
   incident_date: string;
+  start_date?: string;
+  end_date?: string;
+  state?: string;
+  district?: string;
+  place_name?: string;
+  country?: string;
+  severity?: string;
   center_lat: number;
   center_lon: number;
   aoi_geojson?: any;
+  source_org?: string;
+  source_url?: string;
+  verification_status?: string;
 }
 
 export interface DashboardKpis {

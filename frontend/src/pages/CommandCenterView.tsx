@@ -49,6 +49,7 @@ interface CommandCenterViewProps {
   setIsInspectMode: (mode: boolean) => void;
   currentAssessment: LocationAssessment | null;
   setCurrentAssessment: (assessment: LocationAssessment | null) => void;
+  activeIncident?: DisasterEvent | null;
   onNavigateTab: (tab: string) => void;
   onOpenCopilot: () => void;
 }
@@ -72,6 +73,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   setIsInspectMode,
   currentAssessment,
   setCurrentAssessment,
+  activeIncident,
   onNavigateTab,
   onOpenCopilot,
 }) => {
@@ -109,8 +111,16 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             routes={routes}
             assets={assets}
             layers={layers}
+            setLayers={setLayers}
             onSelectItem={setSelectedItem}
-            center={inspectedPoint ? [inspectedPoint.lat, inspectedPoint.lng] : [30.4950, 79.6200]}
+            center={
+              inspectedPoint
+                ? [inspectedPoint.lat, inspectedPoint.lng]
+                : activeIncident
+                ? [activeIncident.center_lat, activeIncident.center_lon]
+                : [24.8333, 92.7789]
+            }
+            activeIncident={activeIncident}
             inspectedPoint={inspectedPoint}
             onMapClick={handleMapClick}
             isInspectMode={isInspectMode}

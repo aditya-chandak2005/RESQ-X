@@ -256,6 +256,7 @@ export const App: React.FC = () => {
               setIsInspectMode={setIsInspectMode}
               currentAssessment={currentAssessment}
               setCurrentAssessment={setCurrentAssessment}
+              activeIncident={activeIncident}
               onNavigateTab={(tab) => setCurrentTab(tab)}
               onOpenCopilot={() => setIsCopilotOpen(true)}
             />
@@ -275,6 +276,7 @@ export const App: React.FC = () => {
               setLayers={setLayers}
               onAnalysisComplete={() => loadAllTelemetry(selectedIncidentId)}
               onSelectItem={setSelectedItem}
+              activeIncident={activeIncident}
             />
           )}
 

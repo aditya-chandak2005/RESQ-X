@@ -719,3 +719,4 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
     </div>
   );
 };
+

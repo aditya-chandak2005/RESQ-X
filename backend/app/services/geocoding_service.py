@@ -523,3 +523,4 @@ class GeocodingService:
             # Gracefully swallow network/timeout errors - do not crash the service
             pass
         return places
+
