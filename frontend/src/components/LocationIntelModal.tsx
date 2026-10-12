@@ -408,3 +408,4 @@ export const LocationIntelModal: React.FC<LocationIntelModalProps> = ({
     </>
   );
 };
+

@@ -74,13 +74,26 @@
   font-family: inherit !important;
 }
 
-/* Tactical Dark Tile Filter - No external API keys needed, zero watermark */
-.leaflet-tile-pane .tactical-dark-tiles {
-  filter: brightness(0.65) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.25) !important;
+/* Prevent SVG and Leaflet focus bounding box outlines on map clicks */
+.leaflet-container :focus,
+.leaflet-container svg:focus,
+.leaflet-container path:focus,
+.leaflet-interactive:focus,
+.leaflet-pane svg path:focus,
+.leaflet-overlay-pane svg path:focus,
+svg:focus,
+path:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Google Maps Style Dark Mode - sleek dark navy water, crisp roads, soft contrast */
+.leaflet-tile-pane .google-dark-tiles {
+  filter: brightness(0.98) contrast(1.12) saturate(1.15) !important;
 }
 
 .leaflet-tile-pane .topo-tiles {
-  filter: contrast(1.1) brightness(0.95);
+  filter: contrast(1.08) brightness(1.0);
 }
 
 .leaflet-tile-pane .satellite-tiles {

@@ -25,8 +25,12 @@ import {
   X,
   Maximize2,
   Sliders,
+  Globe,
+  Moon,
+  Mountain,
+  Check,
 } from 'lucide-react';
-import { DashboardKpis, DisasterEvent, LocationAssessment, GeocodeResult } from '../types';
+import { DashboardKpis, DisasterEvent, LocationAssessment, GeocodeResult, BasemapType } from '../types';
 import { api } from '../services/api';
 import { LocationIntelModal } from './LocationIntelModal';
 
@@ -45,6 +49,9 @@ interface HeaderProps {
   onOpenExplore?: () => void;
   isSidebarHidden?: boolean;
   onToggleSidebar?: () => void;
+  // Basemap switcher in top-right
+  activeBasemap?: BasemapType;
+  onSelectBasemap?: (basemap: BasemapType) => void;
   // Location inspection & geocoding props
   onLocationSelected?: (lat: number, lng: number, label: string) => void;
   isInspectMode?: boolean;
@@ -68,6 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenExplore,
   isSidebarHidden = false,
   onToggleSidebar,
+  activeBasemap = 'satellite',
+  onSelectBasemap,
   onLocationSelected,
   isInspectMode = false,
   setIsInspectMode,
@@ -76,6 +85,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
+  const [showBasemapMenu, setShowBasemapMenu] = useState(false);
+  const basemapMenuRef = useRef<HTMLDivElement>(null);
 
   // Top Nav Search & Omnibar State
   const [searchVal, setSearchVal] = useState('');
@@ -138,11 +149,14 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [searchVal]);
 
-  // Click outside listener to dismiss search dropdown popover
+  // Click outside listener to dismiss search dropdown popover and basemap menu
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsSearchDropdownOpen(false);
+      }
+      if (basemapMenuRef.current && !basemapMenuRef.current.contains(e.target as Node)) {
+        setShowBasemapMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -619,6 +633,107 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           )}
+
+          {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
+          <div ref={basemapMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowBasemapMenu(!showBasemapMenu)}
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
+              title="Change Map Display Mode"
+            >
+              {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400" />}
+              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300" />}
+              {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400" />}
+              <span className="font-semibold text-[11px] hidden sm:inline">
+                {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {showBasemapMenu && (
+              <div className="absolute right-0 mt-1.5 w-60 p-1.5 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] space-y-1 text-xs font-mono">
+                <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                  MAP DISPLAY MODE
+                </div>
+
+                {/* Option 1: Satellite Hybrid */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('satellite');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'satellite'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Globe className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Satellite Hybrid</span>
+                      {activeBasemap === 'satellite' && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      High-res ESRI imagery + labels
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 2: Dark Mode (Google Maps style) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('dark');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'dark' || activeBasemap === 'tactical-dark'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Dark Mode</span>
+                      {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Google Maps dark palette & roads
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 3: Terrain Mode */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('topo');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'topo'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Mountain className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Terrain Mode</span>
+                      {activeBasemap === 'topo' && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Hillshade, elevation contours & summits
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Quick AI Run Pipeline Button */}
           {onRunAnalysis && (

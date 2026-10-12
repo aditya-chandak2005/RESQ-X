@@ -132,6 +132,154 @@ const createStateLabelIcon = (stateName: string, isCurrentState: boolean) => {
   });
 };
 
+interface TerrainLandmark {
+  name: string;
+  elevation_m: number;
+  type: 'summit' | 'ridge' | 'gorge' | 'plateau' | 'basin';
+  coordinates: [number, number]; // [lat, lon]
+  description: string;
+  hazard_or_refuge: string;
+}
+
+const TERRAIN_LANDMARKS: TerrainLandmark[] = [
+  // Uttarakhand / Chamoli Theater
+  {
+    name: 'Nanda Devi Summit',
+    elevation_m: 7816,
+    type: 'summit',
+    coordinates: [30.3753, 79.9708],
+    description: 'Highest peak in Uttarakhand • Glacial boundary crest',
+    hazard_or_refuge: 'Glacial origin ridge',
+  },
+  {
+    name: 'Kamet Peak',
+    elevation_m: 7756,
+    type: 'summit',
+    coordinates: [30.9222, 79.5708],
+    description: 'Second highest summit in Garhwal Himalayas',
+    hazard_or_refuge: 'High altitude glacial headwaters',
+  },
+  {
+    name: 'Trishul I Summit',
+    elevation_m: 7120,
+    type: 'summit',
+    coordinates: [30.3167, 79.7744],
+    description: 'Rishi Ganga glacier boundary crest',
+    hazard_or_refuge: 'Steep avalanche-prone slope',
+  },
+  {
+    name: 'Joshimath Ridge Hub',
+    elevation_m: 1890,
+    type: 'ridge',
+    coordinates: [30.5564, 79.5644],
+    description: 'Strategic disaster staging high ground plateau',
+    hazard_or_refuge: 'CRITICAL HIGH GROUND REFUGE • Above flood crest',
+  },
+  {
+    name: 'Raini Glacial Gorge',
+    elevation_m: 2050,
+    type: 'gorge',
+    coordinates: [30.4912, 79.6841],
+    description: 'Narrow V-shaped confluence of Rishiganga & Dhauliganga',
+    hazard_or_refuge: 'FLASH FLOOD / DEBRIS INGRESS DANGER ZONE',
+  },
+  {
+    name: 'Tapovan Hydro Basin',
+    elevation_m: 1800,
+    type: 'basin',
+    coordinates: [30.4945, 79.6278],
+    description: 'Dhauliganga riverbed alluvial plain & barrage site',
+    hazard_or_refuge: 'HIGH INUNDATION SINK • Evacuate to northern slope',
+  },
+  {
+    name: 'Helang High Terrace',
+    elevation_m: 1450,
+    type: 'ridge',
+    coordinates: [30.5180, 79.5100],
+    description: 'Alaknanda riverbank terrace & suspension span access',
+    hazard_or_refuge: 'SECONDARY REFUGE POINT',
+  },
+  {
+    name: 'Pipalkoti River Basin',
+    elevation_m: 1260,
+    type: 'basin',
+    coordinates: [30.4280, 79.4320],
+    description: 'Alaknanda valley commercial settlement',
+    hazard_or_refuge: 'Low terrace subject to river swells',
+  },
+
+  // Assam / Northeast Theater
+  {
+    name: 'Barail Range Ridge',
+    elevation_m: 1850,
+    type: 'ridge',
+    coordinates: [25.1500, 92.9500],
+    description: 'High watershed barrier between Brahmaputra & Barak basins',
+    hazard_or_refuge: 'SAFE WATERSHED HIGH GROUND',
+  },
+  {
+    name: 'Shillong Plateau Rim',
+    elevation_m: 1520,
+    type: 'plateau',
+    coordinates: [25.5700, 91.8800],
+    description: 'Prominent tableland overlooking southern floodplains',
+    hazard_or_refuge: 'SAFE REFUGE ELEVATION',
+  },
+  {
+    name: 'Silchar Urban Lowland',
+    elevation_m: 25,
+    type: 'basin',
+    coordinates: [24.8333, 92.7789],
+    description: 'Alluvial plain basin surrounded by dykes',
+    hazard_or_refuge: 'SEVERE FLOOD ACCUMULATION BASIN • Dykes vulnerable',
+  },
+  {
+    name: 'Kopili River Alluvial Sink',
+    elevation_m: 65,
+    type: 'basin',
+    coordinates: [26.1500, 92.6500],
+    description: 'Kampung & Nagaon flat agricultural depression',
+    hazard_or_refuge: 'HIGH RISK INUNDATION PLAIN',
+  },
+];
+
+const createTerrainIcon = (landmark: TerrainLandmark) => {
+  const isHigh = landmark.type === 'summit' || landmark.type === 'ridge' || landmark.type === 'plateau';
+  const color = isHigh ? '#34d399' : '#fbbf24';
+  const bg = isHigh ? 'rgba(6, 78, 59, 0.92)' : 'rgba(120, 53, 15, 0.92)';
+  const border = isHigh ? '#10b981' : '#f59e0b';
+  const symbol = landmark.type === 'summit' ? '▲' : landmark.type === 'ridge' ? '⛰️' : landmark.type === 'plateau' ? '⊞' : '▼';
+
+  return L.divIcon({
+    className: 'terrain-landmark-marker',
+    html: `
+      <div style="
+        background: ${bg};
+        border: 1px solid ${border};
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-family: ui-monospace, monospace;
+        font-size: 9px;
+        color: #ffffff;
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      ">
+        <span style="color: ${color}; font-size: 10px;">${symbol}</span>
+        <span>${landmark.name.split(' ')[0]}</span>
+        <span style="background: rgba(0,0,0,0.4); padding: 1px 3px; border-radius: 3px; color: ${color}; font-size: 8px;">${landmark.elevation_m}m</span>
+      </div>
+    `,
+    iconSize: [85, 20],
+    iconAnchor: [42, 10],
+  });
+};
+
 // Map Controller for dynamic flying, recentering and fit-bounds
 const MapController: React.FC<{
   center: [number, number];
@@ -458,9 +606,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const [activeBasemap, setActiveBasemap] = useState<'satellite' | 'dark' | 'topo'>(
-    layers.satellite ? 'satellite' : 'dark'
-  );
+  const activeBasemap: 'satellite' | 'dark' | 'topo' =
+    layers.basemap === 'dark' || layers.basemap === 'tactical-dark'
+      ? 'dark'
+      : layers.basemap === 'topo'
+      ? 'topo'
+      : 'satellite';
 
   // Sync center when active incident or inspected point changes
   useEffect(() => {
@@ -524,43 +675,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       </div>
 
-      {/* 2. Basemap Style Switcher (Top Left above layer controls) */}
-      <div className="absolute top-4 left-4 z-[1000] hidden lg:flex items-center space-x-1 bg-[#0e1629]/95 backdrop-blur-md p-1 rounded-lg border border-slate-700/80 shadow-xl text-[10px] font-mono select-none">
-        <button
-          onClick={() => setActiveBasemap('satellite')}
-          className={`px-2 py-1 rounded transition-all flex items-center space-x-1 ${
-            activeBasemap === 'satellite'
-              ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Globe className="w-3 h-3 text-cyan-400" />
-          <span>SATELLITE HYBRID</span>
-        </button>
-        <button
-          onClick={() => setActiveBasemap('dark')}
-          className={`px-2 py-1 rounded transition-all flex items-center space-x-1 ${
-            activeBasemap === 'dark'
-              ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Sun className="w-3 h-3 text-slate-400" />
-          <span>TACTICAL DARK</span>
-        </button>
-        <button
-          onClick={() => setActiveBasemap('topo')}
-          className={`px-2 py-1 rounded transition-all flex items-center space-x-1 ${
-            activeBasemap === 'topo'
-              ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Mountain className="w-3 h-3 text-amber-400" />
-          <span>TOPO TERRAIN</span>
-        </button>
-      </div>
-
       {/* 3. Main Leaflet Map Container */}
       <MapContainer
         center={mapCenter}
@@ -609,34 +723,88 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </>
         )}
 
-        {/* 2. TACTICAL DARK: CartoDB Dark Matter with Crisp Boundaries */}
+        {/* 2. GOOGLE MAPS STYLE DARK MODE: CartoDB Dark Matter with Crisp Roads & Soft Highway Accents */}
         {activeBasemap === 'dark' && (
-          <TileLayer
-            attribution='&copy; CartoDB & OpenStreetMap contributors'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            maxZoom={19}
-            subdomains="abcd"
-          />
+          <>
+            <TileLayer
+              attribution='&copy; CartoDB & OpenStreetMap contributors'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              maxZoom={19}
+              subdomains="abcd"
+              className="google-dark-tiles"
+            />
+            {/* Subtle arterial road and highway reference layer for Google Maps style legibility */}
+            <TileLayer
+              attribution='&copy; ESRI Transportation'
+              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+              opacity={0.35}
+              zIndex={350}
+            />
+          </>
         )}
 
-        {/* 3. TOPO TERRAIN: ESRI World Topographic Map */}
+        {/* 3. ENHANCED TOPO TERRAIN: Elevation Contours, 3D Hillshade & Topographic Relief */}
         {activeBasemap === 'topo' && (
-          <TileLayer
-            attribution='&copy; ESRI World Topo Map, USGS, FAO'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={18}
-          />
+          <>
+            <TileLayer
+              attribution='&copy; ESRI World Topo Map, USGS, FAO'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={18}
+              className="topo-tiles"
+            />
+            {/* High-Resolution 3D Shaded Relief / Hillshade Overlay */}
+            <TileLayer
+              attribution='&copy; ESRI World Hillshade'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={18}
+              opacity={0.42}
+              zIndex={250}
+            />
+            {/* Topographic reference boundaries, river network, and place labels */}
+            <TileLayer
+              attribution='&copy; ESRI Reference'
+              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={18}
+              opacity={0.7}
+              zIndex={300}
+            />
+          </>
         )}
+
+        {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
+        {activeBasemap === 'topo' &&
+          TERRAIN_LANDMARKS.map((landmark, idx) => (
+            <Marker
+              key={`terrain-${idx}`}
+              position={landmark.coordinates}
+              icon={createTerrainIcon(landmark)}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={0.96}>
+                <div className="font-mono text-xs p-1 max-w-[210px]">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-700 font-bold">
+                    <span className="text-white">{landmark.name}</span>
+                    <span className="text-emerald-400 font-extrabold">{landmark.elevation_m}m</span>
+                  </div>
+                  <div className="text-[10px] text-slate-300 mt-1">{landmark.description}</div>
+                  <div className="text-[9px] text-amber-300 font-semibold mt-1 bg-amber-950/70 p-1 rounded border border-amber-800/80">
+                    {landmark.hazard_or_refuge}
+                  </div>
+                </div>
+              </Tooltip>
+            </Marker>
+          ))}
 
         {/* ============================================================== */}
         {/* VECTOR STATE BOUNDARIES & DISTRICT HIGHLIGHTS (SURVEY OF INDIA)*/}
         {/* ============================================================== */}
         {layers.stateBoundaries && (
           <>
-            {/* GeoJSON Polygon Boundaries for Indian States */}
+            {/* GeoJSON Polygon Boundaries for Indian States (Pure Cartographic Non-Interactive Lines) */}
             <GeoJSON
               key={`india-states-${activeIncident?.id || 'all'}`}
               data={INDIA_STATE_BOUNDARIES_GEOJSON as any}
+              interactive={false}
               style={(feature) => {
                 const name = (feature?.properties?.name || '').toLowerCase();
                 const isSelectedState = name === activeStateName;
@@ -645,43 +813,32 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 if (isSelectedState) {
                   return {
                     color: '#06b6d4', // Bright cyan border for active theater state
-                    weight: 3,
+                    weight: 2.5,
                     dashArray: '5, 5',
                     fillColor: '#0891b2',
-                    fillOpacity: 0.12,
+                    fillOpacity: 0.08,
+                    interactive: false,
                   };
                 }
 
                 if (isDisasterHub) {
                   return {
                     color: '#818cf8', // Indigo for key hazard states (Uttarakhand, Meghalaya, etc.)
-                    weight: 2,
+                    weight: 1.5,
                     dashArray: '4, 4',
                     fillColor: '#4f46e5',
-                    fillOpacity: 0.04,
+                    fillOpacity: 0.03,
+                    interactive: false,
                   };
                 }
 
                 return {
                   color: '#475569', // Subtle slate outline for other states
-                  weight: 1.2,
+                  weight: 1,
                   fillColor: '#1e293b',
                   fillOpacity: 0.01,
+                  interactive: false,
                 };
-              }}
-              onEachFeature={(feature, layer) => {
-                const name = feature?.properties?.name || 'State';
-                const isSelected = name.toLowerCase() === activeStateName;
-                layer.bindTooltip(
-                  `<div class="font-mono text-xs">
-                    <span class="font-bold text-white uppercase">${name}</span>
-                    <br/>
-                    <span class="${isSelected ? 'text-cyan-400 font-bold' : 'text-slate-400'}">
-                      ${isSelected ? '★ ACTIVE DISASTER THEATER' : 'State Administrative Boundary'}
-                    </span>
-                  </div>`,
-                  { sticky: true, opacity: 0.95 }
-                );
               }}
             />
 
@@ -695,6 +852,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     key={`state-label-${f.properties.name}`}
                     position={f.properties.centroid as [number, number]}
                     icon={createStateLabelIcon(f.properties.name, isSelected)}
+                    interactive={false}
                   />
                 );
               })}
@@ -708,24 +866,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <Polygon
                   key={`dist-${dist.name}`}
                   positions={dist.coordinates.map(([lon, lat]) => [lat, lon] as [number, number])}
+                  interactive={false}
                   pathOptions={{
                     color: isCurrentDistrict ? '#f59e0b' : '#38bdf8',
-                    weight: isCurrentDistrict ? 3 : 2,
+                    weight: isCurrentDistrict ? 2 : 1.5,
                     dashArray: '6, 6',
                     fillColor: isCurrentDistrict ? '#d97706' : '#0284c7',
-                    fillOpacity: isCurrentDistrict ? 0.15 : 0.05,
+                    fillOpacity: isCurrentDistrict ? 0.08 : 0.03,
                   }}
-                >
-                  <Tooltip direction="top" opacity={0.95}>
-                    <div className="font-mono text-xs p-0.5">
-                      <span className="font-bold text-amber-400 uppercase">
-                        OPERATIONAL DISTRICT: {dist.name}
-                      </span>
-                      <br />
-                      State: {dist.state} • Sector Boundary Verified
-                    </div>
-                  </Tooltip>
-                </Polygon>
+                />
               );
             })}
           </>

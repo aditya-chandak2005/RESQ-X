@@ -35,7 +35,7 @@ export const LayerControl: React.FC<LayerControlProps> = ({ layers, setLayers })
   ).length;
 
   return (
-    <div className="absolute top-16 left-4 z-[1000] select-none text-xs">
+    <div className="absolute top-4 left-4 z-[1000] select-none text-xs">
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}

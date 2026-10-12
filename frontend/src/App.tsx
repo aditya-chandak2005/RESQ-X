@@ -271,6 +271,8 @@ export const App: React.FC = () => {
             setInspectedPoint(null);
             setCurrentAssessment(null);
           }}
+          activeBasemap={layers.basemap}
+          onSelectBasemap={(bm) => setLayers((prev) => ({ ...prev, basemap: bm }))}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
