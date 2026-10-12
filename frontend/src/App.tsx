@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { InteractiveMap } from './components/InteractiveMap';
-import { LayerControl } from './components/LayerControl';
-import { ContextPanel } from './components/ContextPanel';
-import { DisasterAnalysis } from './pages/DisasterAnalysis';
-import { DynamicReroutingDemo } from './pages/DynamicReroutingDemo';
-import { WhatIfSimulator } from './pages/WhatIfSimulator';
-import { RescuePriorityPage } from './pages/RescuePriorityPage';
-import { FieldTeamInterface } from './pages/FieldTeamInterface';
-import { FloodPathAnalysis } from './pages/FloodPathAnalysis';
-import { PreparednessPage } from './pages/PreparednessPage';
-import { AICopilotModal } from './pages/AICopilotModal';
-import { SituationReportModal } from './pages/SituationReportModal';
-import { DatasetProcessingView } from './pages/DatasetProcessingView';
-import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { CommandCenterView } from './pages/CommandCenterView';
+import { DisasterMappingView } from './pages/DisasterMappingView';
+import { ImpactAssessmentView } from './pages/ImpactAssessmentView';
+import { RescueOperationsView } from './pages/RescueOperationsView';
+import { ReportsIntelligenceView } from './pages/ReportsIntelligenceView';
+import { PreparednessWorkspaceView } from './pages/PreparednessWorkspaceView';
 import { DisasterChatbotView } from './pages/DisasterChatbotView';
 import { OfficialAlertsNewsView } from './pages/OfficialAlertsNewsView';
+import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { AICopilotModal } from './pages/AICopilotModal';
+import { SituationReportModal } from './pages/SituationReportModal';
 import { CitizenGuideModal } from './components/CitizenGuideModal';
-import { LocationRiskInspector } from './components/LocationRiskInspector';
 import { api } from './services/api';
 import {
+  DisasterEvent,
   DashboardKpis,
   FloodResult,
   Settlement,
@@ -34,10 +29,12 @@ import {
   LayerVisibility,
   LocationAssessment,
 } from './types';
-import { Bot, MapPin, Sparkles } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('command');
+  const [incidents, setIncidents] = useState<DisasterEvent[]>([]);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number>(1);
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [floodResult, setFloodResult] = useState<FloodResult | null>(null);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -78,19 +75,23 @@ export const App: React.FC = () => {
     floodPath: false,
   });
 
-  const loadAllTelemetry = async () => {
+  const loadAllTelemetry = async (disasterId: number = selectedIncidentId) => {
     try {
-      const [kpiRes, floodRes, setRes, dmgRes, prioRes, teamRes, msnRes, rscRes] = await Promise.all([
-        api.getKpis(1),
-        api.getFloodResult(1),
-        api.getSettlements(1),
-        api.getDamage(1),
-        api.getPriorities(1),
-        api.getTeams(1),
-        api.getMissions(1),
-        api.getResources(1),
+      const [incidentList, kpiRes, floodRes, setRes, dmgRes, prioRes, teamRes, msnRes, rscRes] = await Promise.all([
+        api.getDisasters().catch(() => []),
+        api.getKpis(disasterId),
+        api.getFloodResult(disasterId),
+        api.getSettlements(disasterId),
+        api.getDamage(disasterId),
+        api.getPriorities(disasterId),
+        api.getTeams(disasterId),
+        api.getMissions(disasterId),
+        api.getResources(disasterId),
       ]);
 
+      if (incidentList && incidentList.length > 0) {
+        setIncidents(incidentList);
+      }
       setKpis(kpiRes);
       setFloodResult(floodRes);
       setSettlements(setRes);
@@ -107,8 +108,8 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadAllTelemetry();
-  }, []);
+    loadAllTelemetry(selectedIncidentId);
+  }, [selectedIncidentId]);
 
   const allRoutes = missions.flatMap((m) => m.routes || []);
 
@@ -119,7 +120,7 @@ export const App: React.FC = () => {
       const assessment = await api.assessLocation({
         latitude: lat,
         longitude: lng,
-        disaster_id: 1,
+        disaster_id: selectedIncidentId,
         location_label: label,
       });
       setCurrentAssessment(assessment);
@@ -135,7 +136,7 @@ export const App: React.FC = () => {
       const assessment = await api.assessLocation({
         latitude: lat,
         longitude: lng,
-        disaster_id: 1,
+        disaster_id: selectedIncidentId,
         location_label: label,
       });
       setCurrentAssessment(assessment);
@@ -152,7 +153,6 @@ export const App: React.FC = () => {
   // Omni-search from Header
   const handleSearchFromHeader = async (query: string) => {
     const q = query.toLowerCase();
-    // Known disaster hotspots
     if (q.includes('raini')) {
       handleNavigateToLocation(30.4912, 79.6841, 'Raini Village North Bank');
     } else if (q.includes('tapovan')) {
@@ -164,30 +164,29 @@ export const App: React.FC = () => {
     } else if (q.includes('helang')) {
       handleNavigateToLocation(30.5180, 79.5100, 'Helang Confluence Terrace');
     } else {
-      // General question -> switch to AI Chatbot
-      setCurrentTab('chatbot');
+      // General question or search -> switch to Copilot
+      setCurrentTab('copilot');
     }
   };
 
   // KPI card click filter
   const handleKpiFilter = (kpiId: string) => {
-    if (kpiId === 'isolated') {
-      setCurrentTab('settlements');
-    } else if (kpiId === 'priorities') {
-      setCurrentTab('priority');
-    } else if (kpiId === 'missions') {
-      setCurrentTab('missions');
-    } else if (kpiId === 'roads' || kpiId === 'bridges') {
-      setCurrentTab('command');
-      setLayers((prev) => ({ ...prev, roads: true, bridges: true }));
+    if (kpiId === 'isolated' || kpiId === 'priorities' || kpiId === 'missions') {
+      setCurrentTab('rescue');
+    } else if (kpiId === 'roads' || kpiId === 'bridges' || kpiId === 'buildings' || kpiId === 'population') {
+      setCurrentTab('impact');
+    } else if (kpiId === 'flood') {
+      setCurrentTab('mapping');
     } else {
       setCurrentTab('command');
     }
   };
 
+  const activeIncident = incidents.find((i) => i.id === selectedIncidentId) || (incidents[0] || null);
+
   return (
     <div className="flex h-screen w-screen bg-[#070b14] overflow-hidden font-sans select-none text-slate-100">
-      {/* 1. Left Sidebar */}
+      {/* 1. Left Sidebar: The 8 Mandated Application Areas */}
       <Sidebar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -197,62 +196,131 @@ export const App: React.FC = () => {
 
       {/* 2. Main Content Canvas */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Top Header with Omni-Search & Mode Controls */}
+        {/* Top Header with Omni-Search, Active Incident & Telemetry Ribbon */}
         <Header
           kpis={kpis}
-          onRefresh={loadAllTelemetry}
-          activeDisasterName="Chamoli Glacial Outburst"
-          onOpenGuide={() => setIsCitizenGuideOpen(true)}
+          activeIncident={activeIncident}
+          incidents={incidents}
+          onSelectIncident={(id) => {
+            setSelectedIncidentId(id);
+            loadAllTelemetry(id);
+          }}
+          onRefresh={() => loadAllTelemetry(selectedIncidentId)}
           onSearchQuery={handleSearchFromHeader}
           onSelectKpiFilter={handleKpiFilter}
+          onRunAnalysis={() => setCurrentTab('mapping')}
+          onOpenCopilot={() => setIsCopilotOpen(true)}
+          onOpenSitrep={() => setIsSitrepOpen(true)}
+          onOpenGuide={() => setIsCitizenGuideOpen(true)}
         />
 
-        {/* Dynamic Viewport */}
+        {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
         <main className="flex-1 relative overflow-hidden flex">
+          {/* AREA 1: Command Center */}
           {currentTab === 'command' && (
-            <div className="flex-1 h-full relative flex">
-              {/* Floating Quick Location Risk Inspector Overlay */}
-              <div className="absolute top-3 left-4 right-4 sm:left-72 sm:right-auto z-[990] sm:max-w-xl pointer-events-auto">
-                <LocationRiskInspector
-                  onLocationSelected={(lat, lng, label) => {
-                    setInspectedPoint({ lat, lng, label });
-                  }}
-                  isInspectMode={isInspectMode}
-                  setIsInspectMode={setIsInspectMode}
-                  currentAssessment={currentAssessment}
-                  setCurrentAssessment={setCurrentAssessment}
-                />
-              </div>
+            <CommandCenterView
+              floodResult={floodResult}
+              settlements={settlements}
+              bridges={bridges}
+              roads={roads}
+              teams={teams}
+              routes={allRoutes}
+              assets={assets}
+              layers={layers}
+              setLayers={setLayers}
+              selectedItem={selectedItem}
+              setSelectedItem={setSelectedItem}
+              inspectedPoint={inspectedPoint}
+              setInspectedPoint={setInspectedPoint}
+              handleMapClick={handleMapClick}
+              isInspectMode={isInspectMode}
+              setIsInspectMode={setIsInspectMode}
+              currentAssessment={currentAssessment}
+              setCurrentAssessment={setCurrentAssessment}
+              onNavigateTab={(tab) => setCurrentTab(tab)}
+              onOpenCopilot={() => setIsCopilotOpen(true)}
+            />
+          )}
 
-              <InteractiveMap
-                floodPolygons={floodResult?.polygons || []}
-                settlements={settlements}
-                bridges={bridges}
-                roads={roads}
-                teams={teams}
-                routes={allRoutes}
-                assets={assets}
-                layers={layers}
-                onSelectItem={setSelectedItem}
-                center={inspectedPoint ? [inspectedPoint.lat, inspectedPoint.lng] : [30.4950, 79.6200]}
-                inspectedPoint={inspectedPoint}
-                onMapClick={handleMapClick}
-                isInspectMode={isInspectMode}
-              />
-              <LayerControl layers={layers} setLayers={setLayers} />
-              <ContextPanel
-                selectedItem={selectedItem}
-                onClose={() => setSelectedItem(null)}
-                onDispatchMission={(s) => {
-                  setCurrentTab('missions');
-                }}
-                onTriggerReroute={(m) => {
-                  setCurrentTab('rerouting');
-                }}
+          {/* AREA 2: Disaster Mapping */}
+          {currentTab === 'mapping' && (
+            <DisasterMappingView
+              floodResult={floodResult}
+              settlements={settlements}
+              bridges={bridges}
+              roads={roads}
+              teams={teams}
+              routes={allRoutes}
+              assets={assets}
+              layers={layers}
+              setLayers={setLayers}
+              onAnalysisComplete={() => loadAllTelemetry(selectedIncidentId)}
+              onSelectItem={setSelectedItem}
+            />
+          )}
+
+          {/* AREA 3: Impact Assessment */}
+          {currentTab === 'impact' && (
+            <ImpactAssessmentView
+              settlements={settlements}
+              bridges={bridges}
+              roads={roads}
+              assets={assets}
+              onSelectFeature={(item) => {
+                setSelectedItem(item);
+                setCurrentTab('command');
+              }}
+            />
+          )}
+
+          {/* AREA 4: Rescue Operations */}
+          {currentTab === 'rescue' && (
+            <RescueOperationsView
+              settlements={settlements}
+              bridges={bridges}
+              roads={roads}
+              priorities={priorities}
+              teams={teams}
+              missions={missions}
+              resources={resources}
+              onUpdateTelemetry={() => loadAllTelemetry(selectedIncidentId)}
+              onNavigateToCommand={() => setCurrentTab('command')}
+            />
+          )}
+
+          {/* AREA 5: RESQ Copilot */}
+          {(currentTab === 'copilot' || currentTab === 'chatbot') && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <DisasterChatbotView
+                onNavigateToLocation={handleNavigateToLocation}
+                onAssessLocation={handleAssessFromChat}
               />
             </div>
           )}
 
+          {/* AREA 6: Disaster Watch */}
+          {(currentTab === 'disaster-watch' || currentTab === 'alerts-news') && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <OfficialAlertsNewsView />
+            </div>
+          )}
+
+          {/* AREA 7: Reports & Intelligence */}
+          {currentTab === 'reports' && (
+            <ReportsIntelligenceView
+              disasterId={selectedIncidentId}
+              onNavigateTab={(tab) => setCurrentTab(tab)}
+            />
+          )}
+
+          {/* AREA 8: Preparedness */}
+          {currentTab === 'preparedness' && (
+            <PreparednessWorkspaceView
+              onNavigateTab={(tab) => setCurrentTab(tab)}
+            />
+          )}
+
+          {/* Secondary / Deep-Link Citizen View */}
           {currentTab === 'location-check' && (
             <CitizenLocationCheckView
               floodResult={floodResult}
@@ -267,186 +335,16 @@ export const App: React.FC = () => {
               initialPoint={inspectedPoint}
             />
           )}
-
-          {currentTab === 'chatbot' && (
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <DisasterChatbotView
-                onNavigateToLocation={handleNavigateToLocation}
-                onAssessLocation={handleAssessFromChat}
-              />
-            </div>
-          )}
-
-          {currentTab === 'alerts-news' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <OfficialAlertsNewsView />
-            </div>
-          )}
-
-          {currentTab === 'dataset' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <DatasetProcessingView />
-            </div>
-          )}
-
-          {currentTab === 'analysis' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <DisasterAnalysis onAnalysisComplete={loadAllTelemetry} />
-            </div>
-          )}
-
-          {currentTab === 'priority' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <RescuePriorityPage priorities={priorities} />
-            </div>
-          )}
-
-          {currentTab === 'rerouting' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <DynamicReroutingDemo onUpdateTelemetry={loadAllTelemetry} />
-            </div>
-          )}
-
-          {currentTab === 'whatif' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <WhatIfSimulator />
-            </div>
-          )}
-
-          {currentTab === 'field' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050811]">
-              <FieldTeamInterface />
-            </div>
-          )}
-
-          {currentTab === 'floodpath' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <FloodPathAnalysis />
-            </div>
-          )}
-
-          {currentTab === 'preparedness' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <PreparednessPage />
-            </div>
-          )}
-
-          {currentTab === 'settlements' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-              <h2 className="text-xl font-extrabold font-mono text-slate-100 flex items-center justify-between">
-                <span>SETTLEMENT CONNECTIVITY & ISOLATION STATUS</span>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-red-950 text-red-300 border border-red-700 font-mono">
-                  3 Cut-Off Hamlets
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {settlements.map((s) => (
-                  <div
-                    key={s.id}
-                    onClick={() => {
-                      setSelectedItem({ type: 'settlement', data: s });
-                      setCurrentTab('command');
-                    }}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                      s.is_isolated
-                        ? 'bg-red-950/25 border-red-700/80 hover:bg-red-950/40 shadow-alert'
-                        : 'bg-command-panel border-command-border hover:bg-command-hover'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between pb-2 border-b border-command-border/60">
-                      <h4 className="font-mono font-bold text-sm text-slate-100">{s.name}</h4>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                        s.is_isolated ? 'bg-red-950 text-red-300 border border-red-700' : 'bg-emerald-950 text-emerald-300'
-                      }`}>
-                        {s.is_isolated ? 'ISOLATED' : 'OPEN'}
-                      </span>
-                    </div>
-                    <div className="mt-2 space-y-1 text-xs">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Population:</span>
-                        <span className="font-mono font-bold text-slate-200">~{s.estimated_population.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Nearest Hospital:</span>
-                        <span className="font-mono text-slate-200">{s.nearest_hospital_dist_km} km</span>
-                      </div>
-                    </div>
-                    {s.is_isolated && (
-                      <p className="mt-2 text-[11px] text-red-300/90 leading-tight">
-                        {s.isolation_reason}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentTab === 'missions' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-              <h2 className="text-xl font-extrabold font-mono text-slate-100 flex items-center justify-between">
-                <span>ACTIVE OPERATIONAL RESCUE MISSIONS</span>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono">
-                  {missions.length} Missions Active
-                </span>
-              </h2>
-              <div className="space-y-3">
-                {missions.map((m) => (
-                  <div key={m.id} className="p-4 rounded-xl bg-command-panel border border-command-border space-y-2">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-mono font-bold text-sm text-slate-100">{m.title}</h4>
-                      <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[10px] font-bold uppercase">
-                        {m.status}
-                      </span>
-                    </div>
-                    <div className="flex gap-4 text-xs font-mono text-slate-400">
-                      <span>Target: {m.settlement_name}</span>
-                      <span>Assigned Team: {m.team_name}</span>
-                      <span>Priority: {m.priority_level}</span>
-                    </div>
-                    {m.notes && <p className="text-xs text-slate-300 font-mono bg-command-bg p-2 rounded">{m.notes}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentTab === 'resources' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-              <h2 className="text-xl font-extrabold font-mono text-slate-100">
-                RESOURCE ALLOCATION & INVENTORY TRIAGE
-              </h2>
-              <div className="p-3 bg-command-panel border border-cyan-500/40 rounded-xl text-cyan-200 text-xs">
-                <strong>Decision-Support Notice:</strong> Resource allocations are automated triage suggestions based on population size, terrain accessibility, and isolation scores. Field command authorization required.
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {resources.map((r) => (
-                  <div key={r.id} className="p-4 rounded-xl bg-command-panel border border-command-border flex items-center justify-between">
-                    <div>
-                      <h4 className="font-mono font-bold text-sm text-slate-100">{r.resource_type}</h4>
-                      <span className="text-xs text-slate-400">Staging Base: {r.base_location_name}</span>
-                    </div>
-                    <div className="text-right font-mono">
-                      <div className="text-base font-bold text-cyan-400">
-                        {r.total_available - r.allocated} <span className="text-xs text-slate-400">/ {r.total_available}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400">Available</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </main>
 
-        {/* Floating AI Chat Assistant Quick Button (Available on any screen) */}
-        {currentTab !== 'chatbot' && (
+        {/* Floating AI Chat Assistant Quick Button (Available when not on Copilot area) */}
+        {currentTab !== 'copilot' && currentTab !== 'chatbot' && (
           <button
-            onClick={() => setCurrentTab('chatbot')}
-            className="absolute bottom-6 right-6 z-[950] px-4 py-2.5 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs flex items-center space-x-2 shadow-2xl hover:scale-105 transition-all border border-cyan-300/40"
+            onClick={() => setCurrentTab('copilot')}
+            className="absolute bottom-12 right-6 z-[950] px-4 py-2.5 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs flex items-center space-x-2 shadow-2xl hover:scale-105 transition-all border border-cyan-300/40 cursor-pointer"
           >
             <Bot className="w-4 h-4 animate-bounce" />
-            <span>Ask Disaster AI</span>
+            <span>RESQ Copilot</span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           </button>
         )}
@@ -456,7 +354,11 @@ export const App: React.FC = () => {
       <AICopilotModal isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
 
       {/* 4. Global Situation Report Modal */}
-      <SituationReportModal isOpen={isSitrepOpen} onClose={() => setIsSitrepOpen(false)} disasterId={1} />
+      <SituationReportModal
+        isOpen={isSitrepOpen}
+        onClose={() => setIsSitrepOpen(false)}
+        disasterId={selectedIncidentId}
+      />
 
       {/* 5. Citizen Quick Onboarding Guide Modal */}
       <CitizenGuideModal

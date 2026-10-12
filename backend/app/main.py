@@ -5,7 +5,7 @@ import uvicorn
 
 from backend.app.core.config import settings
 from backend.app.db.init_db import init_database
-from backend.app.api.endpoints import disasters, missions, intelligence
+from backend.app.api.endpoints import disasters, missions, intelligence, operations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +47,7 @@ app.include_router(disasters.router, prefix=f"{settings.API_V1_STR}/disasters", 
 app.include_router(missions.router, prefix=f"{settings.API_V1_STR}/missions", tags=["Rescue Missions & Teams"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}", tags=["Intelligence & Simulations"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intelligence", tags=["Intelligence & Simulations"])
+app.include_router(operations.router, prefix=f"{settings.API_V1_STR}", tags=["Operations & Reports"])
 
 if __name__ == "__main__":
     uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000, reload=True)

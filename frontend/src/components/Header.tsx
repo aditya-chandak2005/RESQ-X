@@ -10,34 +10,46 @@ import {
   Clock,
   Sparkles,
   AlertOctagon,
-  HelpCircle,
   Search,
-  PhoneCall,
-  ChevronRight,
-  ShieldAlert,
+  ChevronDown,
+  Layers,
+  FileCheck2,
+  Bot,
+  Play,
+  HelpCircle,
 } from 'lucide-react';
-import { DashboardKpis } from '../types';
+import { DashboardKpis, DisasterEvent } from '../types';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
+  activeIncident: DisasterEvent | null;
+  incidents: DisasterEvent[];
+  onSelectIncident: (id: number) => void;
   onRefresh: () => void;
-  activeDisasterName?: string;
-  onOpenGuide?: () => void;
   onSearchQuery?: (query: string) => void;
   onSelectKpiFilter?: (filter: string) => void;
+  onRunAnalysis?: () => void;
+  onOpenCopilot?: () => void;
+  onOpenSitrep?: () => void;
+  onOpenGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   kpis,
+  activeIncident,
+  incidents,
+  onSelectIncident,
   onRefresh,
-  activeDisasterName = "Chamoli Glacial Outburst",
-  onOpenGuide,
   onSearchQuery,
   onSelectKpiFilter,
+  onRunAnalysis,
+  onOpenCopilot,
+  onOpenSitrep,
+  onOpenGuide,
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [searchVal, setSearchVal] = useState('');
-  const [showSos, setShowSos] = useState(false);
+  const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,49 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
       value: kpis ? `${kpis.flooded_area_sqkm} km²` : '42.8 km²',
       icon: Waves,
       color: 'text-cyan-400',
-      border: 'border-cyan-500/40 hover:border-cyan-400',
-      bg: 'bg-cyan-950/20 hover:bg-cyan-950/40',
-      sub: 'Sentinel-1 SAR',
-    },
-    {
-      id: 'buildings',
-      label: 'Affected Buildings',
-      value: kpis ? kpis.affected_buildings : 3,
-      icon: Building,
-      color: 'text-amber-400',
-      border: 'border-amber-500/40 hover:border-amber-400',
-      bg: 'bg-amber-950/20 hover:bg-amber-950/40',
-      sub: 'OSM Overlaid',
-    },
-    {
-      id: 'roads',
-      label: 'Blocked Roads',
-      value: kpis ? kpis.blocked_roads : 1,
-      icon: ShieldX,
-      color: 'text-rose-400',
-      border: 'border-rose-500/40 hover:border-rose-400',
-      bg: 'bg-rose-950/20 hover:bg-rose-950/40',
-      sub: 'NH-58 Severed',
-    },
-    {
-      id: 'bridges',
-      label: 'Critical Bridges',
-      value: kpis ? kpis.critical_bridges : 3,
-      icon: Flame,
-      color: 'text-red-400',
-      border: 'border-red-500/50 hover:border-red-400',
-      bg: 'bg-red-950/30 hover:bg-red-950/50',
-      sub: 'Span B-17 Out',
-    },
-    {
-      id: 'population',
-      label: 'Exposed Population',
-      value: kpis ? `${(kpis.exposed_population / 1000).toFixed(1)}k` : '19.4k',
-      icon: Users,
-      color: 'text-indigo-400',
-      border: 'border-indigo-500/40 hover:border-indigo-400',
-      bg: 'bg-indigo-950/20 hover:bg-indigo-950/40',
-      sub: 'LandScan Model',
+      border: 'border-cyan-500/30',
+      bg: 'bg-cyan-950/20',
+      sub: 'SAR Extent',
     },
     {
       id: 'isolated',
@@ -111,19 +83,58 @@ export const Header: React.FC<HeaderProps> = ({
       value: kpis ? kpis.isolated_settlements : 3,
       icon: AlertOctagon,
       color: 'text-red-400',
-      border: 'border-red-500/60 hover:border-red-400',
-      bg: 'bg-red-950/40 hover:bg-red-950/60',
+      border: 'border-red-500/40',
+      bg: 'bg-red-950/30',
       sub: 'Zero Road Ingress',
-      highlight: true,
+    },
+    {
+      id: 'bridges',
+      label: 'Critical Bridges',
+      value: kpis ? kpis.critical_bridges : 3,
+      icon: Flame,
+      color: 'text-red-400',
+      border: 'border-red-500/30',
+      bg: 'bg-red-950/20',
+      sub: 'Span B-17 Out',
+    },
+    {
+      id: 'roads',
+      label: 'Blocked Roads',
+      value: kpis ? kpis.blocked_roads : 1,
+      icon: ShieldX,
+      color: 'text-rose-400',
+      border: 'border-rose-500/30',
+      bg: 'bg-rose-950/20',
+      sub: 'NH-58 Severed',
+    },
+    {
+      id: 'buildings',
+      label: 'Affected Buildings',
+      value: kpis ? kpis.affected_buildings : 3,
+      icon: Building,
+      color: 'text-amber-400',
+      border: 'border-amber-500/30',
+      bg: 'bg-amber-950/20',
+      sub: 'OSM Overlaid',
+    },
+    {
+      id: 'population',
+      label: 'Exposed Population',
+      value: kpis ? `${(kpis.exposed_population / 1000).toFixed(1)}k` : '19.4k',
+      icon: Users,
+      color: 'text-indigo-400',
+      border: 'border-indigo-500/30',
+      bg: 'bg-indigo-950/20',
+      sub: 'LandScan Model',
     },
     {
       id: 'priorities',
-      label: 'Critical Priorities',
+      label: 'Priority Zones',
       value: kpis ? kpis.critical_priority_zones : 2,
       icon: Sparkles,
       color: 'text-purple-400',
-      border: 'border-purple-500/40 hover:border-purple-400',
-      bg: 'bg-purple-950/20 hover:bg-purple-950/40',
+      border: 'border-purple-500/30',
+      bg: 'bg-purple-950/20',
       sub: 'Priority > 80',
     },
     {
@@ -132,140 +143,166 @@ export const Header: React.FC<HeaderProps> = ({
       value: kpis ? kpis.active_rescue_missions : 1,
       icon: Compass,
       color: 'text-emerald-400',
-      border: 'border-emerald-500/40 hover:border-emerald-400',
-      bg: 'bg-emerald-950/20 hover:bg-emerald-950/40',
+      border: 'border-emerald-500/30',
+      bg: 'bg-emerald-950/20',
       sub: '1 Rerouted',
     },
   ];
 
   return (
-    <header className="bg-[#070b14]/95 backdrop-blur-md border-b border-slate-800/80 z-20 shrink-0">
-      {/* Top Banner Bar */}
-      <div className="px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/60 text-xs">
+    <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans">
+      {/* 1. Main Operational Ribbon */}
+      <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/60 text-xs">
         
-        {/* Left: Disaster Status & Sector */}
-        <div className="flex items-center space-x-2.5">
-          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-red-950/80 border border-red-700 text-red-300 font-mono text-[11px] font-bold tracking-wide shadow-sm animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <span>DISASTER THEATER: {activeDisasterName.toUpperCase()}</span>
-          </div>
+        {/* Incident Selector Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold"
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[10px] text-slate-400 font-mono uppercase">INCIDENT:</span>
+            <span className="text-white font-mono">{activeIncident?.name || 'Chamoli Flash Flood & Outburst'}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </button>
 
-          <div className="hidden sm:flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700/80 text-slate-300 font-mono text-[11px]">
-            <Radio className="w-3 h-3 text-cyan-400" />
-            <span>CHAMOLI SECTOR (UTTARAKHAND)</span>
-          </div>
+          {showIncidentDropdown && (
+            <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#0e172a] border border-slate-700 shadow-2xl z-50 text-xs space-y-1">
+              <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold">
+                SELECT OPERATIONAL THEATER
+              </div>
+              {incidents.map((inc) => (
+                <button
+                  key={inc.id}
+                  onClick={() => {
+                    onSelectIncident(inc.id);
+                    setShowIncidentDropdown(false);
+                  }}
+                  className={`w-full text-left p-2 rounded-lg transition-all flex items-center justify-between ${
+                    activeIncident?.id === inc.id
+                      ? 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
+                      : 'hover:bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold">{inc.name}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      Status: {inc.status.toUpperCase()} • {inc.disaster_type}
+                    </div>
+                  </div>
+                  {activeIncident?.id === inc.id && (
+                    <span className="text-[9px] font-mono bg-cyan-900 text-cyan-200 px-1.5 py-0.5 rounded">
+                      ACTIVE
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Center: Omni-Search Bar for Citizens & Commanders */}
-        <div className="flex-1 max-w-md mx-2">
+        {/* Geographic Search Bar */}
+        <div className="flex-1 max-w-sm">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-            <Search className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
             <input
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Search any village, GPS or ask AI: 'Where is the flood?'..."
-              className="w-full pl-9 pr-20 py-1.5 rounded-full bg-slate-900/90 border border-slate-700/90 hover:border-cyan-500/60 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all shadow-inner"
+              placeholder="Search Indian village, coordinate, or ask AI..."
+              className="w-full pl-8 pr-16 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono"
             />
             <button
               type="submit"
-              className="absolute right-1 px-2.5 py-0.5 rounded-full bg-cyan-600 hover:bg-cyan-500 text-[10px] font-mono font-bold text-white transition-all"
+              className="absolute right-1 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all"
             >
-              SEARCH
+              FIND
             </button>
           </form>
         </div>
 
-        {/* Right: Actions, Helplines & Telemetry Clock */}
-        <div className="flex items-center space-x-2.5">
-          {/* Emergency SOS Dropdown Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSos(!showSos)}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md transition-all animate-pulse"
-            >
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>SOS (112)</span>
-            </button>
-            {showSos && (
-              <div className="absolute right-0 mt-2 w-64 p-3 rounded-xl bg-[#0e172a] border border-red-500/60 shadow-2xl z-50 text-xs space-y-2">
-                <div className="font-bold text-red-400 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4" />
-                  <span>National Emergency Hotlines</span>
-                </div>
-                <div className="space-y-1.5 text-slate-300 font-mono text-[11px]">
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span>Emergency Police/Fire:</span>
-                    <strong className="text-white">112</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span>NDMA National:</span>
-                    <strong className="text-white">1070</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-800 pb-1">
-                    <span>Uttarakhand SDRF:</span>
-                    <strong className="text-white">1077</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ambulance Triage:</span>
-                    <strong className="text-white">108</strong>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSos(false)}
-                  className="w-full mt-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] text-center"
-                >
-                  Close
-                </button>
-              </div>
-            )}
+        {/* Satellite Sensor & Imagery Timestamps */}
+        <div className="hidden xl:flex items-center space-x-3 text-[11px] font-mono text-slate-400">
+          <div>
+            Sensor: <span className="text-cyan-300 font-bold">Sentinel-1 C-SAR IW</span>
           </div>
+          <div>•</div>
+          <div>
+            Pre/Post: <span className="text-slate-200 font-semibold">2026-02-01 / 2026-02-07 10:21Z</span>
+          </div>
+        </div>
 
-          {/* Citizen Guide Button */}
-          <button
-            onClick={onOpenGuide}
-            className="flex items-center space-x-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-400/50 hover:from-cyan-600/50 hover:to-blue-600/50 text-cyan-200 transition-all shadow-sm"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-cyan-300" />
-            <span>Citizen Guide</span>
-          </button>
+        {/* Quick Operations Bar */}
+        <div className="flex items-center space-x-2">
+          {onRunAnalysis && (
+            <button
+              onClick={onRunAnalysis}
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all"
+              title="Run AI Flood Segmentation Pipeline"
+            >
+              <Play className="w-3 h-3 fill-current" />
+              <span>RUN PIPELINE</span>
+            </button>
+          )}
 
-          <button
-            onClick={onRefresh}
-            className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
-            title="Reload live database telemetry"
-          >
-            ↻ REFRESH
-          </button>
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <span>COPILOT</span>
+            </button>
+          )}
 
-          <div className="hidden lg:flex items-center space-x-1 text-slate-400 font-mono text-[11px] pl-1">
+          {onOpenSitrep && (
+            <button
+              onClick={onOpenSitrep}
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all"
+            >
+              <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
+              <span>SITREP</span>
+            </button>
+          )}
+
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+              title="Citizen Guide"
+            >
+              <HelpCircle className="w-4 h-4 text-cyan-300" />
+            </button>
+          )}
+
+          <div className="flex items-center space-x-1 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             <span>{time}</span>
           </div>
         </div>
       </div>
 
-      {/* KPI Ribbon */}
-      <div className="px-4 py-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/60">
+      {/* 2. Compact Analytical Metrics Ribbon */}
+      <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/90">
         {kpiItems.map((kpi, idx) => {
           const Icon = kpi.icon;
           return (
             <div
               key={idx}
               onClick={() => onSelectKpiFilter && onSelectKpiFilter(kpi.id)}
-              className={`p-2 rounded-xl border ${kpi.border} ${kpi.bg} flex flex-col justify-between transition-all hover:scale-[1.02] cursor-pointer shadow-sm`}
+              className={`p-1.5 rounded-lg border ${kpi.border} ${kpi.bg} flex flex-col justify-between transition-all hover:scale-[1.02] cursor-pointer`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-300 font-medium uppercase truncate">
+                <span className="text-[9px] text-slate-400 font-medium uppercase truncate font-mono">
                   {kpi.label}
                 </span>
-                <Icon className={`w-3.5 h-3.5 ${kpi.color} shrink-0`} />
+                <Icon className={`w-3 h-3 ${kpi.color} shrink-0`} />
               </div>
-              <div className="mt-1 flex items-baseline justify-between">
-                <span className={`text-base font-extrabold font-mono ${kpi.color}`}>
+              <div className="mt-0.5 flex items-baseline justify-between">
+                <span className={`text-sm font-extrabold font-mono ${kpi.color}`}>
                   {kpi.value}
                 </span>
-                <span className="text-[9px] text-slate-400 font-mono">
+                <span className="text-[8px] text-slate-400 font-mono truncate">
                   {kpi.sub}
                 </span>
               </div>
