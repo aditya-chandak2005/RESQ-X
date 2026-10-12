@@ -237,6 +237,7 @@ class CopilotQueryResponse(BaseModel):
     query: str
     response: str
     grounded_data: Dict[str, Any]
+    featured_locations: Optional[List[Dict[str, Any]]] = None
     quick_review: Optional[Dict[str, Any]] = None
     suggested_queries: Optional[List[str]] = None
     timestamp: datetime

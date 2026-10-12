@@ -28,6 +28,21 @@ def query_resq_copilot(payload: CopilotQueryRequest, db: Session = Depends(get_d
     result = ResqCopilot.answer_query(db, disaster_id, payload.query)
     return result
 
+@router.get("/copilot/quick-review/{disaster_id}")
+def get_copilot_quick_review(disaster_id: int, review_type: str = "executive", db: Session = Depends(get_db)):
+    """Generate high-speed tactical quick review for leadership triage."""
+    return ResqCopilot.get_quick_review(db, disaster_id, review_type)
+
+@router.get("/copilot/disaster-knowledge")
+def get_copilot_disaster_knowledge():
+    """Retrieve disaster knowledge and life-safety guidelines catalog."""
+    return ResqCopilot.get_knowledge_catalog()
+
+@router.get("/copilot/disaster-knowledge/{topic}")
+def get_copilot_disaster_knowledge_topic(topic: str):
+    """Retrieve detailed knowledge and protocol for a specific disaster topic."""
+    return ResqCopilot.get_knowledge_detail(topic)
+
 @router.get("/reports/{disaster_id}")
 def get_situation_report(disaster_id: int, db: Session = Depends(get_db)):
     """Generate official disaster situation report."""

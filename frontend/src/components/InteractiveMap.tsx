@@ -11,7 +11,6 @@ import {
   LayerVisibility,
   InfrastructureAsset,
 } from '../types';
-import { INDIA_STATE_BOUNDARIES } from '../data/indiaStateBoundaries';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -70,17 +69,6 @@ const RecenterMap: React.FC<{ center: [number, number] }> = ({ center }) => {
   return null;
 };
 
-// Smooth Fly-To Focus Controller when Target Location changes
-const MapFocusController: React.FC<{ target?: { lat: number; lng: number } | null }> = ({ target }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (target) {
-      map.flyTo([target.lat, target.lng], 14, { duration: 1.2 });
-    }
-  }, [target?.lat, target?.lng, map]);
-  return null;
-};
-
 // Map Click Handler for Dropping Inspection Pins
 const MapClickHandler: React.FC<{ onMapClick?: (lat: number, lng: number) => void }> = ({ onMapClick }) => {
   useMapEvents({
@@ -118,7 +106,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoomControl={false}
       >
         <RecenterMap center={center} />
-        <MapFocusController target={inspectedPoint} />
         <MapClickHandler onMapClick={onMapClick} />
 
         {/* Tactical Dark / Satellite Base Tiles (100% Watermark-Free) */}
@@ -136,49 +123,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             maxZoom={19}
           />
         )}
-
-        {/* State Boundaries & Labels Overlay (ESRI Reference + Vector Polygons) */}
-        {layers.stateBoundaries && (
-          <TileLayer
-            attribution='&copy; ESRI Boundaries and Places'
-            url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={19}
-            opacity={0.88}
-          />
-        )}
-
-        {/* Indian State Borders & Operational Theater Highlight */}
-        {layers.stateBoundaries &&
-          INDIA_STATE_BOUNDARIES.map((st) => {
-            const coords = st.coordinates[0].map(([lon, lat]) => [lat, lon] as [number, number]);
-            const isUttarakhand = st.id === 'uttarakhand';
-            return (
-              <Polygon
-                key={st.id}
-                positions={coords}
-                pathOptions={{
-                  color: isUttarakhand ? '#6366f1' : '#475569',
-                  weight: isUttarakhand ? 2.5 : 1.2,
-                  fillColor: isUttarakhand ? '#4f46e5' : '#1e293b',
-                  fillOpacity: isUttarakhand ? 0.08 : 0.02,
-                  dashArray: isUttarakhand ? undefined : '4, 4',
-                }}
-              >
-                <Tooltip direction="center" opacity={0.92} sticky>
-                  <div className="text-xs font-mono p-1">
-                    <span className="font-bold text-indigo-300">{st.name}</span>
-                    <br />
-                    <span className="text-[10px] text-slate-400">Capital: {st.capital}</span>
-                    {isUttarakhand && (
-                      <span className="block mt-0.5 text-[10px] text-red-400 font-bold uppercase tracking-wider">
-                        🚨 ACTIVE FLOOD THEATER (CHAMOLI SECTOR)
-                      </span>
-                    )}
-                  </div>
-                </Tooltip>
-              </Polygon>
-            );
-          })}
 
         {/* 1. Flood Extent / Severity Polygons */}
         {layers.floodExtent &&

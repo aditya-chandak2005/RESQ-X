@@ -71,7 +71,7 @@ export const CitizenLocationCheckView: React.FC<CitizenLocationCheckViewProps> =
     initialPoint ? [initialPoint.lat, initialPoint.lng] : [30.4905, 79.6830]
   );
 
-  // Load assessment when target or initialPoint changes
+  // Load assessment on mount or when target/initialPoint changes
   useEffect(() => {
     const point = initialPoint || {
       lat: 30.4905,

@@ -26,7 +26,7 @@ import {
   Truck,
   HelpCircle,
   FileText,
-  MapPin
+  MapPin,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { QuickReviewData, DisasterKnowledgeItem } from '../types';
@@ -71,7 +71,45 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'copilot',
-      text: `### 🛡️ RESQ-X Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in real-time **Sentinel-1 SAR**, **NetworkX road topology**, and **PostGIS database telemetry**.\n\nAsk me for an **Executive Quick Review**, emergency **life-safety protocols**, **cut-off settlement triage**, or **bridge vulnerability updates**.`,
+      text: `### 🛡️ RESQ-X Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in real-time **Sentinel-1 SAR**, **NetworkX road topology**, and **PostGIS database telemetry**.\n\nDon't know exact coordinates? Ask me **"Where did the flood occur?"**, **"Which villages are cut off?"**, or click any location below to fly the map or verify safety!`,
+      featuredLocations: [
+        {
+          name: "Raini Village (North Bank)",
+          latitude: 30.4912,
+          longitude: 79.6841,
+          risk_level: "CRITICAL",
+          distance_to_flood_km: 0.05,
+          is_isolated: true,
+          details: "Epicenter of Rishi Ganga surge. Bridge B-17 washed out. Cut off from Joshimath road.",
+        },
+        {
+          name: "Tapovan Vishnugad Barrage",
+          latitude: 30.4945,
+          longitude: 79.6278,
+          risk_level: "CRITICAL",
+          distance_to_flood_km: 0.02,
+          is_isolated: true,
+          details: "Major hydropower site inundated with high-velocity silt. Head-race tunnel blocked.",
+        },
+        {
+          name: "Joshimath Incident Command Base",
+          latitude: 30.5580,
+          longitude: 79.5645,
+          risk_level: "SAFE",
+          distance_to_flood_km: 8.40,
+          is_isolated: false,
+          details: "Forward base for NDRF/SDRF helicopter sorting & Joshimath District Hospital.",
+        },
+        {
+          name: "Suraithota Upper Hamlet",
+          latitude: 30.5284,
+          longitude: 79.7431,
+          risk_level: "HIGH",
+          distance_to_flood_km: 0.85,
+          is_isolated: true,
+          details: "Upper Dhauliganga hamlet. Vehicular supply road blocked at km 14 mark.",
+        }
+      ],
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -200,13 +238,13 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   };
 
   const quickPromptChips = [
-    { label: '📍 Where Did Flood Occur & GPS?', query: 'Where did the flood occur and what are the exact coordinates of affected villages?' },
-    { label: '⚠️ Which Settlements Are Cut Off?', query: 'Which settlements are currently cut off and what is their population?' },
-    { label: '🛡️ Raini Village Flood Coordinates', query: 'Show me the exact location, coordinates, and status of Raini Village.' },
-    { label: '🌊 Flash Flood Life Safety', query: 'What are the immediate Do\'s and Don\'ts for flash floods?' },
-    { label: '🌉 Bridge & Road Damage', query: 'What is the structural status of bridges and roads in the operational theater?' },
     { label: '⚡ 60s Executive Review', query: 'Generate a 60-second executive quick review of the disaster.' },
-    { label: '🏥 Nearest Hospitals & Staging', query: 'Where is the nearest safe hospital and base staging ground?' },
+    { label: '🌊 Flash Flood Life Safety', query: 'What are the immediate Do\'s and Don\'ts for flash floods?' },
+    { label: '🏔️ Isolated Settlements', query: 'Which settlements are currently cut off and what is their population?' },
+    { label: '🌉 Bridge & Road Damage', query: 'What is the structural status of bridges and roads in the operational theater?' },
+    { label: '🩹 Hypothermia & First Aid', query: 'How to treat hypothermia and provide field first-aid for flood victims?' },
+    { label: '🚁 Helicopter LZ Criteria', query: 'What are the specifications for establishing a helicopter landing zone (LZ)?' },
+    { label: '📋 Action Checklist', query: 'Show me the tactical incident command operational checklist.' },
   ];
 
   const reviewModes = [
@@ -318,51 +356,6 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
 
             {/* Chat Messages Stream */}
             <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
-              {/* Citizen Hotspot Quick-Navigator Card */}
-              <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/70 via-[#0d1424] to-blue-950/70 border border-cyan-500/40 text-xs shadow-md">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 mb-2 border-b border-cyan-500/20 gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span className="font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-cyan-400" />
-                      Citizen Quick Hotspot Navigator
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-cyan-300 font-sans">
-                    Don't know coordinates? Click any hotspot below to inspect:
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { name: 'Raini Village', tag: 'CRITICAL CUT-OFF', lat: 30.4912, lng: 79.6841, color: 'border-red-700/80 bg-red-950/40 text-red-300' },
-                    { name: 'Tapovan Barrage', tag: 'HIGH RISK INUNDATION', lat: 30.4945, lng: 79.6278, color: 'border-amber-700/80 bg-amber-950/40 text-amber-300' },
-                    { name: 'Joshimath Base', tag: 'SAFE HOSPITAL HUB', lat: 30.5580, lng: 79.5645, color: 'border-emerald-700/80 bg-emerald-950/40 text-emerald-300' },
-                    { name: 'Suraithota Hamlet', tag: 'ISOLATED BORDER', lat: 30.5284, lng: 79.7431, color: 'border-purple-700/80 bg-purple-950/40 text-purple-300' },
-                  ].map((h, hIdx) => (
-                    <div key={hIdx} className={`p-2 rounded-lg border ${h.color} flex flex-col justify-between`}>
-                      <div>
-                        <div className="font-mono font-bold text-xs text-white leading-tight">{h.name}</div>
-                        <div className="text-[9px] font-mono mt-0.5 opacity-80">[{h.lat.toFixed(4)}, {h.lng.toFixed(4)}]</div>
-                      </div>
-                      <div className="mt-2 flex gap-1">
-                        <button
-                          onClick={() => onNavigateToLocation?.(h.lat, h.lng, h.name)}
-                          className="flex-1 py-1 px-1 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-mono text-[9px] font-bold text-center"
-                        >
-                          Fly Map 📍
-                        </button>
-                        <button
-                          onClick={() => handleSend(`Tell me about ${h.name} and its exact coordinates and flood safety.`)}
-                          className="flex-1 py-1 px-1 rounded bg-black/40 hover:bg-black/60 text-cyan-200 border border-white/10 font-mono text-[9px] text-center"
-                        >
-                          Ask AI 💬
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {messages.map((m, idx) => (
                 <div
                   key={idx}
@@ -467,61 +460,65 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
                       </div>
                     )}
 
-                    {/* Interactive Featured Location Action Cards */}
+                    {/* Featured Locations Interactive Hotspots Card Grid */}
                     {m.featuredLocations && m.featuredLocations.length > 0 && (
-                      <div className="mt-3.5 pt-3 border-t border-cyan-500/30 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-mono">
-                          <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                      <div className="mt-3.5 space-y-2 pt-2 border-t border-white/10">
+                        <div className="text-[11px] font-mono font-bold text-cyan-300 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                            Interactive Location Cards ({m.featuredLocations.length})
+                            <span>DISASTER THEATER KEY LOCATIONS & GPS:</span>
                           </span>
-                          <span className="text-[10px] text-slate-400">Click to fly map to coordinates</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Click to navigate map</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {m.featuredLocations.map((loc: any, lIdx: number) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {m.featuredLocations.map((loc, lIdx) => (
                             <div
                               key={lIdx}
-                              className="p-3 rounded-lg bg-black/60 border border-slate-700 hover:border-cyan-400/70 transition-all flex flex-col justify-between shadow-sm"
+                              className="p-3 rounded-lg bg-black/50 border border-slate-700/80 hover:border-cyan-500/60 transition-all flex flex-col justify-between space-y-2 shadow-sm"
                             >
                               <div>
-                                <div className="flex items-start justify-between gap-1 pb-1">
-                                  <span className="font-mono font-bold text-xs text-white">{loc.name}</span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-black uppercase shrink-0 ${
-                                    loc.status.includes('CRITICAL') ? 'bg-red-950 text-red-300 border border-red-800' :
-                                    loc.status.includes('HIGH') ? 'bg-amber-950 text-amber-300 border border-amber-800' :
-                                    'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                <div className="flex items-center justify-between pb-1 border-b border-white/10">
+                                  <span className="font-bold text-slate-100 text-xs truncate">{loc.name}</span>
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase ${
+                                    loc.risk_level === 'CRITICAL'
+                                      ? 'bg-red-950 text-red-300 border border-red-700'
+                                      : loc.risk_level === 'HIGH'
+                                      ? 'bg-amber-950 text-amber-300 border border-amber-700'
+                                      : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                                   }`}>
-                                    {loc.status}
+                                    {loc.risk_level}
                                   </span>
                                 </div>
-                                <div className="text-[10px] font-mono text-cyan-400">
-                                  📍 Coordinates: [{loc.latitude.toFixed(4)}° N, {loc.longitude.toFixed(4)}° E]
+                                <p className="mt-1 text-[11px] text-slate-300 leading-tight">{loc.details}</p>
+                                <div className="mt-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded inline-block">
+                                  GPS: [{loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}]
                                 </div>
-                                <p className="mt-1 text-[11px] text-slate-300 leading-snug">
-                                  {loc.description}
-                                </p>
                               </div>
-                              <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
-                                <button
-                                  onClick={() => onNavigateToLocation?.(loc.latitude, loc.longitude, loc.name)}
-                                  className="flex-1 py-1.5 px-2 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
-                                >
-                                  <Compass className="w-3 h-3" />
-                                  <span>Fly to Map</span>
-                                </button>
-                                <button
-                                  onClick={() => onAssessLocation?.(loc.latitude, loc.longitude, loc.name)}
-                                  className="flex-1 py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono text-[10px] font-medium flex items-center justify-center gap-1 transition-all"
-                                >
-                                  <ShieldAlert className="w-3 h-3 text-cyan-400" />
-                                  <span>Safety Check</span>
-                                </button>
+                              <div className="pt-2 border-t border-white/10 flex items-center gap-1.5">
+                                {onNavigateToLocation && (
+                                  <button
+                                    onClick={() => onNavigateToLocation(loc.latitude, loc.longitude, loc.name)}
+                                    className="flex-1 py-1 px-2 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                                    title="Fly to location on live map"
+                                  >
+                                    <span>Fly Map 📍</span>
+                                  </button>
+                                )}
+                                {onAssessLocation && (
+                                  <button
+                                    onClick={() => onAssessLocation(loc.latitude, loc.longitude, loc.name)}
+                                    className="flex-1 py-1 px-2 rounded bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700 text-indigo-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                                    title="Run individual flood safety check"
+                                  >
+                                    <span>Safety Check 🛡️</span>
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleCopy(`${loc.latitude}, ${loc.longitude}`)}
-                                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                                  className="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
                                   title="Copy GPS coordinates"
                                 >
-                                  <Copy className="w-3 h-3" />
+                                  📋
                                 </button>
                               </div>
                             </div>

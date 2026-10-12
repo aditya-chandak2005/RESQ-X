@@ -161,14 +161,13 @@ class NewsProvider(ABC):
 
 
 class OfficialNewsProvider(NewsProvider):
-    def fetch_disaster_news(self, query: str = "India flood") -> List[Dict[str, Any]]:
+    def fetch_disaster_news(self, query: str = "Chamoli flood") -> List[Dict[str, Any]]:
         return [
             {
                 "source": "Press Information Bureau (PIB) Uttarakhand",
                 "headline": "NDRF & SDRF Columns Airlifted to Joshimath for Chamoli Flash Flood Operations",
                 "summary": "Three National Disaster Response Force teams and Indian Army columns have established forward staging bases at Joshimath Military Hospital with specialized cutting and winching gear.",
                 "hazard_category": "Glacial Flood",
-                "location_tag": "Uttarakhand (Chamoli)",
                 "verification_status": "verified_official",
                 "original_url": "https://pib.gov.in/PressReleasePage.aspx?PRID=1700201"
             },
@@ -177,7 +176,6 @@ class OfficialNewsProvider(NewsProvider):
                 "headline": "Cabinet Secretary Chairs National Crisis Management Committee Review on Chamoli Flood",
                 "summary": "NCMC directs continuous aerial surveillance of glacial lake breach point and deployment of emergency Bailey bridge equipment to reconnect isolated Raini sector.",
                 "hazard_category": "Civil Defense",
-                "location_tag": "National / New Delhi",
                 "verification_status": "verified_official",
                 "original_url": "https://ddnews.gov.in/national/chamoli-flood-live-updates"
             },
@@ -186,45 +184,7 @@ class OfficialNewsProvider(NewsProvider):
                 "headline": "Satellite SAR Confirms Structural Failure of Raini Dhauliganga Bridge B-17",
                 "summary": "Multi-temporal radar analysis reveals bridge span washed away by high-velocity flood debris wave, cutting off surface transit to 3 villages.",
                 "hazard_category": "Infrastructure Impact",
-                "location_tag": "Uttarakhand (Raini)",
                 "verification_status": "verified_media",
                 "original_url": "https://disasterwatch.in/reports/chamoli-flood-bridge-collapse"
-            },
-            {
-                "source": "PIB Guwahati / Assam State Disaster Management Authority",
-                "headline": "Brahmaputra Swells Above Danger Mark at Neamatighat; 14 Districts on High Flood Alert",
-                "summary": "Central Water Commission gauges report steady rise in Brahmaputra water levels following intense upper catchment rainfall in Arunachal Pradesh. NDRF flood rescue teams deployed with inflatable boats in Majuli and Kaziranga sectors.",
-                "hazard_category": "Riverine Flood",
-                "location_tag": "Assam (Brahmaputra Basin)",
-                "verification_status": "verified_official",
-                "original_url": "https://pib.gov.in/PressReleasePage.aspx?PRID=1789124"
-            },
-            {
-                "source": "Himachal State Disaster Management Authority (HPSDMA)",
-                "headline": "Cloudburst Triggers Flash Floods in Mandi & Kullu Valleys; Beas River Embankments Monitored",
-                "summary": "Sudden cloudburst in upper Beas catchment causes localized flash torrents, blocking stretches of Mandi-Kullu National Highway. SDRF establishes relief shelters on high ground; tourists advised to avoid riverside locations.",
-                "hazard_category": "Flash Flood",
-                "location_tag": "Himachal Pradesh (Mandi/Kullu)",
-                "verification_status": "verified_official",
-                "original_url": "https://hpsdma.nic.in/alerts/mandi-flash-flood"
-            },
-            {
-                "source": "Kerala State Disaster Management Authority (KSDMA)",
-                "headline": "IMD Issues Orange Alert for High-Range Districts; River Discharge Telemetry Activated",
-                "summary": "Heavy 24-hour precipitation forecast across Idukki and Wayanad mountain tracts. District emergency operations centers put on 24x7 vigil for hillside runoff and low-lying waterlogging.",
-                "hazard_category": "Monsoon Inundation",
-                "location_tag": "Kerala (Wayanad/Idukki)",
-                "verification_status": "verified_official",
-                "original_url": "https://sdma.kerala.gov.in/warnings"
-            },
-            {
-                "source": "Gujarat Disaster Management Authority",
-                "headline": "Sardar Sarovar Dam Water Inflow Crosses 2.1 Lakh Cusecs; 10 Radial Gates Opened",
-                "summary": "Narmada basin authorities execute controlled water release to maintain reservoir levels. Villages along lower Narmada banks in Bharuch placed on standby for high-tide river backflow.",
-                "hazard_category": "Reservoir Surge",
-                "location_tag": "Gujarat (Narmada Basin)",
-                "verification_status": "verified_official",
-                "original_url": "https://gsdma.org/flood-alert"
             }
         ]
-

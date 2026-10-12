@@ -15,79 +15,7 @@ from backend.app.models.models import (
     RescueTeam,
     Mission,
     Route,
-    NewsItem,
-    OfficialAlert,
-    KnowledgeDocument,
-    PopulationExposure,
-    ConnectivityResult,
-    SituationReport,
 )
-
-def _seed_operations_entities(db, d_id: int):
-    """Seed or update India-centered disaster news, official alerts, and RAG knowledge docs."""
-    from backend.app.services.providers import OfficialNewsProvider, NDMAAlertsProvider
-
-    # 1. India-wide flood news
-    news_provider = OfficialNewsProvider()
-    for item in news_provider.fetch_disaster_news():
-        if not db.query(NewsItem).filter(NewsItem.headline == item["headline"]).first():
-            db.add(NewsItem(
-                disaster_id=d_id,
-                source=item["source"],
-                original_url=item.get("original_url"),
-                headline=item["headline"],
-                summary=item["summary"],
-                hazard_category=item.get("hazard_category", "Flood"),
-                location_tag=item.get("location_tag", "Uttarakhand"),
-                verification_status=item.get("verification_status", "verified_official"),
-                published_at=datetime.datetime.utcnow()
-            ))
-
-    # 2. Official Emergency Alerts
-    alerts_provider = NDMAAlertsProvider()
-    for item in alerts_provider.fetch_live_alerts():
-        if not db.query(OfficialAlert).filter(OfficialAlert.headline == item["headline"]).first():
-            db.add(OfficialAlert(
-                disaster_id=d_id,
-                authority=item["authority"],
-                alert_level=item["alert_level"],
-                headline=item["headline"],
-                instruction=item["instruction"],
-                source_url=item.get("source_url"),
-                verification_status=item.get("verification_status", "official_verified"),
-                effective_until=datetime.datetime.utcnow() + datetime.timedelta(hours=24),
-                published_at=datetime.datetime.utcnow()
-            ))
-
-    # 3. Curated Disaster Guidelines
-    curated_docs = [
-        KnowledgeDocument(
-            title="NDMA Guidelines for Management of Glacial Lake Outburst Floods (GLOFs)",
-            category="ndma_guideline",
-            source_authority="National Disaster Management Authority, Government of India",
-            content_text="Glacial Lake Outburst Floods (GLOFs) are sudden releases of water from lakes dammed by moraine or ice. Key mitigation priorities: 1. Continuous acoustic and satellite early warning; 2. Strict avoidance of downstream riverbed settlement; 3. Structural flow deflection spurs around critical bridges and power installations; 4. Immediate vertical evacuation above 2,000m contour upon sirens.",
-            metadata_json={"regulation": "NDMA Act 2005", "section": "GLOF Protocol", "year": 2024}
-        ),
-        KnowledgeDocument(
-            title="Standard Operating Procedure: Flash Flood Search & Rescue (SAR)",
-            category="sop_flood",
-            source_authority="National Disaster Response Force (NDRF)",
-            content_text="When bridge washouts sever road connectivity: 1. Deploy aerial drone survey to establish visual triage of isolated population pockets; 2. Dispatch forward paramedical teams via ridge high-ground bypasses; 3. Use winch cable-ways across severed river spans for emergency ration and medicine drop; 4. Never attempt wading or vehicle crossings through debris-laden water.",
-            metadata_json={"protocol": "NDRF SOP-12", "hazard": "Flash Flood & Debris", "rev": "2.1"}
-        ),
-        KnowledgeDocument(
-            title="Incident Response System (IRS) — Command & Logistics Protocol",
-            category="irs_protocol",
-            source_authority="National Institute of Disaster Management (NIDM)",
-            content_text="The Incident Commander at District EOC oversees Operations, Planning, and Logistics sections. Primary priorities in first 24 hours: 1. Life preservation and extraction of isolated communities; 2. Securing communication repeaters; 3. Maintaining uninterrupted power and medical triage at base hospitals.",
-            metadata_json={"framework": "NIDM Incident Command", "scope": "District Emergency Operations Center"}
-        )
-    ]
-    for doc in curated_docs:
-        if not db.query(KnowledgeDocument).filter(KnowledgeDocument.title == doc.title).first():
-            db.add(doc)
-
-    db.commit()
 
 def init_database():
     """Create all database tables and seed baseline demo disaster data."""
@@ -97,10 +25,8 @@ def init_database():
     # Check if baseline disaster already exists
     existing = db.query(DisasterEvent).filter(DisasterEvent.name == "Chamoli Flash Flood & Outburst").first()
     if existing:
-        d_id = existing.id
-        _seed_operations_entities(db, d_id)
         db.close()
-        return d_id
+        return existing.id
 
     # 1. Create Core Disaster Event
     disaster = DisasterEvent(

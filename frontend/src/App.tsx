@@ -34,6 +34,7 @@ import {
   LayerVisibility,
   LocationAssessment,
 } from './types';
+import { Bot, MapPin, Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('command');
@@ -110,6 +111,7 @@ export const App: React.FC = () => {
   }, []);
 
   const allRoutes = missions.flatMap((m) => m.routes || []);
+
   const handleMapClick = async (lat: number, lng: number) => {
     const label = `Pinned Point [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
     setInspectedPoint({ lat, lng, label });
@@ -147,6 +149,42 @@ export const App: React.FC = () => {
     setCurrentTab('location-check');
   };
 
+  // Omni-search from Header
+  const handleSearchFromHeader = async (query: string) => {
+    const q = query.toLowerCase();
+    // Known disaster hotspots
+    if (q.includes('raini')) {
+      handleNavigateToLocation(30.4912, 79.6841, 'Raini Village North Bank');
+    } else if (q.includes('tapovan')) {
+      handleNavigateToLocation(30.4945, 79.6278, 'Tapovan Vishnugad Barrage');
+    } else if (q.includes('joshimath')) {
+      handleNavigateToLocation(30.5580, 79.5645, 'Joshimath Base Hub');
+    } else if (q.includes('suraithota')) {
+      handleNavigateToLocation(30.5284, 79.7431, 'Suraithota Hamlet');
+    } else if (q.includes('helang')) {
+      handleNavigateToLocation(30.5180, 79.5100, 'Helang Confluence Terrace');
+    } else {
+      // General question -> switch to AI Chatbot
+      setCurrentTab('chatbot');
+    }
+  };
+
+  // KPI card click filter
+  const handleKpiFilter = (kpiId: string) => {
+    if (kpiId === 'isolated') {
+      setCurrentTab('settlements');
+    } else if (kpiId === 'priorities') {
+      setCurrentTab('priority');
+    } else if (kpiId === 'missions') {
+      setCurrentTab('missions');
+    } else if (kpiId === 'roads' || kpiId === 'bridges') {
+      setCurrentTab('command');
+      setLayers((prev) => ({ ...prev, roads: true, bridges: true }));
+    } else {
+      setCurrentTab('command');
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen bg-[#070b14] overflow-hidden font-sans select-none text-slate-100">
       {/* 1. Left Sidebar */}
@@ -158,13 +196,15 @@ export const App: React.FC = () => {
       />
 
       {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Header */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Top Header with Omni-Search & Mode Controls */}
         <Header
           kpis={kpis}
           onRefresh={loadAllTelemetry}
           activeDisasterName="Chamoli Glacial Outburst"
           onOpenGuide={() => setIsCitizenGuideOpen(true)}
+          onSearchQuery={handleSearchFromHeader}
+          onSelectKpiFilter={handleKpiFilter}
         />
 
         {/* Dynamic Viewport */}
@@ -194,6 +234,7 @@ export const App: React.FC = () => {
                 assets={assets}
                 layers={layers}
                 onSelectItem={setSelectedItem}
+                center={inspectedPoint ? [inspectedPoint.lat, inspectedPoint.lng] : [30.4950, 79.6200]}
                 inspectedPoint={inspectedPoint}
                 onMapClick={handleMapClick}
                 isInspectMode={isInspectMode}
@@ -292,8 +333,11 @@ export const App: React.FC = () => {
 
           {currentTab === 'settlements' && (
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-              <h2 className="text-xl font-extrabold font-mono text-slate-100">
-                SETTLEMENT CONNECTIVITY & ISOLATION STATUS
+              <h2 className="text-xl font-extrabold font-mono text-slate-100 flex items-center justify-between">
+                <span>SETTLEMENT CONNECTIVITY & ISOLATION STATUS</span>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-red-950 text-red-300 border border-red-700 font-mono">
+                  3 Cut-Off Hamlets
+                </span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {settlements.map((s) => (
@@ -303,9 +347,9 @@ export const App: React.FC = () => {
                       setSelectedItem({ type: 'settlement', data: s });
                       setCurrentTab('command');
                     }}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
                       s.is_isolated
-                        ? 'bg-red-950/20 border-red-800/80 hover:bg-red-950/40 shadow-alert'
+                        ? 'bg-red-950/25 border-red-700/80 hover:bg-red-950/40 shadow-alert'
                         : 'bg-command-panel border-command-border hover:bg-command-hover'
                     }`}
                   >
@@ -340,12 +384,15 @@ export const App: React.FC = () => {
 
           {currentTab === 'missions' && (
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
-              <h2 className="text-xl font-extrabold font-mono text-slate-100">
-                ACTIVE OPERATIONAL RESCUE MISSIONS
+              <h2 className="text-xl font-extrabold font-mono text-slate-100 flex items-center justify-between">
+                <span>ACTIVE OPERATIONAL RESCUE MISSIONS</span>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono">
+                  {missions.length} Missions Active
+                </span>
               </h2>
               <div className="space-y-3">
                 {missions.map((m) => (
-                  <div key={m.id} className="p-4 rounded-lg bg-command-panel border border-command-border space-y-2">
+                  <div key={m.id} className="p-4 rounded-xl bg-command-panel border border-command-border space-y-2">
                     <div className="flex justify-between items-center">
                       <h4 className="font-mono font-bold text-sm text-slate-100">{m.title}</h4>
                       <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[10px] font-bold uppercase">
@@ -369,12 +416,12 @@ export const App: React.FC = () => {
               <h2 className="text-xl font-extrabold font-mono text-slate-100">
                 RESOURCE ALLOCATION & INVENTORY TRIAGE
               </h2>
-              <div className="p-3 bg-command-panel border border-cyan-500/40 rounded text-cyan-200 text-xs">
+              <div className="p-3 bg-command-panel border border-cyan-500/40 rounded-xl text-cyan-200 text-xs">
                 <strong>Decision-Support Notice:</strong> Resource allocations are automated triage suggestions based on population size, terrain accessibility, and isolation scores. Field command authorization required.
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {resources.map((r) => (
-                  <div key={r.id} className="p-4 rounded-lg bg-command-panel border border-command-border flex items-center justify-between">
+                  <div key={r.id} className="p-4 rounded-xl bg-command-panel border border-command-border flex items-center justify-between">
                     <div>
                       <h4 className="font-mono font-bold text-sm text-slate-100">{r.resource_type}</h4>
                       <span className="text-xs text-slate-400">Staging Base: {r.base_location_name}</span>
@@ -391,6 +438,18 @@ export const App: React.FC = () => {
             </div>
           )}
         </main>
+
+        {/* Floating AI Chat Assistant Quick Button (Available on any screen) */}
+        {currentTab !== 'chatbot' && (
+          <button
+            onClick={() => setCurrentTab('chatbot')}
+            className="absolute bottom-6 right-6 z-[950] px-4 py-2.5 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs flex items-center space-x-2 shadow-2xl hover:scale-105 transition-all border border-cyan-300/40"
+          >
+            <Bot className="w-4 h-4 animate-bounce" />
+            <span>Ask Disaster AI</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          </button>
+        )}
       </div>
 
       {/* 3. Global AI Copilot Modal */}
