@@ -5,7 +5,7 @@ import uvicorn
 
 from backend.app.core.config import settings
 from backend.app.db.init_db import init_database
-from backend.app.api.endpoints import disasters, missions, intelligence, operations
+from backend.app.api.endpoints import disasters, missions, intelligence
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,7 +33,6 @@ app.add_middleware(
 
 # Health endpoint
 @app.get("/health", tags=["System"])
-@app.get("/api/health", tags=["System"])
 def health_check():
     return {
         "status": "online",
@@ -45,12 +44,9 @@ def health_check():
 
 # Include API Routers
 app.include_router(disasters.router, prefix=f"{settings.API_V1_STR}/disasters", tags=["Disasters & GIS"])
-app.include_router(disasters.router, prefix=f"{settings.API_V1_STR}/incidents", tags=["Incidents & GIS"])
 app.include_router(missions.router, prefix=f"{settings.API_V1_STR}/missions", tags=["Rescue Missions & Teams"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}", tags=["Intelligence & Simulations"])
 app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intelligence", tags=["Intelligence & Simulations"])
-app.include_router(operations.router, prefix=f"{settings.API_V1_STR}", tags=["Operations & Situational Awareness"])
-app.include_router(operations.router, prefix=f"{settings.API_V1_STR}/operations", tags=["Operations & Situational Awareness"])
 
 if __name__ == "__main__":
     uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000, reload=True)

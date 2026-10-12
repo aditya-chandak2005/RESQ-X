@@ -183,6 +183,7 @@ export type BasemapType = 'satellite' | 'tactical-dark' | 'topo' | 'street';
 export interface LayerVisibility {
   basemap: BasemapType;
   satellite: boolean;
+  stateBoundaries: boolean;
   floodExtent: boolean;
   floodSeverity: boolean;
   settlements: boolean;

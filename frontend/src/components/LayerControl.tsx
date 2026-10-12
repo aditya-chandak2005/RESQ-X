@@ -14,6 +14,7 @@ export const LayerControl: React.FC<LayerControlProps> = ({ layers, setLayers })
 
   const layerItems: { key: keyof LayerVisibility; label: string; color: string }[] = [
     { key: 'satellite', label: 'Satellite Basemap', color: 'bg-slate-400' },
+    { key: 'stateBoundaries', label: 'State Borders & Labels', color: 'bg-indigo-400' },
     { key: 'floodExtent', label: 'Flood Inundation Extent', color: 'bg-cyan-500' },
     { key: 'floodSeverity', label: 'Severity Gradients', color: 'bg-blue-600' },
     { key: 'settlements', label: 'Settlements & Villages', color: 'bg-emerald-400' },

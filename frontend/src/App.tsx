@@ -15,7 +15,9 @@ import { AICopilotModal } from './pages/AICopilotModal';
 import { SituationReportModal } from './pages/SituationReportModal';
 import { DatasetProcessingView } from './pages/DatasetProcessingView';
 import { CitizenLocationCheckView } from './pages/CitizenLocationCheckView';
+import { DisasterChatbotView } from './pages/DisasterChatbotView';
 import { OfficialAlertsNewsView } from './pages/OfficialAlertsNewsView';
+import { CitizenGuideModal } from './components/CitizenGuideModal';
 import { LocationRiskInspector } from './components/LocationRiskInspector';
 import { api } from './services/api';
 import {
@@ -49,6 +51,7 @@ export const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<{ type: any; data: any } | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
+  const [isCitizenGuideOpen, setIsCitizenGuideOpen] = useState(false);
 
   // Individual location inspection state
   const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>(null);
@@ -58,6 +61,7 @@ export const App: React.FC = () => {
   const [layers, setLayers] = useState<LayerVisibility>({
     basemap: 'satellite',
     satellite: true,
+    stateBoundaries: true,
     floodExtent: true,
     floodSeverity: true,
     settlements: true,
@@ -122,6 +126,27 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleNavigateToLocation = async (lat: number, lng: number, label: string) => {
+    setInspectedPoint({ lat, lng, label });
+    setCurrentTab('command');
+    try {
+      const assessment = await api.assessLocation({
+        latitude: lat,
+        longitude: lng,
+        disaster_id: 1,
+        location_label: label,
+      });
+      setCurrentAssessment(assessment);
+    } catch (err) {
+      console.error('Location navigation error:', err);
+    }
+  };
+
+  const handleAssessFromChat = (lat: number, lng: number, label: string) => {
+    setInspectedPoint({ lat, lng, label });
+    setCurrentTab('location-check');
+  };
+
   return (
     <div className="flex h-screen w-screen bg-[#070b14] overflow-hidden font-sans select-none text-slate-100">
       {/* 1. Left Sidebar */}
@@ -135,7 +160,12 @@ export const App: React.FC = () => {
       {/* 2. Main Content Canvas */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Top Header */}
-        <Header kpis={kpis} onRefresh={loadAllTelemetry} activeDisasterName="Chamoli Glacial Outburst" />
+        <Header
+          kpis={kpis}
+          onRefresh={loadAllTelemetry}
+          activeDisasterName="Chamoli Glacial Outburst"
+          onOpenGuide={() => setIsCitizenGuideOpen(true)}
+        />
 
         {/* Dynamic Viewport */}
         <main className="flex-1 relative overflow-hidden flex">
@@ -182,12 +212,6 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {currentTab === 'alerts-news' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar flex">
-              <OfficialAlertsNewsView />
-            </div>
-          )}
-
           {currentTab === 'location-check' && (
             <CitizenLocationCheckView
               floodResult={floodResult}
@@ -199,7 +223,23 @@ export const App: React.FC = () => {
               assets={assets}
               layers={layers}
               onSelectItem={setSelectedItem}
+              initialPoint={inspectedPoint}
             />
+          )}
+
+          {currentTab === 'chatbot' && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <DisasterChatbotView
+                onNavigateToLocation={handleNavigateToLocation}
+                onAssessLocation={handleAssessFromChat}
+              />
+            </div>
+          )}
+
+          {currentTab === 'alerts-news' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <OfficialAlertsNewsView />
+            </div>
           )}
 
           {currentTab === 'dataset' && (
@@ -358,6 +398,14 @@ export const App: React.FC = () => {
 
       {/* 4. Global Situation Report Modal */}
       <SituationReportModal isOpen={isSitrepOpen} onClose={() => setIsSitrepOpen(false)} disasterId={1} />
+
+      {/* 5. Citizen Quick Onboarding Guide Modal */}
+      <CitizenGuideModal
+        isOpen={isCitizenGuideOpen}
+        onClose={() => setIsCitizenGuideOpen(false)}
+        onNavigateTab={(tab) => setCurrentTab(tab)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+      />
     </div>
   );
 };

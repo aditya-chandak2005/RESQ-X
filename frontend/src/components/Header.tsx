@@ -9,7 +9,8 @@ import {
   Radio,
   Clock,
   Sparkles,
-  AlertOctagon
+  AlertOctagon,
+  HelpCircle,
 } from 'lucide-react';
 import { DashboardKpis } from '../types';
 
@@ -17,9 +18,15 @@ interface HeaderProps {
   kpis: DashboardKpis | null;
   onRefresh: () => void;
   activeDisasterName?: string;
+  onOpenGuide?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ kpis, onRefresh, activeDisasterName = "Chamoli Glacial Outburst" }) => {
+export const Header: React.FC<HeaderProps> = ({
+  kpis,
+  onRefresh,
+  activeDisasterName = "Chamoli Glacial Outburst",
+  onOpenGuide,
+}) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
 
   useEffect(() => {
@@ -130,6 +137,14 @@ export const Header: React.FC<HeaderProps> = ({ kpis, onRefresh, activeDisasterN
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             <span>{time}</span>
           </div>
+
+          <button
+            onClick={onOpenGuide}
+            className="flex items-center space-x-1.5 text-[11px] font-semibold px-2.5 py-1 rounded bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-400/50 hover:from-cyan-600/50 hover:to-blue-600/50 text-cyan-200 transition-all shadow-sm"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Citizen Guide</span>
+          </button>
 
           <button
             onClick={onRefresh}

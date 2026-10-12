@@ -43,6 +43,7 @@ interface CitizenLocationCheckViewProps {
   assets: InfrastructureAsset[];
   layers: LayerVisibility;
   onSelectItem: (item: { type: any; data: any }) => void;
+  initialPoint?: { lat: number; lng: number; label: string } | null;
 }
 
 export const CitizenLocationCheckView: React.FC<CitizenLocationCheckViewProps> = ({
@@ -55,33 +56,46 @@ export const CitizenLocationCheckView: React.FC<CitizenLocationCheckViewProps> =
   assets,
   layers,
   onSelectItem,
+  initialPoint,
 }) => {
-  const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>({
-    lat: 30.4905,
-    lng: 79.6830,
-    label: 'Raini Village North Bank',
-  });
+  const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>(
+    initialPoint || {
+      lat: 30.4905,
+      lng: 79.6830,
+      label: 'Raini Village North Bank',
+    }
+  );
   const [isInspectMode, setIsInspectMode] = useState<boolean>(false);
   const [currentAssessment, setCurrentAssessment] = useState<LocationAssessment | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([30.4905, 79.6830]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    initialPoint ? [initialPoint.lat, initialPoint.lng] : [30.4905, 79.6830]
+  );
 
-  // Initial load assessment for default location
+  // Load assessment when target or initialPoint changes
   useEffect(() => {
-    const loadDefault = async () => {
+    const point = initialPoint || {
+      lat: 30.4905,
+      lng: 79.6830,
+      label: 'Raini Village North Bank',
+    };
+    setInspectedPoint(point);
+    setMapCenter([point.lat, point.lng]);
+
+    const loadAssessment = async () => {
       try {
         const assessment = await api.assessLocation({
-          latitude: 30.4905,
-          longitude: 79.6830,
+          latitude: point.lat,
+          longitude: point.lng,
           disaster_id: 1,
-          location_label: 'Raini Village North Bank',
+          location_label: point.label,
         });
         setCurrentAssessment(assessment);
       } catch (err) {
         console.error('Failed to load initial assessment:', err);
       }
     };
-    loadDefault();
-  }, []);
+    loadAssessment();
+  }, [initialPoint]);
 
   const handleLocationSelected = (lat: number, lng: number, label: string) => {
     setInspectedPoint({ lat, lng, label });
