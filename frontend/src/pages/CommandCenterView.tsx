@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { LayerControl } from '../components/LayerControl';
 import { ContextPanel } from '../components/ContextPanel';
-import { LocationRiskInspector } from '../components/LocationRiskInspector';
 import {
   FloodResult,
   Settlement,
@@ -86,20 +85,6 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
     <div className="flex-1 flex flex-col h-full overflow-hidden relative font-sans">
       {/* 1. Map Operations Canvas */}
       <div className="flex-1 relative flex overflow-hidden">
-        
-        {/* Floating Quick Location Risk Inspector Overlay */}
-        <div className="absolute top-3 left-4 right-4 sm:left-4 sm:right-auto z-[990] sm:max-w-xl pointer-events-auto">
-          <LocationRiskInspector
-            onLocationSelected={(lat, lng, label) => {
-              setInspectedPoint({ lat, lng, label });
-            }}
-            isInspectMode={isInspectMode}
-            setIsInspectMode={setIsInspectMode}
-            currentAssessment={currentAssessment}
-            setCurrentAssessment={setCurrentAssessment}
-          />
-        </div>
-
         {/* The Primary Map */}
         <div className="flex-1 h-full w-full relative">
           <InteractiveMap

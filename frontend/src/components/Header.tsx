@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Waves,
   Building,
@@ -19,8 +19,16 @@ import {
   HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
+  MapPin,
+  Crosshair,
+  Loader2,
+  X,
+  Maximize2,
+  Sliders,
 } from 'lucide-react';
-import { DashboardKpis, DisasterEvent } from '../types';
+import { DashboardKpis, DisasterEvent, LocationAssessment, GeocodeResult } from '../types';
+import { api } from '../services/api';
+import { LocationIntelModal } from './LocationIntelModal';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
@@ -37,6 +45,12 @@ interface HeaderProps {
   onOpenExplore?: () => void;
   isSidebarHidden?: boolean;
   onToggleSidebar?: () => void;
+  // Location inspection & geocoding props
+  onLocationSelected?: (lat: number, lng: number, label: string) => void;
+  isInspectMode?: boolean;
+  setIsInspectMode?: (active: boolean) => void;
+  currentAssessment?: LocationAssessment | null;
+  onClearAssessment?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -54,11 +68,42 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenExplore,
   isSidebarHidden = false,
   onToggleSidebar,
+  onLocationSelected,
+  isInspectMode = false,
+  setIsInspectMode,
+  currentAssessment,
+  onClearAssessment,
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
-  const [searchVal, setSearchVal] = useState('');
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
 
+  // Top Nav Search & Omnibar State
+  const [searchVal, setSearchVal] = useState('');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showManualCoords, setShowManualCoords] = useState(false);
+  const [manualLat, setManualLat] = useState('24.8333');
+  const [manualLon, setManualLon] = useState('92.7789');
+
+  // Modal State for Detailed Multi-Source Assessment
+  const [isIntelModalOpen, setIsIntelModalOpen] = useState(false);
+
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchDebounceRef = useRef<any>(null);
+
+  // Curated Operational Disaster Hotspots
+  const DISASTER_HOTSPOTS = [
+    { name: 'Silchar', desc: 'Cachar Flood Theater', lat: 24.8333, lon: 92.7789, tag: 'Assam' },
+    { name: 'Guwahati', desc: 'Kamrup Metro', lat: 26.1445, lon: 91.7362, tag: 'Assam' },
+    { name: 'Tapovan Barrage', desc: 'Gorge Project', lat: 30.4945, lon: 79.6278, tag: 'Chamoli' },
+    { name: 'Raini Village', desc: 'Cut-Off Sector', lat: 30.4905, lon: 79.6830, tag: 'Chamoli' },
+    { name: 'Joshimath Base Hub', desc: 'High Ground Triage', lat: 30.5580, lon: 79.5645, tag: 'Chamoli' },
+    { name: 'Kaziranga Basin', desc: 'Brahmaputra Flood Plain', lat: 26.5775, lon: 93.1711, tag: 'Assam' },
+  ];
+
+  // Clock tick
   useEffect(() => {
     const timer = setInterval(() => {
       setTime(new Date().toUTCString().slice(17, 25) + ' UTC');
@@ -66,11 +111,114 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // Debounced geocoding search
+  useEffect(() => {
+    if (!searchVal.trim() || searchVal.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const results = await api.geocode(searchVal);
+        setSuggestions(results);
+        setIsSearchDropdownOpen(true);
+      } catch (err) {
+        console.error('Geocoding error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 280);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchVal]);
+
+  // Click outside listener to dismiss search dropdown popover
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut Ctrl+K / Cmd+K & Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchDropdownOpen(true);
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        setIsSearchDropdownOpen(false);
+        setShowIncidentDropdown(false);
+        setIsIntelModalOpen(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Handle location selection
+  const handleSelectLocation = (lat: number, lon: number, label: string) => {
+    setIsSearchDropdownOpen(false);
+    setSearchVal(label);
+    if (onLocationSelected) {
+      onLocationSelected(lat, lon, label);
+    }
+  };
+
+  // Browser Geolocation
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsSearching(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsSearching(false);
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        handleSelectLocation(lat, lon, `My Device GPS [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
+      },
+      (err) => {
+        setIsSearching(false);
+        console.warn('Geolocation fallback to Silchar:', err);
+        handleSelectLocation(24.8333, 92.7789, 'Silchar Operational Sector');
+      },
+      { timeout: 7000, enableHighAccuracy: true }
+    );
+  };
+
+  // Manual Coordinates Submit
+  const handleManualCoordsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const lat = parseFloat(manualLat);
+    const lon = parseFloat(manualLon);
+    if (isNaN(lat) || isNaN(lon)) return;
+    handleSelectLocation(lat, lon, `Custom Pin [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
+    setShowManualCoords(false);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchVal.trim()) return;
-    if (onSearchQuery) {
+    if (suggestions.length > 0) {
+      const top = suggestions[0];
+      handleSelectLocation(top.latitude, top.longitude, top.name);
+    } else if (onSearchQuery) {
       onSearchQuery(searchVal.trim());
+      setIsSearchDropdownOpen(false);
     }
   };
 
@@ -107,48 +255,48 @@ export const Header: React.FC<HeaderProps> = ({
     },
     {
       id: 'roads',
-      label: 'Blocked Roads',
-      value: kpis ? kpis.blocked_roads : 1,
+      label: 'Severed Roads',
+      value: kpis ? kpis.blocked_roads : 5,
       icon: ShieldX,
-      color: 'text-rose-400',
-      border: 'border-rose-500/30',
-      bg: 'bg-rose-950/20',
-      sub: 'NH-58 Severed',
+      color: 'text-amber-400',
+      border: 'border-amber-500/30',
+      bg: 'bg-amber-950/20',
+      sub: 'NH-306 Inundated',
     },
     {
       id: 'buildings',
-      label: 'Affected Buildings',
-      value: kpis ? kpis.affected_buildings : 3,
+      label: 'Exposed Bldgs',
+      value: kpis ? kpis.affected_buildings : 1420,
       icon: Building,
       color: 'text-amber-400',
       border: 'border-amber-500/30',
       bg: 'bg-amber-950/20',
-      sub: 'OSM Overlaid',
+      sub: 'Cachar Urban Zone',
     },
     {
       id: 'population',
       label: 'Exposed Population',
-      value: kpis ? `${(kpis.exposed_population / 1000).toFixed(1)}k` : '19.4k',
+      value: kpis ? kpis.exposed_population.toLocaleString() : '18,450',
       icon: Users,
-      color: 'text-indigo-400',
-      border: 'border-indigo-500/30',
-      bg: 'bg-indigo-950/20',
-      sub: 'LandScan Model',
+      color: 'text-cyan-400',
+      border: 'border-cyan-500/30',
+      bg: 'bg-cyan-950/20',
+      sub: '8,400 Vulnerable',
     },
     {
       id: 'priorities',
-      label: 'Priority Zones',
-      value: kpis ? kpis.critical_priority_zones : 2,
-      icon: Sparkles,
-      color: 'text-purple-400',
-      border: 'border-purple-500/30',
-      bg: 'bg-purple-950/20',
-      sub: 'Priority > 80',
+      label: 'High Priorities',
+      value: kpis ? kpis.critical_priority_zones : 4,
+      icon: AlertOctagon,
+      color: 'text-red-400',
+      border: 'border-red-500/30',
+      bg: 'bg-red-950/20',
+      sub: 'Triage Level 1',
     },
     {
       id: 'missions',
       label: 'Active Missions',
-      value: kpis ? kpis.active_rescue_missions : 1,
+      value: kpis ? kpis.active_rescue_missions : 3,
       icon: Compass,
       color: 'text-emerald-400',
       border: 'border-emerald-500/30',
@@ -158,12 +306,13 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans">
+    <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans select-none">
+      
       {/* 1. Main Operational Ribbon */}
       <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/60 text-xs">
         
-        {/* Left Operational Controls */}
-        <div className="flex items-center space-x-2">
+        {/* Left Operational Controls: Sidebar Toggle + Incident Selector */}
+        <div className="flex items-center space-x-2 shrink-0">
           {/* Navigation Sidebar Toggle Button */}
           {onToggleSidebar && (
             <button
@@ -176,7 +325,7 @@ export const Header: React.FC<HeaderProps> = ({
               title={isSidebarHidden ? 'Show Navigation Sidebar (Ctrl+B)' : 'Hide Navigation Sidebar (Ctrl+B)'}
             >
               {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400" /> : <PanelLeftClose className="w-4 h-4" />}
-              <span className="font-semibold text-[11px]">
+              <span className="font-semibold text-[11px] hidden sm:inline">
                 {isSidebarHidden ? 'Show Nav' : 'Hide Nav'}
               </span>
             </button>
@@ -188,143 +337,343 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
               className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer"
             >
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] text-slate-400 font-mono uppercase">INCIDENT:</span>
-            <span className="text-white font-mono">{activeIncident?.name || 'Chamoli Flash Flood & Outburst'}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] text-slate-400 font-mono uppercase">INCIDENT:</span>
+              <span className="text-white font-mono truncate max-w-[150px] sm:max-w-xs">
+                {activeIncident?.name || 'Assam Barak Valley Inundation'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
 
-          {showIncidentDropdown && (
-            <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#0e172a] border border-slate-700 shadow-2xl z-50 text-xs space-y-1">
-              <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold">
-                SELECT OPERATIONAL THEATER
-              </div>
-              {incidents.map((inc) => (
-                <button
-                  key={inc.id}
-                  onClick={() => {
-                    onSelectIncident(inc.id);
-                    setShowIncidentDropdown(false);
-                  }}
-                  className={`w-full text-left p-2 rounded-lg transition-all flex items-center justify-between ${
-                    activeIncident?.id === inc.id
-                      ? 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
-                      : 'hover:bg-slate-800 text-slate-300'
-                  }`}
-                >
-                  <div>
-                    <div className="font-semibold">{inc.name}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">
-                      Status: {inc.status.toUpperCase()} • {inc.disaster_type}
+            {showIncidentDropdown && (
+              <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#0e172a] border border-slate-700 shadow-2xl z-50 text-xs space-y-1">
+                <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold">
+                  SELECT OPERATIONAL THEATER
+                </div>
+                {incidents.map((inc) => (
+                  <button
+                    key={inc.id}
+                    onClick={() => {
+                      onSelectIncident(inc.id);
+                      setShowIncidentDropdown(false);
+                    }}
+                    className={`w-full text-left p-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
+                      activeIncident?.id === inc.id
+                        ? 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
+                        : 'hover:bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">{inc.name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        Status: {inc.status.toUpperCase()} • {inc.disaster_type}
+                      </div>
                     </div>
-                  </div>
-                  {activeIncident?.id === inc.id && (
-                    <span className="text-[9px] font-mono bg-cyan-900 text-cyan-200 px-1.5 py-0.5 rounded">
-                      ACTIVE
-                    </span>
-                  )}
-                </button>
-              ))}
+                    {activeIncident?.id === inc.id && (
+                      <span className="text-[9px] font-mono bg-cyan-900 text-cyan-200 px-1.5 py-0.5 rounded">
+                        ACTIVE
+                      </span>
+                    )}
+                  </button>
+                ))}
 
-              <div className="pt-2 border-t border-slate-800">
-                <button
-                  onClick={() => {
-                    setShowIncidentDropdown(false);
-                    if (onOpenExplore) onOpenExplore();
-                  }}
-                  className="w-full text-center py-1.5 px-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-300 font-mono text-[11px] font-semibold transition-all flex items-center justify-center space-x-1.5"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>EXPLORE ARCHIVE (ASSAM & INDIA)</span>
-                </button>
+                <div className="pt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      setShowIncidentDropdown(false);
+                      if (onOpenExplore) onOpenExplore();
+                    }}
+                    className="w-full text-center py-1.5 px-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-300 font-mono text-[11px] font-semibold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    <span>EXPLORE ARCHIVE (ASSAM & INDIA)</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
 
-        {/* Geographic Search Bar */}
-        <div className="flex-1 max-w-sm">
+        {/* ========================================================= */}
+        {/* CENTER: OMNIBAR SEARCH & LOCATION INSPECTOR (POP ON DEMAND)*/}
+        {/* ========================================================= */}
+        <div ref={searchContainerRef} className="relative flex-1 max-w-lg min-w-[240px]">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
             <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              placeholder="Search Indian village, coordinate, or ask AI..."
-              className="w-full pl-8 pr-16 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono"
+              onFocus={() => setIsSearchDropdownOpen(true)}
+              placeholder="Search location, village, coords, or hotspots... (Ctrl+K)"
+              className="w-full pl-8 pr-20 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono"
             />
+            {isSearching && (
+              <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-16" />
+            )}
+            {searchVal && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchVal('');
+                  setSuggestions([]);
+                }}
+                className="absolute right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
             <button
               type="submit"
-              className="absolute right-1 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all"
+              className="absolute right-1.5 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all cursor-pointer"
             >
               FIND
             </button>
           </form>
+
+          {/* POPOVER: Popped on need for search / focus */}
+          {isSearchDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#090e1a]/95 backdrop-blur-xl border border-cyan-500/50 rounded-xl shadow-2xl z-[1200] p-3 text-xs font-mono space-y-2.5 animate-fadeIn">
+              
+              {/* Quick Actions Strip */}
+              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-800 text-[11px]">
+                {/* 1. Device GPS */}
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  className="px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 flex items-center space-x-1.5 transition-all cursor-pointer"
+                  title="Use my device GPS location"
+                >
+                  <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>My GPS</span>
+                </button>
+
+                {/* 2. Map Crosshair Inspection Mode */}
+                {setIsInspectMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInspectMode(!isInspectMode);
+                      setIsSearchDropdownOpen(false);
+                    }}
+                    className={`px-2.5 py-1 rounded-md border flex items-center space-x-1.5 transition-all cursor-pointer ${
+                      isInspectMode
+                        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                    title="Click anywhere on the map to inspect risk"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{isInspectMode ? 'Click Map Mode Active' : 'Inspect Pin'}</span>
+                  </button>
+                )}
+
+                {/* 3. Toggle Exact Lat/Lon inputs */}
+                <button
+                  type="button"
+                  onClick={() => setShowManualCoords(!showManualCoords)}
+                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
+                  title="Enter exact coordinates manually"
+                >
+                  ± Exact Lat/Lon
+                </button>
+
+                <div className="ml-auto text-[10px] text-slate-500 hidden sm:block">
+                  Esc to close
+                </div>
+              </div>
+
+              {/* Exact Lat/Lon Form Strip */}
+              {showManualCoords && (
+                <form
+                  onSubmit={handleManualCoordsSubmit}
+                  className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center gap-2 text-xs"
+                >
+                  <span className="text-[10px] text-slate-400 uppercase">COORDS:</span>
+                  <input
+                    type="text"
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                    placeholder="Lat (e.g. 24.8333)"
+                    className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
+                  />
+                  <input
+                    type="text"
+                    value={manualLon}
+                    onChange={(e) => setManualLon(e.target.value)}
+                    placeholder="Lon (e.g. 92.7789)"
+                    className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
+                  />
+                  <button
+                    type="submit"
+                    className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
+                  >
+                    Evaluate
+                  </button>
+                </form>
+              )}
+
+              {/* Live Geocoding Results (when typing) */}
+              {suggestions.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
+                    <span>Locations Found</span>
+                    <span>{suggestions.length} matching</span>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectLocation(item.latitude, item.longitude, item.name)}
+                        className="w-full text-left p-2 rounded-lg hover:bg-cyan-950/60 border border-transparent hover:border-cyan-800/80 transition-all flex items-start space-x-2 cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-slate-100 truncate">{item.name}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
+                          <div className="text-[9px] text-cyan-400/80 mt-0.5">
+                            [{item.latitude.toFixed(4)}°, {item.longitude.toFixed(4)}°] • {item.source}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Operational Disaster Hotspots Grid (when input has no results or upon initial focus) */}
+              {suggestions.length === 0 && (
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>OPERATIONAL DISASTER HOTSPOTS</span>
+                    <span className="text-[9px] text-slate-500">1-Click Jump</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {DISASTER_HOTSPOTS.map((spot, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectLocation(spot.lat, spot.lon, spot.name)}
+                        className="p-1.5 rounded-lg bg-slate-900/90 hover:bg-cyan-950/70 border border-slate-800 hover:border-cyan-700/80 text-left transition-all cursor-pointer group"
+                      >
+                        <div className="font-bold text-slate-200 group-hover:text-cyan-300 text-[11px] truncate flex items-center justify-between">
+                          <span>{spot.name}</span>
+                          <span className="text-[8px] font-mono px-1 rounded bg-slate-800 text-cyan-400">
+                            {spot.tag}
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 truncate mt-0.5">
+                          {spot.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Satellite Sensor & Imagery Timestamps */}
-        <div className="hidden xl:flex items-center space-x-3 text-[11px] font-mono text-slate-400">
-          <div>
-            Sensor: <span className="text-cyan-300 font-bold">Sentinel-1 C-SAR IW</span>
-          </div>
-          <div>•</div>
-          <div>
-            Pre/Post: <span className="text-slate-200 font-semibold">2026-02-01 / 2026-02-07 10:21Z</span>
-          </div>
-        </div>
+        {/* Right Active Assessment Pill (if an area is inspected) + Operational Actions */}
+        <div className="flex items-center space-x-2 shrink-0">
+          
+          {/* Active Location Inspection Intel Pill */}
+          {currentAssessment && (
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono">
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  currentAssessment.overall_status.is_inundated
+                    ? 'bg-red-400 animate-ping'
+                    : 'bg-emerald-400 animate-pulse'
+                }`}
+              />
+              <span className="font-bold text-cyan-300 truncate max-w-[100px] sm:max-w-[130px]">
+                {currentAssessment.query.location_label}
+              </span>
+              <span
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
+                  currentAssessment.overall_status.is_inundated
+                    ? 'bg-red-950 text-red-300 border border-red-700'
+                    : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                }`}
+              >
+                {currentAssessment.overall_status.safety_score}% SAFE
+              </span>
+              <button
+                onClick={() => setIsIntelModalOpen(true)}
+                className="px-2 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
+                title="Open Multi-Source SAR/DEM/GloFAS Intelligence Report"
+              >
+                Intel Report ▾
+              </button>
+              {onClearAssessment && (
+                <button
+                  onClick={onClearAssessment}
+                  className="text-slate-400 hover:text-red-400 p-0.5 transition-colors cursor-pointer shrink-0"
+                  title="Clear Pin Target"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
-        {/* Quick Operations Bar */}
-        <div className="flex items-center space-x-2">
+          {/* Quick AI Run Pipeline Button */}
           {onRunAnalysis && (
             <button
               onClick={onRunAnalysis}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer"
               title="Run AI Flood Segmentation Pipeline"
             >
               <Play className="w-3 h-3 fill-current" />
-              <span>RUN PIPELINE</span>
+              <span className="hidden lg:inline">RUN PIPELINE</span>
             </button>
           )}
 
+          {/* Copilot */}
           {onOpenCopilot && (
             <button
               onClick={onOpenCopilot}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer"
             >
               <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span>COPILOT</span>
+              <span className="hidden sm:inline">COPILOT</span>
             </button>
           )}
 
+          {/* SITREP */}
           {onOpenSitrep && (
             <button
               onClick={onOpenSitrep}
-              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all"
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer"
             >
               <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
               <span>SITREP</span>
             </button>
           )}
 
+          {/* Citizen Guide */}
           {onOpenGuide && (
             <button
               onClick={onOpenGuide}
-              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
               title="Citizen Guide"
             >
               <HelpCircle className="w-4 h-4 text-cyan-300" />
             </button>
           )}
 
-          <div className="flex items-center space-x-1 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
+          {/* UTC Clock */}
+          <div className="hidden xl:flex items-center space-x-1 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             <span>{time}</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Compact Analytical Metrics Ribbon */}
+      {/* 2. Analytical KPI Metrics Ribbon */}
       <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/90">
         {kpiItems.map((kpi, idx) => {
           const Icon = kpi.icon;
@@ -352,6 +701,14 @@ export const Header: React.FC<HeaderProps> = ({
           );
         })}
       </div>
+
+      {/* 3. Detailed Multi-Source Assessment Intelligence Modal */}
+      {isIntelModalOpen && currentAssessment && (
+        <LocationIntelModal
+          assessment={currentAssessment}
+          onClose={() => setIsIntelModalOpen(false)}
+        />
+      )}
     </header>
   );
 };

@@ -263,6 +263,14 @@ export const App: React.FC = () => {
           onOpenExplore={() => setCurrentTab('explore')}
           isSidebarHidden={isSidebarHidden}
           onToggleSidebar={() => setIsSidebarHidden(!isSidebarHidden)}
+          onLocationSelected={handleNavigateToLocation}
+          isInspectMode={isInspectMode}
+          setIsInspectMode={setIsInspectMode}
+          currentAssessment={currentAssessment}
+          onClearAssessment={() => {
+            setInspectedPoint(null);
+            setCurrentAssessment(null);
+          }}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}

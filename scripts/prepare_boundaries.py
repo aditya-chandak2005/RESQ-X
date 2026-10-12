@@ -162,3 +162,4 @@ with open("frontend/src/data/indiaStateBoundaries.ts", "w", encoding="utf-8") as
     f.write(ts_content)
 
 print(f"Successfully generated frontend/src/data/indiaStateBoundaries.ts with {len(simplified_features)} states and {len(operational_districts)} districts!")
+

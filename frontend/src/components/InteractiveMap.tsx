@@ -524,8 +524,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       </div>
 
-      {/* 2. Basemap Style Switcher (Top Left next to layers) */}
-      <div className="absolute top-4 left-72 z-[1000] hidden lg:flex items-center space-x-1 bg-[#0e1629]/95 backdrop-blur-md p-1 rounded-lg border border-slate-700/80 shadow-xl text-[10px] font-mono select-none">
+      {/* 2. Basemap Style Switcher (Top Left above layer controls) */}
+      <div className="absolute top-4 left-4 z-[1000] hidden lg:flex items-center space-x-1 bg-[#0e1629]/95 backdrop-blur-md p-1 rounded-lg border border-slate-700/80 shadow-xl text-[10px] font-mono select-none">
         <button
           onClick={() => setActiveBasemap('satellite')}
           className={`px-2 py-1 rounded transition-all flex items-center space-x-1 ${
