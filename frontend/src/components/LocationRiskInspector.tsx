@@ -20,7 +20,9 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
-  Flame
+  Flame,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { LocationAssessment, GeocodeResult } from '../types';
@@ -48,8 +50,17 @@ export const LocationRiskInspector: React.FC<LocationRiskInspectorProps> = ({
   const [isLoadingAssessment, setIsLoadingAssessment] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isAssessmentHidden, setIsAssessmentHidden] = useState(false);
+  const [isSearchCollapsed, setIsSearchCollapsed] = useState(false);
   const [isSosSubmitting, setIsSosSubmitting] = useState(false);
   const [sosSuccessMessage, setSosSuccessMessage] = useState<string | null>(null);
+
+  // When new assessment arrives, automatically unhide panel so user sees result
+  useEffect(() => {
+    if (currentAssessment) {
+      setIsAssessmentHidden(false);
+    }
+  }, [currentAssessment]);
 
   // Manual coordinate inputs
   const [showManualCoords, setShowManualCoords] = useState(false);
@@ -185,143 +196,166 @@ export const LocationRiskInspector: React.FC<LocationRiskInspectorProps> = ({
   ];
 
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col space-y-2 select-none">
       {/* Top Search & Location Action Bar */}
-      <div className="bg-command-bg/95 backdrop-blur-md border border-command-border/80 rounded-lg p-2.5 shadow-2xl">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Geocoding Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
-            <div className="flex items-center bg-command-panel/90 border border-command-border rounded-md px-2.5 py-1.5 focus-within:border-cyan-500 transition-colors">
-              <Search className="w-4 h-4 text-cyan-400 mr-2 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggestions(true);
-                }}
-                placeholder="Enter exact location, village, town, or address..."
-                className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-400 focus:outline-none font-mono"
-              />
-              {isSearching && <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" />}
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSuggestions([]);
-                    setShowSuggestions(false);
+      {isSearchCollapsed ? (
+        <button
+          onClick={() => setIsSearchCollapsed(false)}
+          className="self-start bg-command-bg/95 hover:bg-slate-800 backdrop-blur-md border border-command-border/80 hover:border-cyan-500/80 rounded-lg px-3 py-1.5 shadow-xl flex items-center space-x-2 text-xs font-mono text-cyan-300 transition-all cursor-pointer group"
+          title="Show Location Search Bar & Hotspots"
+        >
+          <Search className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+          <span className="font-semibold">Search / Inspect Location</span>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+        </button>
+      ) : (
+        <div className="bg-command-bg/95 backdrop-blur-md border border-command-border/80 rounded-lg p-2.5 shadow-2xl">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Geocoding Search Input */}
+            <div className="relative flex-1 min-w-[220px]">
+              <div className="flex items-center bg-command-panel/90 border border-command-border rounded-md px-2.5 py-1.5 focus-within:border-cyan-500 transition-colors">
+                <Search className="w-4 h-4 text-cyan-400 mr-2 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
                   }}
-                  className="text-slate-400 hover:text-slate-200 ml-1"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                  placeholder="Enter exact location, village, town, or address..."
+                  className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-400 focus:outline-none font-mono"
+                />
+                {isSearching && <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" />}
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSuggestions([]);
+                      setShowSuggestions(false);
+                    }}
+                    className="text-slate-400 hover:text-slate-200 ml-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-[1200] bg-command-bg border border-command-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                  <div className="p-1.5 border-b border-command-border/50 text-[10px] font-mono text-cyan-400 uppercase tracking-wider flex justify-between items-center">
+                    <span>Locations Found</span>
+                    <span>{suggestions.length} matching</span>
+                  </div>
+                  {suggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectSuggestion(item)}
+                      className="w-full text-left p-2 hover:bg-command-card border-b border-command-border/30 last:border-0 transition-colors flex items-start space-x-2"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-slate-100 truncate">{item.name}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
+                        <div className="text-[9px] font-mono text-cyan-400/80 mt-0.5">
+                          [{item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}] • {item.source}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 z-[1200] bg-command-bg border border-command-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
-                <div className="p-1.5 border-b border-command-border/50 text-[10px] font-mono text-cyan-400 uppercase tracking-wider flex justify-between items-center">
-                  <span>Locations Found</span>
-                  <span>{suggestions.length} matching</span>
-                </div>
-                {suggestions.map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSelectSuggestion(item)}
-                    className="w-full text-left p-2 hover:bg-command-card border-b border-command-border/30 last:border-0 transition-colors flex items-start space-x-2"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-slate-100 truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
-                      <div className="text-[9px] font-mono text-cyan-400/80 mt-0.5">
-                        [{item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}] • {item.source}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Action: Use GPS Location */}
+            <button
+              onClick={handleUseMyLocation}
+              title="Use current GPS location"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 font-mono text-xs transition-all cursor-pointer"
+            >
+              <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">My GPS</span>
+            </button>
+
+            {/* Action: Toggle Pin Drop on Map */}
+            <button
+              onClick={() => setIsInspectMode(!isInspectMode)}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md font-mono text-xs border transition-all cursor-pointer ${
+                isInspectMode
+                  ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20 animate-pulse'
+                  : 'bg-command-panel hover:bg-command-hover text-slate-300 border-command-border'
+              }`}
+              title="Enable Crosshair to Click on Map"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isInspectMode ? 'Click Map' : 'Inspect Pin'}</span>
+            </button>
+
+            {/* Action: Toggle Manual Coordinates */}
+            <button
+              onClick={() => setShowManualCoords(!showManualCoords)}
+              className="text-[11px] font-mono px-2 py-1.5 rounded bg-command-panel hover:bg-command-hover text-slate-300 border border-command-border transition-all cursor-pointer"
+              title="Input Lat/Lon manually"
+            >
+              ± Lat/Lon
+            </button>
+
+            {/* Collapse Search Bar Button */}
+            <button
+              onClick={() => setIsSearchCollapsed(true)}
+              className="text-slate-400 hover:text-cyan-300 p-1.5 rounded hover:bg-command-panel transition-colors cursor-pointer"
+              title="Minimize / Hide Search Bar"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Action: Use GPS Location */}
-          <button
-            onClick={handleUseMyLocation}
-            title="Use current GPS location"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 font-mono text-xs transition-all"
-          >
-            <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">My GPS</span>
-          </button>
+          {/* Manual Coordinates Input Strip */}
+          {showManualCoords && (
+            <form onSubmit={handleManualCoordsSubmit} className="mt-2 pt-2 border-t border-command-border/60 flex items-center gap-2">
+              <span className="text-[10px] font-mono text-slate-400 uppercase">Exact Coords:</span>
+              <input
+                type="text"
+                value={manualLat}
+                onChange={(e) => setManualLat(e.target.value)}
+                placeholder="Lat (e.g. 30.4905)"
+                className="w-24 bg-command-panel px-2 py-1 rounded text-xs font-mono text-slate-200 border border-command-border focus:outline-none focus:border-cyan-400"
+              />
+              <input
+                type="text"
+                value={manualLon}
+                onChange={(e) => setManualLon(e.target.value)}
+                placeholder="Lon (e.g. 79.6830)"
+                className="w-24 bg-command-panel px-2 py-1 rounded text-xs font-mono text-slate-200 border border-command-border focus:outline-none focus:border-cyan-400"
+              />
+              <button
+                type="submit"
+                className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold cursor-pointer"
+              >
+                Evaluate
+              </button>
+            </form>
+          )}
 
-          {/* Action: Toggle Pin Drop on Map */}
-          <button
-            onClick={() => setIsInspectMode(!isInspectMode)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md font-mono text-xs border transition-all ${
-              isInspectMode
-                ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20 animate-pulse'
-                : 'bg-command-panel hover:bg-command-hover text-slate-300 border-command-border'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>{isInspectMode ? 'Click Map to Inspect' : 'Inspect Pin'}</span>
-          </button>
-
-          {/* Action: Toggle Manual Coordinates */}
-          <button
-            onClick={() => setShowManualCoords(!showManualCoords)}
-            className="text-[11px] font-mono px-2 py-1.5 rounded bg-command-panel hover:bg-command-hover text-slate-300 border border-command-border transition-all"
-          >
-            ± Lat/Lon
-          </button>
+          {/* Hotspot Presets Quick Bar */}
+          <div className="mt-2 pt-2 border-t border-command-border/40 flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
+            <span className="text-[10px] font-mono text-slate-400 uppercase shrink-0">Hotspots:</span>
+            {PRESET_HOTSPOTS.map((spot, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setSearchQuery(spot.name);
+                  triggerAssessment(spot.lat, spot.lon, spot.name);
+                }}
+                className="px-2 py-0.5 rounded bg-command-panel/80 hover:bg-command-hover border border-command-border text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors whitespace-nowrap shrink-0 flex items-center space-x-1 cursor-pointer"
+              >
+                <span>{spot.name}</span>
+                <span className="text-[9px] text-cyan-400/80">({spot.badge})</span>
+              </button>
+            ))}
+          </div>
         </div>
-
-        {/* Manual Coordinates Input Strip */}
-        {showManualCoords && (
-          <form onSubmit={handleManualCoordsSubmit} className="mt-2 pt-2 border-t border-command-border/60 flex items-center gap-2">
-            <span className="text-[10px] font-mono text-slate-400 uppercase">Exact Coords:</span>
-            <input
-              type="text"
-              value={manualLat}
-              onChange={(e) => setManualLat(e.target.value)}
-              placeholder="Lat (e.g. 30.4905)"
-              className="w-24 bg-command-panel px-2 py-1 rounded text-xs font-mono text-slate-200 border border-command-border focus:outline-none focus:border-cyan-400"
-            />
-            <input
-              type="text"
-              value={manualLon}
-              onChange={(e) => setManualLon(e.target.value)}
-              placeholder="Lon (e.g. 79.6830)"
-              className="w-24 bg-command-panel px-2 py-1 rounded text-xs font-mono text-slate-200 border border-command-border focus:outline-none focus:border-cyan-400"
-            />
-            <button
-              type="submit"
-              className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold"
-            >
-              Evaluate
-            </button>
-          </form>
-        )}
-
-        {/* Hotspot Presets Quick Bar */}
-        <div className="mt-2 pt-2 border-t border-command-border/40 flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5">
-          <span className="text-[10px] font-mono text-slate-400 uppercase shrink-0">Hotspots:</span>
-          {PRESET_HOTSPOTS.map((spot, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setSearchQuery(spot.name);
-                triggerAssessment(spot.lat, spot.lon, spot.name);
-              }}
-              className="px-2 py-0.5 rounded bg-command-panel/80 hover:bg-command-hover border border-command-border text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors whitespace-nowrap shrink-0 flex items-center space-x-1"
-            >
-              <span>{spot.name}</span>
-              <span className="text-[9px] text-cyan-400/80">({spot.badge})</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Loading State Indicator */}
       {isLoadingAssessment && (
@@ -333,73 +367,136 @@ export const LocationRiskInspector: React.FC<LocationRiskInspectorProps> = ({
 
       {/* Detailed Assessment Card for the Individual */}
       {currentAssessment && !isLoadingAssessment && (
-        <div className="bg-command-bg/95 backdrop-blur-md border border-command-border rounded-lg shadow-2xl overflow-hidden transition-all text-xs">
-          {/* Card Header & Safety Verdict */}
-          <div className={`p-3 border-b flex items-start justify-between ${
-            currentAssessment.overall_status.is_inundated
-              ? 'bg-red-950/40 border-red-800/80'
-              : currentAssessment.overall_status.safety_score < 70
-              ? 'bg-amber-950/40 border-amber-800/80'
-              : 'bg-emerald-950/30 border-emerald-800/80'
-          }`}>
-            <div className="flex items-start space-x-2.5">
-              <div className="mt-0.5">
-                {currentAssessment.overall_status.is_inundated ? (
-                  <AlertOctagon className="w-5 h-5 text-red-400 animate-pulse" />
-                ) : currentAssessment.overall_status.safety_score < 70 ? (
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
-                ) : (
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono text-sm font-extrabold text-slate-100 tracking-wide uppercase">
-                    {currentAssessment.query.location_label}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase ${
-                    currentAssessment.overall_status.is_inundated
-                      ? 'bg-red-900/80 text-red-200 border border-red-600'
-                      : currentAssessment.overall_status.safety_score < 70
-                      ? 'bg-amber-900/80 text-amber-200 border border-amber-600'
-                      : 'bg-emerald-900/80 text-emerald-200 border border-emerald-600'
-                  }`}>
-                    {currentAssessment.overall_status.risk_tier}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-300 font-mono mt-0.5">
-                  {currentAssessment.overall_status.status_heading}
-                </div>
-              </div>
+        isAssessmentHidden ? (
+          /* Minimized Floating Pill Mode: Takes almost zero screen space */
+          <div className="bg-[#0b1220]/95 backdrop-blur-md border border-cyan-500/50 rounded-lg px-3 py-2 shadow-2xl flex items-center justify-between text-xs font-mono text-slate-200 animate-fadeIn">
+            <div className="flex items-center space-x-2 min-w-0 pr-2">
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                currentAssessment.overall_status.is_inundated
+                  ? 'bg-red-500 animate-ping'
+                  : currentAssessment.overall_status.safety_score < 70
+                  ? 'bg-amber-400'
+                  : 'bg-emerald-400 animate-pulse'
+              }`} />
+              <span className="font-bold text-cyan-300 truncate max-w-[140px] sm:max-w-xs">
+                {currentAssessment.query.location_label}
+              </span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
+                currentAssessment.overall_status.is_inundated
+                  ? 'bg-red-950 text-red-300 border border-red-700'
+                  : currentAssessment.overall_status.safety_score < 70
+                  ? 'bg-amber-950 text-amber-300 border border-amber-700'
+                  : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+              }`}>
+                {currentAssessment.overall_status.safety_score}% • {currentAssessment.overall_status.risk_tier}
+              </span>
             </div>
-
-            <div className="flex items-center space-x-3">
-              {/* Safety Score Meter */}
-              <div className="text-right font-mono">
-                <div className="text-[9px] text-slate-400 uppercase">Safety Score</div>
-                <div className={`text-base font-extrabold ${
-                  currentAssessment.overall_status.safety_score >= 80
-                    ? 'text-emerald-400'
-                    : currentAssessment.overall_status.safety_score >= 50
-                    ? 'text-amber-400'
-                    : 'text-red-400'
-                }`}>
-                  {currentAssessment.overall_status.safety_score} / 100
-                </div>
-              </div>
-
+            <div className="flex items-center space-x-1.5 shrink-0">
               <button
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="text-slate-400 hover:text-slate-200 p-1"
-                title={isMinimized ? 'Expand full evaluation' : 'Minimize'}
+                onClick={() => setIsAssessmentHidden(false)}
+                className="px-2 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 text-[10px] font-bold flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
+                title="Expand Full Assessment Intelligence Panel"
               >
-                {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                <Eye className="w-3.5 h-3.5" />
+                <span>Show Panel</span>
+              </button>
+              <button
+                onClick={() => setCurrentAssessment(null)}
+                className="p-1 rounded bg-slate-800 hover:bg-red-950 text-slate-400 hover:text-red-300 border border-slate-700 transition-all cursor-pointer"
+                title="Dismiss Assessment"
+              >
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
+        ) : (
+          /* Full Tactical Intelligence Card with Scrollable Body & Hide/Dismiss Controls */
+          <div className="bg-command-bg/95 backdrop-blur-md border border-command-border rounded-lg shadow-2xl overflow-hidden transition-all text-xs">
+            {/* Card Header & Safety Verdict */}
+            <div className={`p-3 border-b flex items-start justify-between ${
+              currentAssessment.overall_status.is_inundated
+                ? 'bg-red-950/40 border-red-800/80'
+                : currentAssessment.overall_status.safety_score < 70
+                ? 'bg-amber-950/40 border-amber-800/80'
+                : 'bg-emerald-950/30 border-emerald-800/80'
+            }`}>
+              <div className="flex items-start space-x-2.5 min-w-0 pr-2">
+                <div className="mt-0.5 shrink-0">
+                  {currentAssessment.overall_status.is_inundated ? (
+                    <AlertOctagon className="w-5 h-5 text-red-400 animate-pulse" />
+                  ) : currentAssessment.overall_status.safety_score < 70 ? (
+                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                  ) : (
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-sm font-extrabold text-slate-100 tracking-wide uppercase truncate">
+                      {currentAssessment.query.location_label}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase shrink-0 ${
+                      currentAssessment.overall_status.is_inundated
+                        ? 'bg-red-900/80 text-red-200 border border-red-600'
+                        : currentAssessment.overall_status.safety_score < 70
+                        ? 'bg-amber-900/80 text-amber-200 border border-amber-600'
+                        : 'bg-emerald-900/80 text-emerald-200 border border-emerald-600'
+                    }`}>
+                      {currentAssessment.overall_status.risk_tier}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 font-mono mt-0.5 truncate">
+                    {currentAssessment.overall_status.status_heading}
+                  </div>
+                </div>
+              </div>
 
-          {!isMinimized && (
-            <div className="p-3 space-y-3">
+              <div className="flex items-center space-x-2 shrink-0">
+                {/* Safety Score Meter */}
+                <div className="text-right font-mono mr-1">
+                  <div className="text-[9px] text-slate-400 uppercase">Safety Score</div>
+                  <div className={`text-base font-extrabold ${
+                    currentAssessment.overall_status.safety_score >= 80
+                      ? 'text-emerald-400'
+                      : currentAssessment.overall_status.safety_score >= 50
+                      ? 'text-amber-400'
+                      : 'text-red-400'
+                  }`}>
+                    {currentAssessment.overall_status.safety_score} / 100
+                  </div>
+                </div>
+
+                {/* Hide Panel (Free up map canvas) */}
+                <button
+                  onClick={() => setIsAssessmentHidden(true)}
+                  className="text-slate-400 hover:text-cyan-300 p-1.5 rounded hover:bg-slate-800/80 transition-colors cursor-pointer"
+                  title="Hide Panel (View map underneath)"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
+
+                {/* Minimize/Expand Body */}
+                <button
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  className="text-slate-400 hover:text-slate-200 p-1.5 rounded hover:bg-slate-800/80 transition-colors cursor-pointer"
+                  title={isMinimized ? 'Expand full evaluation' : 'Minimize body'}
+                >
+                  {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </button>
+
+                {/* Close Assessment */}
+                <button
+                  onClick={() => setCurrentAssessment(null)}
+                  className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-red-950/60 transition-colors cursor-pointer"
+                  title="Dismiss Assessment Card"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {!isMinimized && (
+              <div className="p-3 space-y-3 max-h-[min(540px,calc(100vh-230px))] overflow-y-auto custom-scrollbar">
               {/* MULTI-SOURCE COMPARISON: Addressing "check for if there is some other alternative as well" */}
               <div>
                 <div className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wide mb-1.5 flex items-center justify-between">
@@ -623,6 +720,7 @@ export const LocationRiskInspector: React.FC<LocationRiskInspectorProps> = ({
             </div>
           )}
         </div>
+        )
       )}
     </div>
   );

@@ -17,6 +17,8 @@ import {
   Bot,
   Play,
   HelpCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { DashboardKpis, DisasterEvent } from '../types';
 
@@ -33,6 +35,8 @@ interface HeaderProps {
   onOpenSitrep?: () => void;
   onOpenGuide?: () => void;
   onOpenExplore?: () => void;
+  isSidebarHidden?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -48,6 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSitrep,
   onOpenGuide,
   onOpenExplore,
+  isSidebarHidden = false,
+  onToggleSidebar,
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [searchVal, setSearchVal] = useState('');
@@ -156,12 +162,32 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 1. Main Operational Ribbon */}
       <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/60 text-xs">
         
-        {/* Incident Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold"
-          >
+        {/* Left Operational Controls */}
+        <div className="flex items-center space-x-2">
+          {/* Navigation Sidebar Toggle Button */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className={`px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm ${
+                isSidebarHidden
+                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
+                  : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500'
+              }`}
+              title={isSidebarHidden ? 'Show Navigation Sidebar (Ctrl+B)' : 'Hide Navigation Sidebar (Ctrl+B)'}
+            >
+              {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400" /> : <PanelLeftClose className="w-4 h-4" />}
+              <span className="font-semibold text-[11px]">
+                {isSidebarHidden ? 'Show Nav' : 'Hide Nav'}
+              </span>
+            </button>
+          )}
+
+          {/* Incident Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer"
+            >
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-[10px] text-slate-400 font-mono uppercase">INCIDENT:</span>
             <span className="text-white font-mono">{activeIncident?.name || 'Chamoli Flash Flood & Outburst'}</span>
@@ -215,6 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+      </div>
 
         {/* Geographic Search Bar */}
         <div className="flex-1 max-w-sm">

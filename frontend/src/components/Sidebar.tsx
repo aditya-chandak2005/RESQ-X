@@ -10,8 +10,11 @@ import {
   SlidersHorizontal,
   LifeBuoy,
   FileCheck2,
-  Info,
   Search,
+  PanelLeftClose,
+  ChevronRight,
+  ChevronLeft,
+  X,
 } from 'lucide-react';
 
 export type AppArea =
@@ -30,6 +33,10 @@ interface SidebarProps {
   setCurrentTab: (tab: string) => void;
   openCopilot: () => void;
   openSitrep: () => void;
+  isCollapsed?: boolean;
+  setIsCollapsed?: (collapsed: boolean) => void;
+  isHidden?: boolean;
+  setIsHidden?: (hidden: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,6 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setCurrentTab,
   openCopilot,
   openSitrep,
+  isCollapsed = false,
+  setIsCollapsed,
+  isHidden = false,
+  setIsHidden,
 }) => {
   const applicationAreas = [
     {
@@ -113,157 +124,305 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  if (isHidden) return null;
+
+  const handleSelectTab = (tab: string) => {
+    setCurrentTab(tab);
+    if (window.innerWidth < 768 && setIsHidden) {
+      setIsHidden(true);
+    }
+  };
+
   return (
-    <aside className="w-64 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none z-30 shrink-0 font-sans">
-      {/* 1. Brand Header */}
-      <div>
-        <div className="px-4 py-3.5 border-b border-slate-800/80 bg-[#0e1629]">
-          <div className="flex items-center space-x-2.5">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-cyan-400">
-                <LifeBuoy className="w-4 h-4 animate-pulse" />
-              </div>
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-1.5">
-                <span className="font-extrabold text-sm tracking-wider text-slate-100 font-mono">
-                  RESQ<span className="text-cyan-400">-X</span>
-                </span>
-                <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
-                  Track B
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 tracking-tight">Disaster Response Intelligence</p>
-            </div>
-          </div>
-        </div>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[1050] md:hidden cursor-pointer"
+        onClick={() => setIsHidden && setIsHidden(true)}
+      />
 
-        {/* 2. Navigation List: The 8 Mandated Areas + Explore Archive */}
-        <nav className="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-210px)] custom-scrollbar">
-          {/* Explore Disasters — Historical Archive */}
-          <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
-            <span>DISASTER ARCHIVE</span>
-            <span className="text-cyan-400 font-mono">SEARCH</span>
-          </div>
-
-          <button
-            onClick={() => setCurrentTab('explore')}
-            className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between group mb-2 ${
-              currentTab === 'explore'
-                ? 'bg-cyan-950/80 border-cyan-500/60 text-slate-100 shadow-sm'
-                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-900 hover:text-slate-100 hover:border-slate-700'
-            }`}
-          >
-            <div className="flex items-center space-x-2.5 min-w-0">
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-[1100] md:z-30 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none shrink-0 font-sans transition-all duration-200 ${
+          isCollapsed ? 'w-16' : 'w-64'
+        }`}
+      >
+        {/* ========================================================= */}
+        {/* TOP SECTION: BRAND & NAVIGATION                           */}
+        {/* ========================================================= */}
+        <div className="flex-1 flex flex-col min-h-0">
+          
+          {/* 1. Brand Header */}
+          {isCollapsed ? (
+            /* Collapsed Compact Rail Header */
+            <div className="p-3 border-b border-slate-800/80 bg-[#0e1629] flex flex-col items-center space-y-2 shrink-0">
               <div
-                className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
-                  currentTab === 'explore'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                    : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'
-                }`}
+                className="relative group cursor-pointer"
+                onClick={() => setIsCollapsed && setIsCollapsed(false)}
+                title="Expand Navigation Sidebar"
               >
-                <Search className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center space-x-1.5">
-                  <span className={`text-xs font-semibold truncate ${currentTab === 'explore' ? 'text-cyan-300 font-bold' : ''}`}>
-                    Explore Disasters
-                  </span>
+                <div className="w-9 h-9 rounded-lg bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-cyan-400 group-hover:border-cyan-400 group-hover:scale-105 transition-all">
+                  <LifeBuoy className="w-5 h-5 animate-pulse" />
                 </div>
-                <p className="text-[10px] text-slate-400 truncate leading-tight">
-                  Historical search & archive
-                </p>
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+              </div>
+
+              {setIsCollapsed && (
+                <button
+                  onClick={() => setIsCollapsed(false)}
+                  className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 transition-colors cursor-pointer"
+                  title="Expand Navigation (w-64)"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Expanded Full Header */
+            <div className="px-4 py-3.5 border-b border-slate-800/80 bg-[#0e1629] flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2.5">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-cyan-400">
+                    <LifeBuoy className="w-4 h-4 animate-pulse" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-extrabold text-sm tracking-wider text-slate-100 font-mono">
+                      RESQ<span className="text-cyan-400">-X</span>
+                    </span>
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                      Track B
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 tracking-tight">Disaster Response Intel</p>
+                </div>
+              </div>
+
+              {/* Action Controls: Collapse Rail & Hide Sidebar */}
+              <div className="flex items-center space-x-1">
+                {setIsCollapsed && (
+                  <button
+                    onClick={() => setIsCollapsed(true)}
+                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 transition-colors cursor-pointer"
+                    title="Collapse to compact icon rail"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {setIsHidden && (
+                  <button
+                    onClick={() => setIsHidden(true)}
+                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-950 text-slate-400 hover:text-red-300 border border-slate-800 transition-colors cursor-pointer"
+                    title="Hide Navigation Sidebar completely"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
+          )}
 
-            <span className="text-[8px] font-mono px-1 py-0.5 rounded uppercase font-bold border shrink-0 bg-cyan-950 text-cyan-300 border-cyan-800">
-              SEARCH
-            </span>
-          </button>
+          {/* 2. Navigation Items List */}
+          <nav className="p-2 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
+            {isCollapsed ? (
+              /* COLLAPSED ICON-ONLY RAIL */
+              <div className="space-y-1.5 flex flex-col items-center pt-1">
+                {/* Explore Archive Button */}
+                <button
+                  onClick={() => handleSelectTab('explore')}
+                  className={`w-10 h-10 rounded-lg border transition-all flex items-center justify-center relative group cursor-pointer ${
+                    currentTab === 'explore'
+                      ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 shadow-md shadow-cyan-950'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-cyan-300'
+                  }`}
+                  title="Explore Disasters Archive (Historical Search)"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
 
-          <div className="px-2.5 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between border-t border-slate-800/60">
-            <span>OPERATIONAL WORKSPACES</span>
-            <span className="text-slate-400">8 AREAS</span>
-          </div>
+                <div className="w-6 h-px bg-slate-800 my-1" />
 
-          {applicationAreas.map((area) => {
-            const Icon = area.icon;
-            const isActive = currentTab === area.id;
+                {/* 8 Mandated Areas */}
+                {applicationAreas.map((area) => {
+                  const Icon = area.icon;
+                  const isActive = currentTab === area.id;
 
-            return (
-              <button
-                key={area.id}
-                onClick={() => setCurrentTab(area.id)}
-                className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between group ${
-                  isActive
-                    ? 'bg-cyan-950/70 border-cyan-500/60 text-slate-100 shadow-sm'
-                    : 'bg-transparent border-transparent text-slate-300 hover:bg-slate-900/80 hover:text-slate-100 hover:border-slate-800'
-                }`}
-              >
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <div
-                    className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
-                      isActive
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                        : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-mono text-[10px] text-slate-400">{area.number}.</span>
-                      <span className={`text-xs font-semibold truncate ${isActive ? 'text-cyan-300 font-bold' : ''}`}>
-                        {area.label}
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => handleSelectTab(area.id)}
+                      className={`w-10 h-10 rounded-lg border transition-all flex items-center justify-center relative group cursor-pointer ${
+                        isActive
+                          ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 shadow-md shadow-cyan-950'
+                          : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-900/80 hover:text-slate-100 hover:border-slate-800'
+                      }`}
+                      title={`${area.number}. ${area.label} — ${area.sublabel}`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="absolute -bottom-1 -right-1 text-[8px] font-mono px-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400">
+                        {area.number}
                       </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 truncate leading-tight">
-                      {area.sublabel}
-                    </p>
-                  </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* EXPANDED FULL-WIDTH NAVIGATION */
+              <>
+                {/* Explore Disasters — Historical Archive */}
+                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
+                  <span>DISASTER ARCHIVE</span>
+                  <span className="text-cyan-400 font-mono">SEARCH</span>
                 </div>
 
-                {area.badge && (
-                  <span
-                    className={`text-[8px] font-mono px-1 py-0.5 rounded uppercase font-bold border shrink-0 ${area.badgeColor}`}
-                  >
-                    {area.badge}
+                <button
+                  onClick={() => handleSelectTab('explore')}
+                  className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between group mb-2 cursor-pointer ${
+                    currentTab === 'explore'
+                      ? 'bg-cyan-950/80 border-cyan-500/60 text-slate-100 shadow-sm'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-900 hover:text-slate-100 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div
+                      className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
+                        currentTab === 'explore'
+                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                          : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'
+                      }`}
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className={`text-xs font-semibold truncate ${currentTab === 'explore' ? 'text-cyan-300 font-bold' : ''}`}>
+                          Explore Disasters
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 truncate leading-tight">
+                        Historical search & archive
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-[8px] font-mono px-1 py-0.5 rounded uppercase font-bold border shrink-0 bg-cyan-950 text-cyan-300 border-cyan-800">
+                    SEARCH
                   </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+                </button>
 
-      {/* 3. Operational Quick Actions */}
-      <div className="p-3 border-t border-slate-800/80 bg-[#0c1322] space-y-2">
-        <button
-          onClick={openCopilot}
-          className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/60 text-cyan-200 text-xs font-semibold transition-all shadow-sm"
-        >
-          <Bot className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Quick RESQ Copilot</span>
-        </button>
+                <div className="px-2.5 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between border-t border-slate-800/60">
+                  <span>OPERATIONAL WORKSPACES</span>
+                  <span className="text-slate-400">8 AREAS</span>
+                </div>
 
-        <button
-          onClick={openSitrep}
-          className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 text-xs font-medium transition-all"
-        >
-          <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
-          <span>Export Situation Report</span>
-        </button>
+                {applicationAreas.map((area) => {
+                  const Icon = area.icon;
+                  const isActive = currentTab === area.id;
 
-        <div className="pt-1 flex items-center justify-between text-[9px] text-slate-400 font-mono px-1">
-          <span>COPERNICUS S1/S2</span>
-          <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            READY
-          </span>
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => handleSelectTab(area.id)}
+                      className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between group cursor-pointer ${
+                        isActive
+                          ? 'bg-cyan-950/70 border-cyan-500/60 text-slate-100 shadow-sm'
+                          : 'bg-transparent border-transparent text-slate-300 hover:bg-slate-900/80 hover:text-slate-100 hover:border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${
+                            isActive
+                              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                              : 'bg-slate-900 text-slate-400 group-hover:text-cyan-400'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-mono text-[10px] text-slate-400">{area.number}.</span>
+                            <span className={`text-xs font-semibold truncate ${isActive ? 'text-cyan-300 font-bold' : ''}`}>
+                              {area.label}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 truncate leading-tight">
+                            {area.sublabel}
+                          </p>
+                        </div>
+                      </div>
+
+                      {area.badge && (
+                        <span
+                          className={`text-[8px] font-mono px-1 py-0.5 rounded uppercase font-bold border shrink-0 ${area.badgeColor}`}
+                        >
+                          {area.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </nav>
         </div>
-      </div>
-    </aside>
+
+        {/* ========================================================= */}
+        {/* BOTTOM SECTION: QUICK ACTIONS                             */}
+        {/* ========================================================= */}
+        <div className="shrink-0">
+          {isCollapsed ? (
+            /* Collapsed Bottom Action Icons */
+            <div className="p-2 border-t border-slate-800/80 bg-[#0c1322] flex flex-col items-center space-y-2">
+              <button
+                onClick={openCopilot}
+                className="w-10 h-10 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/60 text-cyan-400 flex items-center justify-center cursor-pointer transition-all shadow-sm"
+                title="Quick RESQ Copilot"
+              >
+                <Bot className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={openSitrep}
+                className="w-10 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-slate-200 flex items-center justify-center cursor-pointer transition-all"
+                title="Export Situation Report"
+              >
+                <FileCheck2 className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            /* Expanded Bottom Actions */
+            <div className="p-3 border-t border-slate-800/80 bg-[#0c1322] space-y-2">
+              <button
+                onClick={openCopilot}
+                className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/60 text-cyan-200 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+              >
+                <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Quick RESQ Copilot</span>
+              </button>
+
+              <button
+                onClick={openSitrep}
+                className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 text-xs font-medium transition-all cursor-pointer"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
+                <span>Export Situation Report</span>
+              </button>
+
+              <div className="pt-1 flex items-center justify-between text-[9px] text-slate-400 font-mono px-1">
+                <span>COPERNICUS S1/S2</span>
+                <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  READY
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
   );
 };

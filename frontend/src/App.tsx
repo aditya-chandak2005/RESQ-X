@@ -52,6 +52,31 @@ export const App: React.FC = () => {
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
   const [isCitizenGuideOpen, setIsCitizenGuideOpen] = useState(false);
 
+  // Sidebar navigation visibility & responsive collapse state
+  const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Keyboard shortcut Ctrl+B or Cmd+B to toggle navigation sidebar visibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarHidden((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Responsive initialization: auto-collapse on tablet, auto-hide on mobile
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsSidebarHidden(true);
+    } else if (window.innerWidth < 1024) {
+      setIsSidebarCollapsed(true);
+    }
+  }, []);
+
   // Individual location inspection state
   const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [isInspectMode, setIsInspectMode] = useState<boolean>(false);
@@ -211,10 +236,14 @@ export const App: React.FC = () => {
         setCurrentTab={setCurrentTab}
         openCopilot={() => setIsCopilotOpen(true)}
         openSitrep={() => setIsSitrepOpen(true)}
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+        isHidden={isSidebarHidden}
+        setIsHidden={setIsSidebarHidden}
       />
 
       {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
         {/* Top Header with Omni-Search, Active Incident & Telemetry Ribbon */}
         <Header
           kpis={kpis}
@@ -232,6 +261,8 @@ export const App: React.FC = () => {
           onOpenSitrep={() => setIsSitrepOpen(true)}
           onOpenGuide={() => setIsCitizenGuideOpen(true)}
           onOpenExplore={() => setCurrentTab('explore')}
+          isSidebarHidden={isSidebarHidden}
+          onToggleSidebar={() => setIsSidebarHidden(!isSidebarHidden)}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}

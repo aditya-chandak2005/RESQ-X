@@ -28,6 +28,8 @@ import {
   RefreshCw,
   Compass,
   Check,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -66,6 +68,7 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
   const [postEventDate, setPostEventDate] = useState('2026-02-07 10:21 UTC');
   const [activeTab, setActiveTab] = useState<'map' | 'pipeline' | 'metadata'>('map');
   const [comparisonMode, setComparisonMode] = useState<'overlay' | 'sar_only' | 'optical_pre'>('overlay');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const pipelineStages = [
     { title: 'Sentinel-1 C-SAR Scene Ingestion', desc: 'Acquired IW GRDH dual-polarization (VV/VH) scene from Copernicus SciHub' },
@@ -100,23 +103,33 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
     <div className="flex-1 flex h-full overflow-hidden bg-[#070b14] font-sans">
       
       {/* Left Control & Analysis Sidebar */}
-      <div className="w-96 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-full z-10 shrink-0 text-xs">
-        
-        {/* Workspace Title & Tabs */}
-        <div>
-          <div className="p-4 border-b border-slate-800/80 bg-[#0e1629]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Layers className="w-4 h-4 text-cyan-400" />
-                <h2 className="font-mono font-bold text-sm text-white">DISASTER MAPPING WORKSPACE</h2>
+      {!isSidebarCollapsed && (
+        <div className="w-96 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-full z-10 shrink-0 text-xs transition-all">
+          
+          {/* Workspace Title & Tabs */}
+          <div>
+            <div className="p-4 border-b border-slate-800/80 bg-[#0e1629]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-cyan-400" />
+                  <h2 className="font-mono font-bold text-sm text-white">DISASTER MAPPING WORKSPACE</h2>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    AREA 2
+                  </span>
+                  <button
+                    onClick={() => setIsSidebarCollapsed(true)}
+                    className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-700 transition-colors cursor-pointer"
+                    title="Hide Controls (Full Screen Map)"
+                  >
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                AREA 2
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1 leading-tight">
-              Satellite SAR flood extent detection, scene metadata & multi-spectral verification
-            </p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+                Satellite SAR flood extent detection, scene metadata & multi-spectral verification
+              </p>
 
             {/* Sub-tab pills */}
             <div className="mt-3 flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800">
@@ -362,9 +375,23 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
           <span className="text-emerald-400">Validated 91.8% F1</span>
         </div>
       </div>
+      )}
 
       {/* Main Map Canvas */}
       <div className="flex-1 h-full relative">
+        {/* Floating Toggle Button when mapping controls are collapsed */}
+        {isSidebarCollapsed && (
+          <div className="absolute top-4 left-4 z-[1000]">
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-[#0e1629]/95 backdrop-blur-md border border-cyan-500/60 text-cyan-300 font-mono text-xs font-semibold shadow-2xl hover:bg-cyan-950 transition-all cursor-pointer"
+              title="Show Mapping Controls & AI Pipeline"
+            >
+              <PanelLeftOpen className="w-4 h-4 text-cyan-400" />
+              <span>Show Mapping Controls</span>
+            </button>
+          </div>
+        )}
         <InteractiveMap
           floodPolygons={floodResult?.polygons || []}
           settlements={settlements}
