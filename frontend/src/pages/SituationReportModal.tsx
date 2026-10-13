@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Printer, Download, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { api } from '../services/api';
+import { PortalModal } from '../components/PortalModal';
 
 interface SituationReportModalProps {
   isOpen: boolean;
@@ -29,8 +30,12 @@ export const SituationReportModal: React.FC<SituationReportModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-      <div className="bg-command-bg border border-command-border rounded-xl shadow-2xl w-full max-w-3xl h-[650px] flex flex-col justify-between overflow-hidden text-xs">
+    <PortalModal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-3xl"
+      className="bg-[#0a0f1d] border border-cyan-500/50 h-[85vh] max-h-[700px] flex flex-col justify-between"
+    >
         {/* Modal Toolbar */}
         <div className="px-5 py-3 border-b border-command-border flex items-center justify-between bg-command-panel">
           <div className="flex items-center space-x-2">
@@ -178,7 +183,6 @@ export const SituationReportModal: React.FC<SituationReportModalProps> = ({
             </div>
           ) : null}
         </div>
-      </div>
-    </div>
+    </PortalModal>
   );
 };

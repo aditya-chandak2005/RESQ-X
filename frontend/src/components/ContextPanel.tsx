@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   X,
   AlertTriangle,
@@ -30,12 +30,23 @@ export const ContextPanel: React.FC<ContextPanelProps> = ({
   onDispatchMission,
   onTriggerReroute,
 }) => {
+  useEffect(() => {
+    if (!selectedItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItem, onClose]);
+
   if (!selectedItem) return null;
 
   const { type, data } = selectedItem;
 
   return (
-    <div className="w-80 bg-command-bg/95 backdrop-blur-md border-l border-command-border h-full flex flex-col justify-between z-20 shrink-0 shadow-panel select-none overflow-y-auto custom-scrollbar">
+    <div className="absolute top-0 right-0 bottom-0 z-[1050] w-80 max-w-[calc(100vw-32px)] bg-[#090e1a]/98 backdrop-blur-xl border-l border-cyan-500/40 shadow-2xl flex flex-col justify-between select-none overflow-y-auto custom-scrollbar animate-slideInRight">
       {/* Header */}
       <div>
         <div className="px-4 py-3 border-b border-command-border flex items-center justify-between bg-command-panel/70">

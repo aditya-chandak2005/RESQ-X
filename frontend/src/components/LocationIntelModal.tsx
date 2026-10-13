@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { LocationAssessment } from '../types';
 import { api } from '../services/api';
+import { PortalModal } from './PortalModal';
 
 interface LocationIntelModalProps {
   assessment: LocationAssessment;
@@ -54,15 +55,12 @@ export const LocationIntelModal: React.FC<LocationIntelModalProps> = ({
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[1300] cursor-pointer animate-fadeIn"
-        onClick={onClose}
-      />
-
-      {/* Modal Dialog Card */}
-      <div className="fixed top-16 right-4 left-4 sm:left-auto sm:right-6 sm:w-[580px] max-h-[calc(100vh-80px)] bg-[#0a0f1d] border border-cyan-500/60 rounded-2xl shadow-2xl overflow-hidden z-[1310] flex flex-col font-sans select-none animate-scaleIn">
+    <PortalModal
+      isOpen={true}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      className="bg-[#0a0f1d] border border-cyan-500/60 max-h-[85vh]"
+    >
         
         {/* Header & Safety Verdict */}
         <div
@@ -404,8 +402,7 @@ export const LocationIntelModal: React.FC<LocationIntelModalProps> = ({
             Close Report
           </button>
         </div>
-      </div>
-    </>
+    </PortalModal>
   );
 };
 

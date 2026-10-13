@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Send, X, Sparkles, Database, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
+import { PortalModal } from '../components/PortalModal';
 
 interface AICopilotModalProps {
   isOpen: boolean;
@@ -60,8 +61,12 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({ isOpen, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-      <div className="bg-command-bg border border-cyan-500/50 rounded-xl shadow-hud w-full max-w-2xl h-[560px] flex flex-col justify-between overflow-hidden text-xs">
+    <PortalModal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      className="bg-[#0b1222] border border-cyan-500/50 h-[80vh] max-h-[600px] flex flex-col justify-between"
+    >
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-command-border flex items-center justify-between bg-command-panel">
           <div className="flex items-center space-x-2.5">
@@ -160,7 +165,6 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({ isOpen, onClose 
             <Send className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
-    </div>
+    </PortalModal>
   );
 };

@@ -19,12 +19,16 @@ import {
   Mountain,
   Check,
   Settings,
+  Layers,
+  Activity,
 } from 'lucide-react';
 import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType } from '../types';
 import { api } from '../services/api';
 import { GlobalSearch } from './GlobalSearch';
 import { LocationIntelModal } from './LocationIntelModal';
 import { OperationalSettingsModal } from './OperationalSettingsModal';
+import { MapLayersPanel } from './MapLayersPanel';
+import { TelemetryDetailsModal } from './TelemetryDetailsModal';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
@@ -91,6 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
   // Modals state
   const [isIntelModalOpen, setIsIntelModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [isTelemetryModalOpen, setIsTelemetryModalOpen] = useState(false);
 
   const incidentDropdownRef = useRef<HTMLDivElement>(null);
   const basemapMenuRef = useRef<HTMLDivElement>(null);
@@ -144,6 +150,8 @@ export const Header: React.FC<HeaderProps> = ({
         setShowBasemapMenu(false);
         setIsIntelModalOpen(false);
         setIsSettingsOpen(false);
+        setIsLayersOpen(false);
+        setIsTelemetryModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -236,8 +244,13 @@ export const Header: React.FC<HeaderProps> = ({
   // Active sidebar collapse state (checking both desktop rail and mobile hidden)
   const isNavCollapsed = isSidebarCollapsed || isSidebarHidden;
 
+  // Active Map Layers Count
+  const activeLayersCount = layers
+    ? Object.entries(layers).filter(([k, v]) => k !== 'basemap' && Boolean(v)).length
+    : 11;
+
   return (
-    <header className="bg-[#0b1222] border-b border-slate-800/90 z-20 shrink-0 font-sans select-none">
+    <header className="bg-[#0b1222] border-b border-slate-800/90 z-40 relative shrink-0 font-sans select-none">
       
       {/* =================================================================== */}
       {/* 1. PRIMARY ROW: Navigation, Incident Context, Search & Core Actions */}
@@ -587,8 +600,34 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Telemetry Metrics Ribbon Toggle */}
+          {/* Tactical Map Layers Panel Button */}
           <button
+            type="button"
+            onClick={() => setIsLayersOpen(true)}
+            className="h-7 px-2 rounded-md border border-slate-700/80 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-500/60 text-slate-300 hover:text-white text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0"
+            title="Open Tactical Map Layers Panel (5 Categories, 14 Overlays)"
+          >
+            <Layers className="w-3 h-3 text-cyan-400 shrink-0" />
+            <span className="font-semibold hidden sm:inline">Layers</span>
+            <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-800 font-bold font-mono">
+              {activeLayersCount}
+            </span>
+          </button>
+
+          {/* Telemetry & System Diagnostics Modal Button */}
+          <button
+            type="button"
+            onClick={() => setIsTelemetryModalOpen(true)}
+            className="h-7 px-2 rounded-md border border-slate-700/80 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-500/60 text-slate-300 hover:text-white text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0"
+            title="System Diagnostics & Telemetry (Sentinel-1 SAR, Copernicus DEM, GloFAS River Gauges)"
+          >
+            <Activity className="w-3 h-3 text-cyan-400 shrink-0" />
+            <span className="font-semibold hidden sm:inline">Telemetry</span>
+          </button>
+
+          {/* KPI Metrics Ribbon Toggle */}
+          <button
+            type="button"
             onClick={() => setShowKpis(!showKpis)}
             className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0 ${
               showKpis
@@ -598,7 +637,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={showKpis ? 'Minimize Analytical KPI Bar' : 'Show Analytical KPI Bar'}
           >
             <Sliders className="w-3 h-3" />
-            <span className="hidden sm:inline">Telemetry</span>
+            <span className="hidden md:inline">KPI Bar</span>
           </button>
         </div>
       </div>
@@ -657,6 +696,25 @@ export const Header: React.FC<HeaderProps> = ({
             ? () => setLayers((prev: any) => ({ ...prev, stateBoundaries: !prev.stateBoundaries }))
             : undefined
         }
+      />
+
+      {/* 6. Tactical Map Layers Panel Drawer */}
+      {layers && setLayers && (
+        <MapLayersPanel
+          isOpen={isLayersOpen}
+          onClose={() => setIsLayersOpen(false)}
+          layers={layers}
+          setLayers={setLayers}
+        />
+      )}
+
+      {/* 7. Real-Time Telemetry & System Diagnostics Modal */}
+      <TelemetryDetailsModal
+        isOpen={isTelemetryModalOpen}
+        onClose={() => setIsTelemetryModalOpen(false)}
+        kpis={kpis}
+        activeIncident={activeIncident}
+        onRefreshTelemetry={onRefresh}
       />
     </header>
   );
