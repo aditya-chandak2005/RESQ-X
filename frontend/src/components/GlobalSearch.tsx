@@ -354,14 +354,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         }}
         className="relative flex items-center w-full"
       >
-        <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none shrink-0" />
+        <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none shrink-0" />
         <input
           ref={inputRef}
           type="text"
           role="combobox"
           aria-expanded={isOpen}
           aria-autocomplete="list"
-          aria-label="Search places, rivers, incidents, or coordinates"
+          aria-label="Search"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -370,12 +370,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full h-8 pl-8.5 pr-26 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none text-xs text-slate-100 placeholder-slate-400 font-mono shadow-inner transition-all"
+          className="w-full h-8 pl-8 pr-16 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none focus:shadow-[0_0_10px_rgba(6,182,212,0.18)] text-xs text-slate-100 placeholder:text-slate-400 font-sans shadow-inner transition-all flex items-center"
         />
 
         {/* Loading Spinner */}
         {isLoading && (
-          <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-20 pointer-events-none" />
+          <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-14 top-1/2 -translate-y-1/2 pointer-events-none" />
         )}
 
         {/* Clear Button */}
@@ -388,24 +388,17 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
               setIncidentMatches([]);
               inputRef.current?.focus();
             }}
-            className="absolute right-13 text-slate-400 hover:text-white p-1 cursor-pointer transition-colors"
+            className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer transition-colors flex items-center justify-center"
             title="Clear search query"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
 
-        {/* Shortcut Badge (Desktop / Tablet) */}
-        {!query && (
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700/80 rounded absolute right-13 pointer-events-none select-none">
-            Ctrl+K
-          </kbd>
-        )}
-
         {/* FIND Action Button */}
         <button
           type="submit"
-          className="absolute right-1 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
+          className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
         >
           FIND
         </button>
