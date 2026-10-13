@@ -6,11 +6,8 @@ import {
   Users,
   Compass,
   Flame,
-  Radio,
   Clock,
-  Sparkles,
   AlertOctagon,
-  Search,
   ChevronDown,
   Layers,
   FileCheck2,
@@ -19,20 +16,21 @@ import {
   HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
-  MapPin,
-  Crosshair,
-  Loader2,
   X,
-  Maximize2,
   Sliders,
   Globe,
   Moon,
   Mountain,
   Check,
+  Settings,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
-import { DashboardKpis, DisasterEvent, LocationAssessment, GeocodeResult, BasemapType } from '../types';
+import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType } from '../types';
 import { api } from '../services/api';
+import { GlobalSearch } from './GlobalSearch';
 import { LocationIntelModal } from './LocationIntelModal';
+import { OperationalSettingsModal } from './OperationalSettingsModal';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
@@ -47,9 +45,10 @@ interface HeaderProps {
   onOpenSitrep?: () => void;
   onOpenGuide?: () => void;
   onOpenExplore?: () => void;
+  isSidebarCollapsed?: boolean;
   isSidebarHidden?: boolean;
   onToggleSidebar?: () => void;
-  // Basemap switcher in top-right
+  // Basemap switcher
   activeBasemap?: BasemapType;
   onSelectBasemap?: (basemap: BasemapType) => void;
   // Location inspection & geocoding props
@@ -58,6 +57,9 @@ interface HeaderProps {
   setIsInspectMode?: (active: boolean) => void;
   currentAssessment?: LocationAssessment | null;
   onClearAssessment?: () => void;
+  // Map layers
+  layers?: any;
+  setLayers?: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -73,6 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSitrep,
   onOpenGuide,
   onOpenExplore,
+  isSidebarCollapsed = false,
   isSidebarHidden = false,
   onToggleSidebar,
   activeBasemap = 'satellite',
@@ -82,38 +85,21 @@ export const Header: React.FC<HeaderProps> = ({
   setIsInspectMode,
   currentAssessment,
   onClearAssessment,
+  layers,
+  setLayers,
 }) => {
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
   const [showBasemapMenu, setShowBasemapMenu] = useState(false);
   const [showKpis, setShowKpis] = useState(true);
-  const basemapMenuRef = useRef<HTMLDivElement>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
 
-  // Top Nav Search & Omnibar State
-  const [searchVal, setSearchVal] = useState('');
-  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showManualCoords, setShowManualCoords] = useState(false);
-  const [manualLat, setManualLat] = useState('24.8333');
-  const [manualLon, setManualLon] = useState('92.7789');
-
-  // Modal State for Detailed Multi-Source Assessment
+  // Modals state
   const [isIntelModalOpen, setIsIntelModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchDebounceRef = useRef<any>(null);
-
-  // Curated Operational Disaster Hotspots
-  const DISASTER_HOTSPOTS = [
-    { name: 'Silchar', desc: 'Cachar Flood Theater', lat: 24.8333, lon: 92.7789, tag: 'Assam' },
-    { name: 'Guwahati', desc: 'Kamrup Metro', lat: 26.1445, lon: 91.7362, tag: 'Assam' },
-    { name: 'Tapovan Barrage', desc: 'Gorge Project', lat: 30.4945, lon: 79.6278, tag: 'Chamoli' },
-    { name: 'Raini Village', desc: 'Cut-Off Sector', lat: 30.4905, lon: 79.6830, tag: 'Chamoli' },
-    { name: 'Joshimath Base Hub', desc: 'High Ground Triage', lat: 30.5580, lon: 79.5645, tag: 'Chamoli' },
-    { name: 'Kaziranga Basin', desc: 'Brahmaputra Flood Plain', lat: 26.5775, lon: 93.1711, tag: 'Assam' },
-  ];
+  const incidentDropdownRef = useRef<HTMLDivElement>(null);
+  const basemapMenuRef = useRef<HTMLDivElement>(null);
 
   // Clock tick
   useEffect(() => {
@@ -123,38 +109,26 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Debounced geocoding search
+  // Backend Connectivity Heartbeat
   useEffect(() => {
-    if (!searchVal.trim() || searchVal.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-
-    searchDebounceRef.current = setTimeout(async () => {
+    const checkConnectivity = async () => {
       try {
-        setIsSearching(true);
-        const results = await api.geocode(searchVal);
-        setSuggestions(results);
-        setIsSearchDropdownOpen(true);
-      } catch (err) {
-        console.error('Geocoding error:', err);
-      } finally {
-        setIsSearching(false);
+        const disasters = await api.getDisasters();
+        setIsOnline(Boolean(disasters && disasters.length > 0));
+      } catch {
+        setIsOnline(false);
       }
-    }, 280);
-
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     };
-  }, [searchVal]);
+    checkConnectivity();
+    const interval = setInterval(checkConnectivity, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // Click outside listener to dismiss search dropdown popover and basemap menu
+  // Click outside to dismiss menus
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setIsSearchDropdownOpen(false);
+      if (incidentDropdownRef.current && !incidentDropdownRef.current.contains(e.target as Node)) {
+        setShowIncidentDropdown(false);
       }
       if (basemapMenuRef.current && !basemapMenuRef.current.contains(e.target as Node)) {
         setShowBasemapMenu(false);
@@ -164,78 +138,23 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard shortcut Ctrl+K / Cmd+K & Escape
+  // Keyboard shortcut Ctrl+B for Sidebar toggle & Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setIsSearchDropdownOpen(true);
-        searchInputRef.current?.focus();
+        if (onToggleSidebar) onToggleSidebar();
       }
       if (e.key === 'Escape') {
-        setIsSearchDropdownOpen(false);
         setShowIncidentDropdown(false);
+        setShowBasemapMenu(false);
         setIsIntelModalOpen(false);
-        searchInputRef.current?.blur();
+        setIsSettingsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Handle location selection
-  const handleSelectLocation = (lat: number, lon: number, label: string) => {
-    setIsSearchDropdownOpen(false);
-    setSearchVal(label);
-    if (onLocationSelected) {
-      onLocationSelected(lat, lon, label);
-    }
-  };
-
-  // Browser Geolocation
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
-    setIsSearching(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsSearching(false);
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        handleSelectLocation(lat, lon, `My Device GPS [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
-      },
-      (err) => {
-        setIsSearching(false);
-        console.warn('Geolocation fallback to Silchar:', err);
-        handleSelectLocation(24.8333, 92.7789, 'Silchar Operational Sector');
-      },
-      { timeout: 7000, enableHighAccuracy: true }
-    );
-  };
-
-  // Manual Coordinates Submit
-  const handleManualCoordsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const lat = parseFloat(manualLat);
-    const lon = parseFloat(manualLon);
-    if (isNaN(lat) || isNaN(lon)) return;
-    handleSelectLocation(lat, lon, `Custom Pin [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
-    setShowManualCoords(false);
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchVal.trim()) return;
-    if (suggestions.length > 0) {
-      const top = suggestions[0];
-      handleSelectLocation(top.latitude, top.longitude, top.name);
-    } else if (onSearchQuery) {
-      onSearchQuery(searchVal.trim());
-      setIsSearchDropdownOpen(false);
-    }
-  };
+  }, [onToggleSidebar]);
 
   const kpiItems = [
     {
@@ -320,66 +239,72 @@ export const Header: React.FC<HeaderProps> = ({
     },
   ];
 
+  // Active sidebar collapse state (checking both desktop rail and mobile hidden)
+  const isNavCollapsed = isSidebarCollapsed || isSidebarHidden;
+
   return (
-    <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans select-none">
+    <header className="bg-[#0b1222] border-b border-slate-800/90 z-20 shrink-0 font-sans select-none">
       
-      {/* 1. Main Operational Ribbon - High-Precision 3-Column Responsive Grid */}
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(200px,460px)_minmax(0,1fr)] items-center gap-2 sm:gap-3 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/90 text-xs bg-[#0b1222] select-none">
+      {/* =================================================================== */}
+      {/* 1. PRIMARY ROW: Navigation, Incident Context, Search & Core Actions */}
+      {/* =================================================================== */}
+      <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[minmax(0,1fr)_minmax(240px,480px)_minmax(0,1fr)] items-center gap-2 sm:gap-3 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs">
         
-        {/* ============================================================== */}
-        {/* COLUMN 1 (LEFT): Mission Identity & Operational Theater       */}
-        {/* ============================================================== */}
-        <div className="flex items-center justify-start space-x-1.5 sm:space-x-2 min-w-0">
+        {/* LEFT SECTION: Sleek Nav Toggle, App Identifier & Theater Selector */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
           
-          {/* Navigation Sidebar Toggle Button */}
+          {/* Sleek Compact Navigation Toggle (Icon-only, no bulky 'Hide Nav' text) */}
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className={`h-8 px-2.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm shrink-0 ${
-                isSidebarHidden
+              className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shadow-sm shrink-0 focus:outline-none focus:ring-1 focus:ring-cyan-400 ${
+                isNavCollapsed
                   ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
-                  : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
+                  : 'bg-slate-900/90 border-slate-700/80 text-slate-400 hover:text-white hover:border-cyan-500/60'
               }`}
-              title={isSidebarHidden ? 'Show Navigation Sidebar (Ctrl+B)' : 'Hide Navigation Sidebar (Ctrl+B)'}
+              aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+              title={isNavCollapsed ? 'Expand navigation (Ctrl+B)' : 'Collapse navigation (Ctrl+B)'}
             >
-              {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400 shrink-0" /> : <PanelLeftClose className="w-4 h-4 shrink-0" />}
-              <span className="font-semibold text-[11px] hidden md:inline">
-                {isSidebarHidden ? 'Show Nav' : 'Hide Nav'}
-              </span>
+              {isNavCollapsed ? (
+                <PanelLeftOpen className="w-4 h-4 text-cyan-400" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4 text-slate-400 hover:text-cyan-400" />
+              )}
             </button>
           )}
 
-          {/* Platform Identity Anchor (visible on large screens) */}
-          <div className="hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-800 text-[10px] font-mono text-slate-400 shrink-0">
+          {/* Compact Application Identifier Anchor */}
+          <div className="hidden sm:flex items-center space-x-1.5 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-800 text-[10px] font-mono shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="font-bold text-slate-200">RESQ-X</span>
+            <span className="font-bold text-white tracking-wider">RESQ-X</span>
             <span className="text-slate-600">|</span>
-            <span className="text-cyan-400/90 font-medium">OPS</span>
+            <span className="text-cyan-400 font-medium">OPS</span>
           </div>
 
-          <div className="h-4 w-px bg-slate-800/80 hidden sm:block shrink-0" />
+          <div className="h-4 w-px bg-slate-800 hidden sm:block shrink-0" />
 
-          {/* Operational Theater / Incident Selector */}
-          <div className="relative shrink min-w-0">
+          {/* Current Incident Theater Selector Dropdown */}
+          <div ref={incidentDropdownRef} className="relative shrink min-w-0">
             <button
               onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
               className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm max-w-full"
+              title="Select operational disaster incident"
             >
               <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
               </span>
               <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline shrink-0">THEATER:</span>
-              <span className="text-white font-mono truncate max-w-[85px] sm:max-w-[130px] md:max-w-[160px] lg:max-w-[210px] xl:max-w-[260px]">
+              <span className="text-white font-mono truncate max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[220px]">
                 {activeIncident?.name || 'Assam Barak Valley Inundation'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
 
             {showIncidentDropdown && (
-              <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-50 text-xs space-y-1">
+              <div className="absolute left-0 mt-1.5 w-76 p-2 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] text-xs space-y-1 animate-fadeIn">
                 <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider border-b border-slate-800">
-                  SELECT OPERATIONAL THEATER
+                  OPERATIONAL THEATERS
                 </div>
                 {incidents.map((inc) => (
                   <button
@@ -416,8 +341,8 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className="w-full text-center py-1.5 px-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-300 font-mono text-[11px] font-semibold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
-                    <Search className="w-3.5 h-3.5" />
-                    <span>EXPLORE ARCHIVE (ASSAM & INDIA)</span>
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>EXPLORE ALL ARCHIVES (ASSAM & INDIA)</span>
                   </button>
                 </div>
               </div>
@@ -425,205 +350,124 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* ============================================================== */}
-        {/* COLUMN 2 (CENTER): Mathematically Centered Search Omnibar      */}
-        {/* ============================================================== */}
-        <div className="flex items-center justify-center w-full min-w-0">
-          <div
-            ref={searchContainerRef}
-            className="relative w-full max-w-[440px] min-w-0"
-          >
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-              <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                onFocus={() => setIsSearchDropdownOpen(true)}
-                placeholder="Search place, coords, or hotspots... (Ctrl+K)"
-                className="w-full h-8 pl-9 pr-20 sm:pr-24 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner truncate"
-              />
-              <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700 rounded absolute right-14 pointer-events-none">
-                Ctrl+K
-              </kbd>
-              {isSearching && (
-                <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-14" />
-              )}
-              {searchVal && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchVal('');
-                    setSuggestions([]);
-                  }}
-                  className="absolute right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
-                  title="Clear input"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-              <button
-                type="submit"
-                className="absolute right-1 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center"
-              >
-                FIND
-              </button>
-            </form>
-
-            {/* POPOVER: Popped on need for search / focus - Symmetrically Centered */}
-            {isSearchDropdownOpen && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] sm:w-[460px] md:w-[480px] max-w-[500px] mt-1.5 bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/50 rounded-xl shadow-2xl z-[1200] p-3 text-xs font-mono space-y-2.5 animate-fadeIn">
-                
-                {/* Quick Actions Strip */}
-                <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-800 text-[11px]">
-                  {/* 1. Device GPS */}
-                  <button
-                    type="button"
-                    onClick={handleUseMyLocation}
-                    className="px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 flex items-center space-x-1.5 transition-all cursor-pointer"
-                    title="Use my device GPS location"
-                  >
-                    <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>My GPS</span>
-                  </button>
-
-                  {/* 2. Map Crosshair Inspection Mode */}
-                  {setIsInspectMode && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsInspectMode(!isInspectMode);
-                        setIsSearchDropdownOpen(false);
-                      }}
-                      className={`px-2.5 py-1 rounded-md border flex items-center space-x-1.5 transition-all cursor-pointer ${
-                        isInspectMode
-                          ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20'
-                          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                      }`}
-                      title="Click anywhere on the map to inspect risk"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{isInspectMode ? 'Click Map Active' : 'Inspect Pin'}</span>
-                    </button>
-                  )}
-
-                  {/* 3. Toggle Exact Lat/Lon inputs */}
-                  <button
-                    type="button"
-                    onClick={() => setShowManualCoords(!showManualCoords)}
-                    className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
-                    title="Enter exact coordinates manually"
-                  >
-                    ± Exact Lat/Lon
-                  </button>
-
-                  <div className="ml-auto text-[10px] text-slate-500 hidden sm:block">
-                    Esc to close
-                  </div>
-                </div>
-
-                {/* Exact Lat/Lon Form Strip */}
-                {showManualCoords && (
-                  <form
-                    onSubmit={handleManualCoordsSubmit}
-                    className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center gap-2 text-xs"
-                  >
-                    <span className="text-[10px] text-slate-400 uppercase">COORDS:</span>
-                    <input
-                      type="text"
-                      value={manualLat}
-                      onChange={(e) => setManualLat(e.target.value)}
-                      placeholder="Lat (e.g. 24.8333)"
-                      className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
-                    />
-                    <input
-                      type="text"
-                      value={manualLon}
-                      onChange={(e) => setManualLon(e.target.value)}
-                      placeholder="Lon (e.g. 92.7789)"
-                      className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
-                    />
-                    <button
-                      type="submit"
-                      className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
-                    >
-                      Evaluate
-                    </button>
-                  </form>
-                )}
-
-                {/* Live Geocoding Results (when typing) */}
-                {suggestions.length > 0 && (
-                  <div>
-                    <div className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
-                      <span>Locations Found</span>
-                      <span>{suggestions.length} matching</span>
-                    </div>
-                    <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1">
-                      {suggestions.map((item, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSelectLocation(item.latitude, item.longitude, item.name)}
-                          className="w-full text-left p-2 rounded-lg hover:bg-cyan-950/60 border border-transparent hover:border-cyan-800/80 transition-all flex items-start space-x-2 cursor-pointer"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold text-slate-100 truncate">{item.name}</div>
-                            <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
-                            <div className="text-[9px] text-cyan-400/80 mt-0.5">
-                              [{item.latitude.toFixed(4)}°, {item.longitude.toFixed(4)}°] • {item.source}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Operational Disaster Hotspots Grid (when input has no results or upon initial focus) */}
-                {suggestions.length === 0 && (
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5 flex items-center justify-between">
-                      <span>OPERATIONAL DISASTER HOTSPOTS</span>
-                      <span className="text-[9px] text-slate-500">1-Click Jump</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                      {DISASTER_HOTSPOTS.map((spot, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleSelectLocation(spot.lat, spot.lon, spot.name)}
-                          className="p-1.5 rounded-lg bg-slate-900/90 hover:bg-cyan-950/70 border border-slate-800 hover:border-cyan-700/80 text-left transition-all cursor-pointer group"
-                        >
-                          <div className="font-bold text-slate-200 group-hover:text-cyan-300 text-[11px] truncate flex items-center justify-between">
-                            <span>{spot.name}</span>
-                            <span className="text-[8px] font-mono px-1 rounded bg-slate-800 text-cyan-400">
-                              {spot.tag}
-                            </span>
-                          </div>
-                          <div className="text-[9px] text-slate-400 truncate mt-0.5">
-                            {spot.desc}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        {/* CENTER SECTION: First-Class Global Place & Disaster Search (Desktop) */}
+        <div className="hidden md:flex items-center justify-center w-full min-w-0">
+          <GlobalSearch
+            onLocationSelected={onLocationSelected}
+            onSelectIncident={onSelectIncident}
+            onSearchQuery={onSearchQuery}
+            isInspectMode={isInspectMode}
+            setIsInspectMode={setIsInspectMode}
+            className="w-full max-w-[460px] min-w-0"
+          />
         </div>
 
-        {/* ============================================================== */}
-        {/* COLUMN 3 (RIGHT): Operational Actions & Far-Right Map Controls */}
-        {/* ============================================================== */}
-        <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 min-w-0">
+        {/* RIGHT SECTION: Core Operational Actions, Help, Settings & System Status */}
+        <div className="flex items-center justify-end space-x-1 sm:space-x-1.5 min-w-0">
           
-          {/* 1. Active Location Inspection Intel Pill (if an area is inspected) */}
-          {currentAssessment && (
-            <div className="h-8 flex items-center space-x-1 px-2 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono shrink min-w-0">
+          {/* AI Pipeline Trigger */}
+          {onRunAnalysis && (
+            <button
+              onClick={onRunAnalysis}
+              className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono text-xs font-semibold shadow-md shadow-cyan-950/50 transition-all cursor-pointer shrink-0"
+              title="Run AI Flood Segmentation Pipeline"
+            >
+              <Play className="w-3 h-3 fill-current shrink-0" />
+              <span className="hidden sm:inline">RUN</span>
+              <span className="hidden xl:inline">PIPELINE</span>
+            </button>
+          )}
+
+          {/* Copilot Assistant */}
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/60 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
+              title="Open RESQ AI Disaster Copilot"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="hidden xl:inline">COPILOT</span>
+            </button>
+          )}
+
+          {/* SITREP Situation Report */}
+          {onOpenSitrep && (
+            <button
+              onClick={onOpenSitrep}
+              className="h-8 hidden sm:flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
+              title="View Official Situation Report (SITREP)"
+            >
+              <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="hidden 2xl:inline">SITREP</span>
+            </button>
+          )}
+
+          <div className="h-4 w-px bg-slate-800 hidden sm:block shrink-0" />
+
+          {/* Citizen Survival Guide (Help) */}
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className="h-8 w-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white transition-all flex items-center justify-center cursor-pointer shrink-0"
+              title="Citizen Survival Guide & Safety Checklist (Help)"
+            >
+              <HelpCircle className="w-4 h-4 text-cyan-300" />
+            </button>
+          )}
+
+          {/* Operational Settings */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="h-8 w-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white transition-all flex items-center justify-center cursor-pointer shrink-0"
+            title="Operational Settings & System Diagnostics"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          {/* Live Data Connection & UTC Clock */}
+          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
+            {isOnline ? (
+              <span className="flex items-center space-x-1 text-emerald-400 text-[10px] font-bold" title="Connected to Disaster Intelligence API">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>ONLINE</span>
+              </span>
+            ) : (
+              <span className="flex items-center space-x-1 text-amber-400 text-[10px] font-bold" title="Reconnecting to Backend API">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>OFFLINE</span>
+              </span>
+            )}
+            <span className="text-slate-600">|</span>
+            <Clock className="w-3 h-3 text-cyan-400" />
+            <span>{time}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* =================================================================== */}
+      {/* 2. MOBILE DEDICATED SEARCH ROW (Full width on screens < md)         */}
+      {/* =================================================================== */}
+      <div className="md:hidden px-3 py-2 bg-[#090e1a] border-b border-slate-800/80">
+        <GlobalSearch
+          onLocationSelected={onLocationSelected}
+          onSelectIncident={onSelectIncident}
+          onSearchQuery={onSearchQuery}
+          isInspectMode={isInspectMode}
+          setIsInspectMode={setIsInspectMode}
+          className="w-full"
+        />
+      </div>
+
+      {/* =================================================================== */}
+      {/* 3. SECONDARY ROW: Contextual Toolbar (Map Styles, Active Pins)      */}
+      {/* =================================================================== */}
+      <div className="px-3 sm:px-4 py-1.5 bg-[#080d18] border-b border-slate-800/70 flex items-center justify-between text-xs font-mono">
+        
+        {/* Left Context: Active Pinned Location Intel OR Incident Sub-context */}
+        <div className="flex items-center space-x-2 min-w-0">
+          {currentAssessment ? (
+            /* Active Location Inspection Intel Pill */
+            <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-[#071324] border border-cyan-500/60 shadow-sm text-xs shrink min-w-0">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   currentAssessment.overall_status.is_inundated
@@ -631,24 +475,24 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-emerald-400 animate-pulse'
                 }`}
               />
-              <span className="font-bold text-cyan-300 truncate max-w-[50px] sm:max-w-[80px] 2xl:max-w-[120px] hidden md:inline">
+              <span className="font-bold text-cyan-300 truncate max-w-[90px] sm:max-w-[140px] md:max-w-[200px]">
                 {currentAssessment.query.location_label}
               </span>
               <span
-                className={`px-1 py-0.2 rounded text-[9px] sm:text-[10px] font-bold shrink-0 ${
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
                   currentAssessment.overall_status.is_inundated
                     ? 'bg-red-950 text-red-300 border border-red-700'
                     : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                 }`}
               >
-                {currentAssessment.overall_status.safety_score}%<span className="hidden sm:inline"> SAFE</span>
+                {currentAssessment.overall_status.safety_score}% SAFE
               </span>
               <button
                 onClick={() => setIsIntelModalOpen(true)}
                 className="px-1.5 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
                 title="Open Multi-Source SAR/DEM/GloFAS Intelligence Report"
               >
-                <span>Intel</span><span className="hidden 2xl:inline"> Report</span> ▾
+                <span>Intel Report ▾</span>
               </button>
               {onClearAssessment && (
                 <button
@@ -660,203 +504,148 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
             </div>
+          ) : (
+            /* Incident Regional Context Banner */
+            <div className="flex items-center space-x-2 text-[11px] text-slate-400 truncate">
+              <span className="text-cyan-400/90 font-bold">OPERATIONAL REGION:</span>
+              <span className="text-slate-300 truncate">
+                {activeIncident?.state || 'Assam'} • {activeIncident?.district || 'Cachar District'} (Barak Basin Monsoonal Drainage)
+              </span>
+            </div>
           )}
+        </div>
 
-          {/* 2. Operations Group: AI Pipeline, Copilot, SITREP */}
-          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
-            {/* Quick AI Run Pipeline Button */}
-            {onRunAnalysis && (
-              <button
-                onClick={onRunAnalysis}
-                className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono text-xs font-semibold shadow-md shadow-cyan-950/50 transition-all cursor-pointer shrink-0"
-                title="Run AI Flood Segmentation Pipeline"
-              >
-                <Play className="w-3 h-3 fill-current shrink-0" />
-                <span className="hidden sm:inline">RUN</span>
-                <span className="hidden 2xl:inline">PIPELINE</span>
-              </button>
-            )}
-
-            {/* Copilot */}
-            {onOpenCopilot && (
-              <button
-                onClick={onOpenCopilot}
-                className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/60 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-                title="Open RESQ AI Disaster Copilot"
-              >
-                <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="hidden xl:inline">COPILOT</span>
-              </button>
-            )}
-
-            {/* SITREP */}
-            {onOpenSitrep && (
-              <button
-                onClick={onOpenSitrep}
-                className="h-8 hidden sm:flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-                title="View NDMA Official Situation Report"
-              >
-                <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="hidden 2xl:inline">SITREP</span>
-              </button>
-            )}
-          </div>
-
-          {/* Group Divider */}
-          <div className="h-4 w-px bg-slate-800/80 shrink-0 hidden sm:block" />
-
-          {/* 3. Dedicated Top-Right Map & View Controls Group */}
-          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
-            
-            {/* Telemetry Bar Toggle */}
+        {/* Right Tools: Map Style Selector & Telemetry Toggle */}
+        <div className="flex items-center space-x-1.5 shrink-0">
+          
+          {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
+          <div ref={basemapMenuRef} className="relative shrink-0">
             <button
-              onClick={() => setShowKpis(!showKpis)}
-              className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
-                showKpis
-                  ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-400 hover:text-white'
-                  : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+              type="button"
+              onClick={() => setShowBasemapMenu(!showBasemapMenu)}
+              className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${
+                activeBasemap === 'satellite'
+                  ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
+                  : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark')
+                  ? 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
+                  : 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
               }`}
-              title={showKpis ? 'Minimize Telemetry Bar' : 'Show Telemetry Bar'}
+              title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
             >
-              <Sliders className="w-3.5 h-3.5" />
+              {activeBasemap === 'satellite' && <Globe className="w-3 h-3 text-cyan-400 shrink-0" />}
+              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3 h-3 text-amber-300 shrink-0" />}
+              {activeBasemap === 'topo' && <Mountain className="w-3 h-3 text-emerald-400 shrink-0" />}
+              <span className="font-semibold">
+                {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
-            {/* Citizen Survival Guide */}
-            {onOpenGuide && (
-              <button
-                onClick={onOpenGuide}
-                className="h-8 w-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white transition-all flex items-center justify-center cursor-pointer shrink-0"
-                title="Citizen Survival Guide & Safety Checklist"
-              >
-                <HelpCircle className="w-4 h-4 text-cyan-300" />
-              </button>
-            )}
-
-            {/* ============================================================== */}
-            {/* MAP DISPLAY MODE SELECTOR (SATELLITE / DARK MODE / TERRAIN)    */}
-            {/* PROMINENTLY POSITIONED AT THE TOP RIGHT CORNER                 */}
-            {/* ============================================================== */}
-            <div ref={basemapMenuRef} className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-                className={`h-8 flex items-center space-x-1.5 px-2.5 rounded-lg border transition-all cursor-pointer shadow-sm ${
-                  activeBasemap === 'satellite'
-                    ? 'bg-slate-900 border-cyan-500/50 hover:border-cyan-400 text-cyan-200'
-                    : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark')
-                    ? 'bg-slate-900 border-amber-500/50 hover:border-amber-400 text-amber-200'
-                    : 'bg-slate-900 border-emerald-500/50 hover:border-emerald-400 text-emerald-200'
-                }`}
-                title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
-              >
-                {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
-                {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
-                {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-                <span className="font-mono font-semibold text-[11px] hidden md:inline">
-                  {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-              </button>
-
-              {showBasemapMenu && (
-                <div className="absolute right-0 mt-1.5 w-60 p-1.5 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] space-y-1 text-xs font-mono">
-                  <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
-                    MAP DISPLAY MODE
-                  </div>
-
-                  {/* Option 1: Satellite Hybrid */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectBasemap) onSelectBasemap('satellite');
-                      setShowBasemapMenu(false);
-                    }}
-                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                      activeBasemap === 'satellite'
-                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                        : 'hover:bg-slate-800/80 text-slate-300'
-                    }`}
-                  >
-                    <Globe className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                        <span>Satellite Hybrid</span>
-                        {activeBasemap === 'satellite' && <Check className="w-3 h-3 text-cyan-400" />}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        High-res ESRI imagery + labels
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Option 2: Dark Mode */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectBasemap) onSelectBasemap('dark');
-                      setShowBasemapMenu(false);
-                    }}
-                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                      activeBasemap === 'dark' || activeBasemap === 'tactical-dark'
-                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                        : 'hover:bg-slate-800/80 text-slate-300'
-                    }`}
-                  >
-                    <Moon className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                        <span>Dark Mode</span>
-                        {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Check className="w-3 h-3 text-cyan-400" />}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        Google Maps dark palette & roads
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Option 3: Terrain Mode */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectBasemap) onSelectBasemap('topo');
-                      setShowBasemapMenu(false);
-                    }}
-                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                      activeBasemap === 'topo'
-                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                        : 'hover:bg-slate-800/80 text-slate-300'
-                    }`}
-                  >
-                    <Mountain className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                        <span>Terrain Mode</span>
-                        {activeBasemap === 'topo' && <Check className="w-3 h-3 text-cyan-400" />}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        Hillshade, elevation contours & summits
-                      </div>
-                    </div>
-                  </button>
+            {showBasemapMenu && (
+              <div className="absolute right-0 mt-1.5 w-60 p-1.5 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] space-y-1 text-xs font-mono animate-fadeIn">
+                <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                  MAP DISPLAY MODE
                 </div>
-              )}
-            </div>
+
+                {/* Option 1: Satellite Hybrid */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('satellite');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'satellite'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Globe className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Satellite Hybrid</span>
+                      {activeBasemap === 'satellite' && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      High-res ESRI imagery + labels
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 2: Dark Mode */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('dark');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'dark' || activeBasemap === 'tactical-dark'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Dark Mode</span>
+                      {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Google Maps dark palette & roads
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 3: Terrain Mode */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectBasemap) onSelectBasemap('topo');
+                    setShowBasemapMenu(false);
+                  }}
+                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                    activeBasemap === 'topo'
+                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                      : 'hover:bg-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <Mountain className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                      <span>Terrain Mode</span>
+                      {activeBasemap === 'topo' && <Check className="w-3 h-3 text-cyan-400" />}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Hillshade, elevation contours & summits
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* 4. Live Operational Status & UTC Clock */}
-          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">LIVE</span>
-            <span className="text-slate-600">|</span>
-            <Clock className="w-3 h-3 text-cyan-400" />
-            <span>{time}</span>
-          </div>
+          {/* Telemetry Metrics Ribbon Toggle */}
+          <button
+            onClick={() => setShowKpis(!showKpis)}
+            className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0 ${
+              showKpis
+                ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300'
+                : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+            }`}
+            title={showKpis ? 'Minimize Analytical KPI Bar' : 'Show Analytical KPI Bar'}
+          >
+            <Sliders className="w-3 h-3" />
+            <span className="hidden sm:inline">Telemetry</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Analytical KPI Metrics Ribbon (Collapsible for Maximum Map Canvas) */}
+      {/* =================================================================== */}
+      {/* 4. TERTIARY ROW: Analytical KPI Metrics Ribbon (Collapsible)        */}
+      {/* =================================================================== */}
       {showKpis && (
-        <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/90 transition-all">
+        <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/95 transition-all animate-fadeIn">
           {kpiItems.map((kpi, idx) => {
             const Icon = kpi.icon;
             return (
@@ -885,13 +674,28 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* 3. Detailed Multi-Source Assessment Intelligence Modal */}
+      {/* =================================================================== */}
+      {/* 5. MODALS: Location Intelligence & Operational Settings             */}
+      {/* =================================================================== */}
       {isIntelModalOpen && currentAssessment && (
         <LocationIntelModal
           assessment={currentAssessment}
           onClose={() => setIsIntelModalOpen(false)}
         />
       )}
+
+      <OperationalSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        activeBasemap={activeBasemap}
+        onSelectBasemap={onSelectBasemap || (() => {})}
+        stateBoundariesEnabled={layers?.stateBoundaries ?? true}
+        onToggleStateBoundaries={
+          setLayers
+            ? () => setLayers((prev: any) => ({ ...prev, stateBoundaries: !prev.stateBoundaries }))
+            : undefined
+        }
+      />
     </header>
   );
 };

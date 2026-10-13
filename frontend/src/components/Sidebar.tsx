@@ -124,8 +124,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  if (isHidden) return null;
-
   const handleSelectTab = (tab: string) => {
     setCurrentTab(tab);
     if (window.innerWidth < 768 && setIsHidden) {
@@ -136,15 +134,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Mobile Drawer Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[1050] md:hidden cursor-pointer"
-        onClick={() => setIsHidden && setIsHidden(true)}
-      />
+      {!isHidden && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[1050] md:hidden cursor-pointer"
+          onClick={() => setIsHidden && setIsHidden(true)}
+        />
+      )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-[1100] md:z-30 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none shrink-0 font-sans transition-all duration-200 ${
-          isCollapsed ? 'w-16' : 'w-64'
-        }`}
+        className={`fixed md:static inset-y-0 left-0 z-[1100] md:z-30 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none shrink-0 font-sans transition-all duration-300 ease-in-out ${
+          isHidden ? '-translate-x-full md:translate-x-0' : 'translate-x-0'
+        } ${isCollapsed ? 'w-16' : 'w-64'}`}
       >
         {/* ========================================================= */}
         {/* TOP SECTION: BRAND & NAVIGATION                           */}

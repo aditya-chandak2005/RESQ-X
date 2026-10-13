@@ -61,7 +61,11 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setIsSidebarHidden((prev) => !prev);
+        if (window.innerWidth < 768) {
+          setIsSidebarHidden((prev) => !prev);
+        } else {
+          setIsSidebarCollapsed((prev) => !prev);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -261,8 +265,15 @@ export const App: React.FC = () => {
           onOpenSitrep={() => setIsSitrepOpen(true)}
           onOpenGuide={() => setIsCitizenGuideOpen(true)}
           onOpenExplore={() => setCurrentTab('explore')}
+          isSidebarCollapsed={isSidebarCollapsed}
           isSidebarHidden={isSidebarHidden}
-          onToggleSidebar={() => setIsSidebarHidden(!isSidebarHidden)}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 768) {
+              setIsSidebarHidden((prev) => !prev);
+            } else {
+              setIsSidebarCollapsed((prev) => !prev);
+            }
+          }}
           onLocationSelected={handleNavigateToLocation}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
@@ -273,6 +284,8 @@ export const App: React.FC = () => {
           }}
           activeBasemap={layers.basemap}
           onSelectBasemap={(bm) => setLayers((prev) => ({ ...prev, basemap: bm }))}
+          layers={layers}
+          setLayers={setLayers}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
