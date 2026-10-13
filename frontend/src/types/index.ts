@@ -201,12 +201,14 @@ export interface LayerVisibility {
   bridges: boolean;
   roads: boolean;
   blockedRoads: boolean;
+  buildings?: boolean;
   hospitals: boolean;
   shelters: boolean;
   rescueTeams: boolean;
   routes: boolean;
   alternateRoutes: boolean;
   floodPath: boolean;
+  elevationContours?: boolean;
 }
 
 export interface LocationAssessment {

@@ -30,10 +30,19 @@ export const AnchoredPopover: React.FC<AnchoredPopoverProps> = ({
   const [coords, setCoords] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
 
   const updatePosition = useCallback(() => {
-    if (!triggerRef.current) return;
-    const triggerRect = triggerRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+
+    if (!triggerRef.current) {
+      const targetWidth = Math.min(maxWidth, viewportWidth - 24);
+      setCoords({
+        top: 54,
+        left: Math.max(12, viewportWidth - targetWidth - 12),
+        maxHeight: Math.min(maxHeight, viewportHeight - 70),
+      });
+      return;
+    }
+    const triggerRect = triggerRef.current.getBoundingClientRect();
 
     // Estimate or measure popover dimensions
     const popoverEl = popoverRef.current;
@@ -157,7 +166,7 @@ export const AnchoredPopover: React.FC<AnchoredPopoverProps> = ({
         visibility: coords ? 'visible' : 'hidden',
         zIndex: 2100,
       }}
-      className={`bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 rounded-xl shadow-2xl flex flex-col font-sans select-none text-slate-100 overflow-hidden animate-fadeIn ${className}`}
+      className={`bg-[#080e1c]/92 backdrop-blur-xl border border-cyan-500/30 rounded-xl shadow-2xl flex flex-col font-sans select-none text-slate-100 overflow-hidden animate-fadeIn ${className}`}
       role="dialog"
       aria-modal="false"
       onClick={(e) => e.stopPropagation()}

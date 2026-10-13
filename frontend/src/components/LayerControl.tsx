@@ -149,6 +149,7 @@ export const LayerControl: React.FC<LayerControlProps> = ({ layers, setLayers })
       <MapLayersPanel
         isOpen={showFullDrawer}
         onClose={() => setShowFullDrawer(false)}
+        triggerRef={controlRef}
         layers={layers}
         setLayers={setLayers}
       />

@@ -764,7 +764,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
-        {activeBasemap === 'topo' &&
+        {(activeBasemap === 'topo' || layers.elevationContours) &&
           TERRAIN_LANDMARKS.map((landmark, idx) => (
             <Marker
               key={`terrain-${idx}`}
@@ -1114,6 +1114,77 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       <span className="font-bold text-teal-400">{h.name}</span>
                       <br />
                       Trauma Level: District Emergency
+                    </div>
+                  </Tooltip>
+                </Marker>
+              );
+            })}
+
+        {/* Evacuation Shelters & Relief Camps */}
+        {layers.shelters &&
+          assets
+            .filter((a) => a.asset_type === 'shelter')
+            .map((s) => {
+              const icon = createCustomIcon('#059669', '#34d399', '⛺');
+              return (
+                <Marker
+                  key={`shelter-${s.id}`}
+                  position={[s.latitude, s.longitude]}
+                  icon={icon}
+                  eventHandlers={{
+                    click: () => onSelectItem({ type: 'asset', data: s }),
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs font-mono">
+                      <span className="font-bold text-emerald-400">{s.name}</span>
+                      <br />
+                      Type: Relief Shelter & Camp
+                      <br />
+                      Status: <span className="text-emerald-400 font-bold">{s.status.toUpperCase()}</span>
+                    </div>
+                  </Tooltip>
+                </Marker>
+              );
+            })}
+
+        {/* Exposed Buildings & Infrastructure */}
+        {layers.buildings &&
+          assets
+            .filter((a) => a.asset_type === 'building' || a.asset_type === 'infrastructure')
+            .map((b) => {
+              const isDestroyed = b.status === 'destroyed';
+              const isAffected = b.status === 'affected';
+              const color = isDestroyed ? '#ef4444' : isAffected ? '#f59e0b' : '#38bdf8';
+              const borderColor = isDestroyed ? '#fca5a5' : isAffected ? '#fcd34d' : '#7dd3fc';
+              const icon = createCustomIcon(color, borderColor, '🏛️');
+              return (
+                <Marker
+                  key={`building-${b.id}`}
+                  position={[b.latitude, b.longitude]}
+                  icon={icon}
+                  eventHandlers={{
+                    click: () => onSelectItem({ type: 'asset', data: b }),
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs font-mono">
+                      <span className="font-bold text-slate-200">{b.name}</span>
+                      <br />
+                      Status:{' '}
+                      <span
+                        className={
+                          isDestroyed
+                            ? 'text-red-400 font-bold'
+                            : isAffected
+                            ? 'text-amber-400 font-bold'
+                            : 'text-cyan-400'
+                        }
+                      >
+                        {b.status.toUpperCase()}
+                      </span>
+                      <br />
+                      Damage Prob: {(b.damage_probability * 100).toFixed(0)}%
                     </div>
                   </Tooltip>
                 </Marker>

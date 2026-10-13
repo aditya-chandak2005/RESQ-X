@@ -1,9 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Layers,
   X,
-  Eye,
-  EyeOff,
   Check,
   RotateCcw,
   Search,
@@ -19,83 +17,157 @@ import {
   Compass,
   Hospital,
   Mountain,
-  Clock,
-  Sparkles,
   MapPin,
+  Moon,
+  Sparkles,
+  ExternalLink,
   CheckSquare,
   Square,
   Filter,
 } from 'lucide-react';
-import { LayerVisibility } from '../types';
+import { LayerVisibility, BasemapType } from '../types';
+import { AnchoredPopover } from './AnchoredPopover';
+import { BASEMAP_DEFINITIONS } from '../services/basemapConfig';
 
-interface MapLayersPanelProps {
+export interface MapLayersPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  triggerRef: React.RefObject<HTMLElement | null>;
   layers: LayerVisibility;
   setLayers: React.Dispatch<React.SetStateAction<LayerVisibility>>;
-  isSidebarCollapsed?: boolean;
-  isSidebarHidden?: boolean;
+  className?: string;
 }
 
-export type LayerGroupId =
-  | 'satellite'
+export type LayerCategoryKey =
+  | 'basemaps'
   | 'flood'
-  | 'buildings'
-  | 'roads'
+  | 'infrastructure'
   | 'settlements'
-  | 'hospitals'
   | 'rescue'
   | 'terrain';
 
-export interface TacticalLayer {
-  key: keyof LayerVisibility;
+export interface TacticalLayerDefinition {
+  id: string;
+  key?: keyof LayerVisibility;
   label: string;
   description: string;
-  group: LayerGroupId;
+  category: LayerCategoryKey;
   color: string;
   symbolType: 'polygon' | 'gradient' | 'line' | 'pin';
   source: string;
   updated: string;
   confidence?: string;
   available: boolean;
+  unavailableReason?: string;
   status: 'live' | 'computed' | 'static' | 'unavailable';
+  isBasemap?: boolean;
+  basemapValue?: BasemapType;
 }
 
-export const TACTICAL_LAYERS: TacticalLayer[] = [
-  // 1. Satellite imagery and basemaps
+export interface LayerCategoryConfig {
+  id: LayerCategoryKey;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  isExclusive?: boolean; // True for basemaps
+}
+
+export const LAYER_CATEGORIES: LayerCategoryConfig[] = [
   {
-    key: 'satellite',
-    label: 'Optical Satellite Imagery',
-    description: '10m multispectral baseline imagery providing terrain context and land cover classification.',
-    group: 'satellite',
-    color: '#818cf8',
-    symbolType: 'polygon',
-    source: 'Sentinel-2 MSI (10m ESA Copernicus)',
-    updated: '2026-02-08 10:15 UTC',
-    confidence: 'Cloud Cover: 14.2% • L2A Bottom-of-Atmosphere',
-    available: true,
-    status: 'static',
+    id: 'basemaps',
+    label: 'Base maps',
+    icon: Globe,
+    description: 'Geospatial satellite imagery & topographic basemaps',
+    isExclusive: true,
   },
   {
-    key: 'stateBoundaries',
-    label: 'India State Borders & Labels',
-    description: 'Official administrative state boundary outlines and labeled centroid reference pins.',
-    group: 'satellite',
+    id: 'flood',
+    label: 'Flood analysis',
+    icon: Waves,
+    description: 'SAR water extent, severity & satellite observations',
+  },
+  {
+    id: 'infrastructure',
+    label: 'Infrastructure',
+    icon: Building,
+    description: 'Road networks, blocked corridors, bridges & buildings',
+  },
+  {
+    id: 'settlements',
+    label: 'Settlements and exposure',
+    icon: Users,
+    description: 'Revenue villages, cut-off hamlets & demographics',
+  },
+  {
+    id: 'rescue',
+    label: 'Rescue operations',
+    icon: ShieldCheck,
+    description: 'Hospitals, relief shelters, rescue teams & routes',
+  },
+  {
+    id: 'terrain',
+    label: 'Terrain and preparedness',
+    icon: Mountain,
+    description: 'Administrative borders, DEM drainage & elevations',
+  },
+];
+
+export const TACTICAL_LAYERS: TacticalLayerDefinition[] = [
+  // =========================================================================
+  // 1. BASE MAPS (Mutually exclusive background raster styles)
+  // =========================================================================
+  {
+    id: 'bm-satellite',
+    label: 'Satellite imagery',
+    description: 'High-resolution ESRI World Imagery orbital multispectral baseline.',
+    category: 'basemaps',
     color: '#38bdf8',
-    symbolType: 'line',
-    source: 'Survey of India Administrative GIS',
-    updated: '2026 Sovereign Datum',
-    confidence: '1:50,000 Scale Cadastral Precision',
+    symbolType: 'polygon',
+    source: 'ESRI World Imagery (Sentinel & Maxar Composite)',
+    updated: 'Operational Global 2026',
     available: true,
-    status: 'static',
+    status: 'live',
+    isBasemap: true,
+    basemapValue: 'satellite',
+  },
+  {
+    id: 'bm-dark',
+    label: 'Dark basemap',
+    description: 'CartoDB high-contrast dark geographic vector tiles for nighttime command ops.',
+    category: 'basemaps',
+    color: '#f59e0b',
+    symbolType: 'polygon',
+    source: 'CartoDB Dark Matter',
+    updated: 'Global 2026',
+    available: true,
+    status: 'live',
+    isBasemap: true,
+    basemapValue: 'dark',
+  },
+  {
+    id: 'bm-topo',
+    label: 'Terrain / topographic basemap',
+    description: 'ESRI World Topo with elevation contours, shaded relief, and ridgeline terrain.',
+    category: 'basemaps',
+    color: '#10b981',
+    symbolType: 'polygon',
+    source: 'ESRI World Topo & Shaded Relief',
+    updated: 'Global 2026',
+    available: true,
+    status: 'live',
+    isBasemap: true,
+    basemapValue: 'topo',
   },
 
-  // 2. Flood extent and severity
+  // =========================================================================
+  // 2. FLOOD ANALYSIS
+  // =========================================================================
   {
+    id: 'flood-extent',
     key: 'floodExtent',
-    label: 'Flood Inundation Extent',
-    description: 'Active open-water inundation mask segmented from Sentinel-1 SAR backscatter amplitude.',
-    group: 'flood',
+    label: 'Detected flood extent',
+    description: 'Active open-water inundation mask segmented from Sentinel-1 SAR backscatter.',
+    category: 'flood',
     color: '#06b6d4',
     symbolType: 'polygon',
     source: 'Sentinel-1 C-SAR IW (VV+VH Dual Pol)',
@@ -105,10 +177,11 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'live',
   },
   {
+    id: 'flood-severity',
     key: 'floodSeverity',
-    label: 'Severity Gradients (SAR AI)',
-    description: 'Classified flood depth zones: Critical (>3m, red), High (1.5-3m, amber), Moderate (<1.5m, blue).',
-    group: 'flood',
+    label: 'Flood severity',
+    description: 'Neural depth triage zones: Critical (>3m, red), High (1.5-3m, amber), Moderate (<1.5m, blue).',
+    category: 'flood',
     color: '#2563eb',
     symbolType: 'gradient',
     source: 'RESQ-Net-SARv2 Neural Depth Pipeline',
@@ -117,28 +190,57 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     available: true,
     status: 'computed',
   },
-
-  // 3. Buildings and infrastructure
   {
-    key: 'blockedRoads',
-    label: 'Severed Infrastructure & Debris',
-    description: 'Critical washed-out structures, silt blockages, and impassable arterial road corridors.',
-    group: 'buildings',
+    id: 'flood-sar-post',
+    key: 'satellite',
+    label: 'Post-event SAR imagery',
+    description: 'Sentinel-1 calibrated ground range detected (GRD) footprint bounds & SAR metadata.',
+    category: 'flood',
+    color: '#818cf8',
+    symbolType: 'polygon',
+    source: 'Copernicus Open Access Hub',
+    updated: '2026-02-08 10:15 UTC',
+    confidence: 'Cloud-penetrating C-band active microwave',
+    available: true,
+    status: 'live',
+  },
+  {
+    id: 'flood-optical-pre',
+    label: 'Pre-event optical imagery',
+    description: 'Historical cloud-free multispectral archive for baseline land cover comparison.',
+    category: 'flood',
+    color: '#64748b',
+    symbolType: 'polygon',
+    source: 'Sentinel-2 MSI 10m L2A Archive',
+    updated: 'Historical Baseline Archive',
+    available: false,
+    unavailableReason: 'Data unavailable (Awaiting pre-monsoon cloudless mosaic)',
+    status: 'unavailable',
+  },
+
+  // =========================================================================
+  // 3. INFRASTRUCTURE
+  // =========================================================================
+  {
+    id: 'infra-buildings',
+    key: 'buildings',
+    label: 'Exposed buildings',
+    description: 'Municipal structures, power stations, and residential dwellings in flood zone.',
+    category: 'infrastructure',
     color: '#f43f5e',
-    symbolType: 'line',
-    source: 'NetworkX Graph Road Severance Engine',
-    updated: 'Live Graph Sync',
-    confidence: 'Water depth > 0.3m vehicle threshold',
+    symbolType: 'pin',
+    source: 'OpenStreetMap Building Footprints & PWD GIS',
+    updated: '2026 Q1 Geometry',
+    confidence: 'Damage probability assessment indexed',
     available: true,
     status: 'computed',
   },
-
-  // 4. Roads and bridges
   {
+    id: 'infra-roads',
     key: 'roads',
-    label: 'Road Infrastructure Network',
+    label: 'Road network',
     description: 'National highways (NH-58, NH-306), state highways, and municipal access routes.',
-    group: 'roads',
+    category: 'infrastructure',
     color: '#fb923c',
     symbolType: 'line',
     source: 'OpenStreetMap Hydro-Road Grid',
@@ -148,10 +250,25 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'static',
   },
   {
+    id: 'infra-blocked-roads',
+    key: 'blockedRoads',
+    label: 'Blocked roads / debris',
+    description: 'Impassable road segments exceeding vehicle water-depth clearance (0.3m).',
+    category: 'infrastructure',
+    color: '#ef4444',
+    symbolType: 'line',
+    source: 'NetworkX Graph Road Severance Engine',
+    updated: 'Live Graph Sync',
+    confidence: 'Water depth > 0.3m vehicle threshold',
+    available: true,
+    status: 'computed',
+  },
+  {
+    id: 'infra-bridges',
     key: 'bridges',
-    label: 'River Bridges & Spans',
-    description: 'River crossings categorized by structural integrity: passable, submerged, or destroyed.',
-    group: 'roads',
+    label: 'Bridges & river spans',
+    description: 'Critical hydraulic crossings monitored for structural washouts and clearance.',
+    category: 'infrastructure',
     color: '#f59e0b',
     symbolType: 'pin',
     source: 'Central Water Commission / State PWD',
@@ -161,12 +278,15 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'live',
   },
 
-  // 5. Settlements and population exposure
+  // =========================================================================
+  // 4. SETTLEMENTS AND EXPOSURE
+  // =========================================================================
   {
+    id: 'settlements-all',
     key: 'settlements',
-    label: 'Settlements & Villages',
-    description: 'Revenue villages, municipal clusters, and civilian dwellings with population exposure metrics.',
-    group: 'settlements',
+    label: 'Settlements & villages',
+    description: 'Revenue villages, municipal clusters, and civilian dwellings with population exposure.',
+    category: 'settlements',
     color: '#10b981',
     symbolType: 'pin',
     source: 'Census GIS & LandScan Population Grid',
@@ -176,10 +296,11 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'static',
   },
   {
+    id: 'settlements-isolated',
     key: 'isolatedOnly',
-    label: 'Highlight Cut-Off Zones Only',
-    description: 'Isolate hamlets having zero navigable dry-ground road egress (requiring helicopter/boat airdrops).',
-    group: 'settlements',
+    label: 'Isolated cut-off settlements',
+    description: 'Hamlets having zero navigable dry-ground road egress (requiring airdrops/boats).',
+    category: 'settlements',
     color: '#ef4444',
     symbolType: 'pin',
     source: 'Dijkstra Islanding & Ingress Cutoff Engine',
@@ -188,13 +309,29 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     available: true,
     status: 'computed',
   },
-
-  // 6. Hospitals and shelters
   {
+    id: 'settlements-pop-grid',
+    label: 'Population exposure grid',
+    description: 'High-resolution ambient demographic density raster grid overlay (1km).',
+    category: 'settlements',
+    color: '#64748b',
+    symbolType: 'polygon',
+    source: 'Census GIS & LandScan Global Grid',
+    updated: 'Awaiting Census GeoPackage',
+    available: false,
+    unavailableReason: 'Data unavailable (Awaiting State Census GeoPackage)',
+    status: 'unavailable',
+  },
+
+  // =========================================================================
+  // 5. RESCUE OPERATIONS
+  // =========================================================================
+  {
+    id: 'rescue-hospitals',
     key: 'hospitals',
-    label: 'Hospitals & Medical Triage',
+    label: 'Hospitals & medical triage',
     description: 'Civil hospitals, community health centers, and emergency heli-evac landing zones.',
-    group: 'hospitals',
+    category: 'rescue',
     color: '#2dd4bf',
     symbolType: 'pin',
     source: 'National Health Mission GIS Registry',
@@ -204,10 +341,11 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'static',
   },
   {
+    id: 'rescue-shelters',
     key: 'shelters',
-    label: 'Evacuation Shelters & Relief Camps',
-    description: 'High-elevation disaster refuge camps and designated government school relief shelters.',
-    group: 'hospitals',
+    label: 'Relief shelters & camps',
+    description: 'High-elevation disaster refuge camps and designated government school shelters.',
+    category: 'rescue',
     color: '#34d399',
     symbolType: 'pin',
     source: 'State Disaster Management Authority (SDMA)',
@@ -216,13 +354,12 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     available: true,
     status: 'live',
   },
-
-  // 7. Rescue routes and operational assets
   {
+    id: 'rescue-teams',
     key: 'rescueTeams',
-    label: 'Rescue Teams (GPS Telemetry)',
-    description: 'Active deployed NDRF, SDRF, and military disaster response task forces with boat AIS tracking.',
-    group: 'rescue',
+    label: 'Rescue teams (AIS GPS)',
+    description: 'Active deployed NDRF, SDRF, and military disaster response task forces.',
+    category: 'rescue',
     color: '#c084fc',
     symbolType: 'pin',
     source: 'NDRF AIS Live GPS Telemetry Stream',
@@ -232,10 +369,11 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'live',
   },
   {
+    id: 'rescue-routes',
     key: 'routes',
-    label: 'Primary Rescue Corridors',
-    description: 'Dijkstra-optimized dry-ground egress paths connecting operational staging bases to target hamlets.',
-    group: 'rescue',
+    label: 'Rescue routes (Primary A*)',
+    description: 'Dijkstra-optimized dry-ground egress paths connecting staging bases to hamlets.',
+    category: 'rescue',
     color: '#60a5fa',
     symbolType: 'line',
     source: 'A* Topological Routing Engine',
@@ -245,10 +383,11 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'computed',
   },
   {
+    id: 'rescue-alt-routes',
     key: 'alternateRoutes',
-    label: 'Alternate Detour Routes',
-    description: 'Secondary ridgeline and flood embankment bypasses when primary arteries are compromised.',
-    group: 'rescue',
+    label: 'Alternate detour routes',
+    description: 'Secondary ridgeline and flood embankment bypasses when primary arteries fail.',
+    category: 'rescue',
     color: '#059669',
     symbolType: 'line',
     source: 'Topographic Rerouting Engine',
@@ -258,12 +397,29 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     status: 'computed',
   },
 
-  // 8. Terrain and vulnerability
+  // =========================================================================
+  // 6. TERRAIN AND PREPAREDNESS
+  // =========================================================================
   {
+    id: 'terrain-boundaries',
+    key: 'stateBoundaries',
+    label: 'Survey of India state boundaries',
+    description: 'Official administrative state boundary outlines and labeled centroid reference pins.',
+    category: 'terrain',
+    color: '#38bdf8',
+    symbolType: 'line',
+    source: 'Survey of India Administrative GIS',
+    updated: '2026 Sovereign Datum',
+    confidence: '1:50,000 Scale Cadastral Precision',
+    available: true,
+    status: 'static',
+  },
+  {
+    id: 'terrain-drainage',
     key: 'floodPath',
-    label: 'Downstream DEM Flow Corridor',
+    label: 'Drainage corridor / vulnerability',
     description: 'Hydrological drainage pathways and low-elevation flood velocity vector simulations.',
-    group: 'terrain',
+    category: 'terrain',
     color: '#eab308',
     symbolType: 'line',
     source: 'Copernicus 30m DEM (GLO-30) Hydro Engine',
@@ -272,472 +428,544 @@ export const TACTICAL_LAYERS: TacticalLayer[] = [
     available: true,
     status: 'computed',
   },
-];
-
-export interface LayerGroupConfig {
-  id: LayerGroupId;
-  label: string;
-  icon: typeof Waves;
-  description: string;
-}
-
-export const LAYER_GROUPS: LayerGroupConfig[] = [
   {
-    id: 'satellite',
-    label: 'Satellite Imagery & Basemaps',
-    icon: Globe,
-    description: 'Multispectral baselines & administrative borders',
+    id: 'terrain-contours',
+    key: 'elevationContours',
+    label: 'Elevation contours & relief',
+    description: 'Topographic summit landmarks, high-ground ridgelines, and safe refuge elevations.',
+    category: 'terrain',
+    color: '#10b981',
+    symbolType: 'line',
+    source: 'Copernicus GLO-30 Topography',
+    updated: 'Real-time Topo Engine',
+    confidence: 'Elevation verified above 100-yr flood datum',
+    available: true,
+    status: 'computed',
   },
   {
-    id: 'flood',
-    label: 'Flood Extent & Severity',
-    icon: Waves,
-    description: 'SAR water segmentation & depth gradients',
-  },
-  {
-    id: 'buildings',
-    label: 'Buildings & Infrastructure',
-    icon: Building,
-    description: 'Critical infrastructure & debris washouts',
-  },
-  {
-    id: 'roads',
-    label: 'Roads & Bridges',
-    icon: Compass,
-    description: 'Highways, arterial roads & river spans',
-  },
-  {
-    id: 'settlements',
-    label: 'Settlements & Exposure',
-    icon: Users,
-    description: 'Revenue villages & cut-off isolated hamlets',
-  },
-  {
-    id: 'hospitals',
-    label: 'Hospitals & Shelters',
-    icon: Hospital,
-    description: 'Medical triage facilities & relief camps',
-  },
-  {
-    id: 'rescue',
-    label: 'Rescue Routes & Assets',
-    icon: ShieldCheck,
-    description: 'NDRF GPS units & A* navigation corridors',
-  },
-  {
-    id: 'terrain',
-    label: 'Terrain & Vulnerability',
-    icon: Mountain,
-    description: 'Copernicus 30m DEM drainage corridors',
+    id: 'terrain-slope',
+    label: 'Slope hazard & landslide risk',
+    description: 'Copernicus DEM slope angle raster classifying unstable mountain gradients (>35°).',
+    category: 'terrain',
+    color: '#64748b',
+    symbolType: 'gradient',
+    source: 'Copernicus DEM Slope Derivative',
+    updated: 'Pipeline Ingestion Queue',
+    available: false,
+    unavailableReason: 'Coming soon (DEM gradient derivative pending)',
+    status: 'unavailable',
   },
 ];
+
+export const DEFAULT_TACTICAL_LAYERS: LayerVisibility = {
+  basemap: 'satellite',
+  satellite: true,
+  stateBoundaries: true,
+  floodExtent: true,
+  floodSeverity: true,
+  settlements: true,
+  isolatedOnly: false,
+  bridges: true,
+  roads: true,
+  blockedRoads: true,
+  buildings: true,
+  hospitals: true,
+  shelters: true,
+  rescueTeams: true,
+  routes: true,
+  alternateRoutes: false,
+  floodPath: true,
+  elevationContours: false,
+};
 
 export const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
   isOpen,
   onClose,
+  triggerRef,
   layers,
   setLayers,
-  isSidebarCollapsed = false,
-  isSidebarHidden = false,
+  className = '',
 }) => {
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const toggleLayer = (key: keyof LayerVisibility) => {
-    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Reset to default layer state
+  const handleResetDefaults = () => {
+    setLayers(DEFAULT_TACTICAL_LAYERS);
   };
 
-  const toggleGroup = (groupId: LayerGroupId, enable: boolean) => {
-    const groupLayerKeys = TACTICAL_LAYERS.filter((l) => l.group === groupId && l.available).map(
-      (l) => l.key
-    );
-    setLayers((prev) => {
-      const updated = { ...prev };
-      groupLayerKeys.forEach((key) => {
-        (updated as any)[key] = enable;
-      });
-      return updated;
+  // Toggle individual layer
+  const handleToggleLayer = (item: TacticalLayerDefinition) => {
+    if (!item.available) return;
+
+    if (item.isBasemap && item.basemapValue) {
+      setLayers((prev) => ({ ...prev, basemap: item.basemapValue! }));
+      return;
+    }
+
+    if (item.key) {
+      const key = item.key;
+      setLayers((prev) => ({
+        ...prev,
+        [key]: !prev[key],
+      }));
+    }
+  };
+
+  // Category collapse / expand
+  const toggleCategoryCollapse = (catId: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [catId]: !prev[catId],
+    }));
+  };
+
+  // Expand / collapse all categories
+  const areAllCollapsed = useMemo(() => {
+    return LAYER_CATEGORIES.every((c) => collapsedCategories[c.id]);
+  }, [collapsedCategories]);
+
+  const toggleAllCollapse = () => {
+    const newState: Record<string, boolean> = {};
+    const targetCollapsed = !areAllCollapsed;
+    LAYER_CATEGORIES.forEach((c) => {
+      newState[c.id] = targetCollapsed;
     });
+    setCollapsedCategories(newState);
   };
 
-  const setAllLayers = (enable: boolean) => {
+  // Enable/disable all available layers in a category
+  const toggleCategoryAll = (catId: LayerCategoryKey, enable: boolean) => {
+    const catLayers = TACTICAL_LAYERS.filter((l) => l.category === catId && l.available && l.key);
     setLayers((prev) => {
       const updated = { ...prev };
-      TACTICAL_LAYERS.forEach((def) => {
-        if (def.available) {
-          (updated as any)[def.key] = enable;
+      catLayers.forEach((l) => {
+        if (l.key) {
+          (updated as any)[l.key] = enable;
         }
       });
       return updated;
     });
   };
 
-  const resetTacticalDefaults = () => {
-    setLayers((prev) => ({
-      ...prev,
-      floodExtent: true,
-      floodSeverity: true,
-      settlements: true,
-      isolatedOnly: false,
-      bridges: true,
-      roads: true,
-      blockedRoads: true,
-      hospitals: true,
-      shelters: true,
-      rescueTeams: true,
-      routes: true,
-      alternateRoutes: false,
-      floodPath: true,
-      stateBoundaries: true,
-      satellite: true,
-    }));
-  };
-
-  const toggleGroupCollapse = (groupId: string) => {
-    setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
-  };
-
-  // Rule-based active layer count calculation
-  const activeCount = Object.entries(layers).filter(
-    ([k, v]) => k !== 'basemap' && Boolean(v)
-  ).length;
-
-  const totalCount = TACTICAL_LAYERS.length;
-
-  // Filtered layers
+  // Filtered layers based on search and category filter
   const filteredLayers = useMemo(() => {
-    return TACTICAL_LAYERS.filter((def) => {
-      const matchesGroup = selectedGroup === 'all' || def.group === selectedGroup;
-      const q = searchQuery.toLowerCase().trim();
+    const q = searchQuery.toLowerCase().trim();
+    return TACTICAL_LAYERS.filter((item) => {
+      const matchesCategory =
+        selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
       const matchesSearch =
         !q ||
-        def.label.toLowerCase().includes(q) ||
-        def.description.toLowerCase().includes(q) ||
-        def.source.toLowerCase().includes(q);
-      return matchesGroup && matchesSearch;
+        item.label.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.source.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
     });
-  }, [selectedGroup, searchQuery]);
+  }, [searchQuery, selectedCategoryFilter]);
+
+  // Accurate Layer Counts (Only available layers are counted!)
+  const overlayStats = useMemo(() => {
+    const availableOverlays = TACTICAL_LAYERS.filter((l) => !l.isBasemap && l.available);
+    const enabledOverlays = availableOverlays.filter((l) => l.key && Boolean(layers[l.key]));
+
+    return {
+      enabled: enabledOverlays.length,
+      available: availableOverlays.length,
+    };
+  }, [layers]);
+
+  // Category counts helper
+  const getCategoryStats = useCallback(
+    (catId: LayerCategoryKey) => {
+      const catLayers = TACTICAL_LAYERS.filter((l) => l.category === catId);
+      if (catId === 'basemaps') {
+        return { active: 1, available: catLayers.filter((l) => l.available).length };
+      }
+      const available = catLayers.filter((l) => l.available && l.key);
+      const active = available.filter((l) => l.key && Boolean(layers[l.key]));
+      return { active: active.length, available: available.length };
+    },
+    [layers]
+  );
 
   return (
-    <>
-      {/* Non-blocking subtle backdrop for outside focus dismiss on mobile only */}
-      <div
-        className="fixed inset-0 z-[1040] bg-black/50 backdrop-blur-[1px] md:hidden transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Docked Side Panel (Left edge, immediately next to the Navigation Sidebar) */}
-      <aside
-        className={`fixed top-13 ${
-          isSidebarHidden
-            ? 'left-0'
-            : isSidebarCollapsed
-            ? 'left-0 md:left-16'
-            : 'left-0 md:left-16 lg:left-64'
-        } bottom-0 w-[380px] sm:w-[420px] max-w-[calc(100vw-20px)] bg-[#090e1a]/98 backdrop-blur-2xl border-r border-cyan-500/40 shadow-2xl z-[1050] flex flex-col font-sans select-none text-slate-100 overflow-hidden animate-slideInRight`}
-        role="region"
-        aria-label="Tactical Map Layers Panel"
-      >
-        {/* Panel Header */}
-        <div className="px-4 py-3.5 border-b border-slate-800 bg-[#0c1424] flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 shadow-sm">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="font-mono text-xs font-extrabold text-white tracking-wider uppercase">
-                  Tactical Map Layers
-                </h2>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
-                  {activeCount} / {totalCount} Active
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                8 Grounded geospatial layer groups
-              </p>
-            </div>
+    <AnchoredPopover
+      isOpen={isOpen}
+      onClose={onClose}
+      triggerRef={triggerRef}
+      placement="bottom-end"
+      offset={8}
+      minWidth={360}
+      maxWidth={460}
+      maxHeight={680}
+      className={`border-cyan-500/40 shadow-2xl ${className}`}
+    >
+      {/* ================================================================= */}
+      {/* 1. PANEL HEADER                                                   */}
+      {/* ================================================================= */}
+      <div className="p-3.5 border-b border-slate-800/90 bg-[#080d19]/90 flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-2.5">
+          <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-400 shadow-xs">
+            <Layers className="w-4 h-4" />
           </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="font-bold font-mono text-sm tracking-wide text-white uppercase">
+                MAP LAYERS
+              </h3>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 border border-cyan-700/80 text-cyan-300">
+                Enabled {overlayStats.enabled} / {overlayStats.available}
+              </span>
+            </div>
+            <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+              Tactical geospatial analysis & situational overlays
+            </p>
+          </div>
+        </div>
 
+        <div className="flex items-center space-x-1.5">
+          {/* Reset to defaults button */}
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-950 text-slate-400 hover:text-red-300 border border-slate-800 transition-colors cursor-pointer"
-            title="Close Map Layers Panel (Esc)"
+            type="button"
+            onClick={handleResetDefaults}
+            className="p-1.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+            title="Reset to default operational layer configuration"
           >
-            <X className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Close Map Layers (Esc)"
+          >
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
 
-        {/* Search & Quick Group Selector */}
-        <div className="p-3 border-b border-slate-800 bg-[#070b14] space-y-2 shrink-0">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search layers by name, sensor, or agency..."
-              className="w-full h-7 pl-8 pr-3 bg-slate-900 border border-slate-700/80 rounded-lg text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
-            />
-          </div>
-
-          {/* Group Filter Chips */}
-          <div className="flex items-center space-x-1 overflow-x-auto custom-scrollbar pb-1 text-[11px] font-mono">
+      {/* ================================================================= */}
+      {/* 2. SEARCH & QUICK FILTER TOOLBAR                                  */}
+      {/* ================================================================= */}
+      <div className="px-3.5 py-2.5 border-b border-slate-800/80 bg-[#070b14]/70 space-y-2 shrink-0">
+        {/* Search input */}
+        <div className="relative flex items-center">
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search layers (e.g. SAR, flood, hospitals, routes)..."
+            className="w-full h-8 pl-8 pr-7 bg-slate-900/90 border border-slate-800 rounded-md text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/50 transition-all"
+          />
+          {searchQuery && (
             <button
-              onClick={() => setSelectedGroup('all')}
-              className={`px-2 py-1 rounded-md shrink-0 flex items-center space-x-1 transition-all cursor-pointer ${
-                selectedGroup === 'all'
-                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 font-bold'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-transparent'
-              }`}
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer"
+              title="Clear search query"
             >
-              <Filter className="w-3 h-3" />
-              <span>All ({totalCount})</span>
+              <X className="w-3 h-3" />
             </button>
-
-            {LAYER_GROUPS.map((grp) => {
-              const Icon = grp.icon;
-              const isSelected = selectedGroup === grp.id;
-              const grpActiveCount = TACTICAL_LAYERS.filter(
-                (l) => l.group === grp.id && layers[l.key]
-              ).length;
-              const grpTotal = TACTICAL_LAYERS.filter((l) => l.group === grp.id).length;
-
-              return (
-                <button
-                  key={grp.id}
-                  onClick={() => setSelectedGroup(grp.id)}
-                  className={`px-2 py-1 rounded-md shrink-0 flex items-center space-x-1.5 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-600 font-bold'
-                      : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-transparent'
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span className="whitespace-nowrap">{grp.label}</span>
-                  <span className="text-[9px] opacity-75 font-mono">
-                    ({grpActiveCount}/{grpTotal})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Scrollable Layer Groups & Items */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-          {filteredLayers.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 space-y-2">
-              <Info className="w-6 h-6 mx-auto text-slate-400" />
-              <div className="text-xs font-bold font-mono">No matching layers found</div>
-              <p className="text-[10px]">Try clearing your search query or switching group filters</p>
-            </div>
-          ) : (
-            LAYER_GROUPS.filter(
-              (g) => selectedGroup === 'all' || selectedGroup === g.id
-            ).map((grp) => {
-              const groupLayers = filteredLayers.filter((l) => l.group === grp.id);
-              if (groupLayers.length === 0) return null;
-
-              const isCollapsed = collapsedGroups[grp.id] || false;
-              const GroupIcon = grp.icon;
-              const activeInGroup = groupLayers.filter((l) => layers[l.key]).length;
-              const allActive = activeInGroup === groupLayers.length;
-
-              return (
-                <div
-                  key={grp.id}
-                  className="rounded-xl border border-slate-800 bg-[#070b14]/90 overflow-hidden shadow-xs"
-                >
-                  {/* Group Header */}
-                  <div className="px-3 py-2 bg-[#0a101f] border-b border-slate-800/80 flex items-center justify-between">
-                    <button
-                      onClick={() => toggleGroupCollapse(grp.id)}
-                      className="flex items-center space-x-2 text-left flex-1 min-w-0 cursor-pointer"
-                    >
-                      {isCollapsed ? (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      )}
-                      <GroupIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="font-mono text-xs font-bold text-slate-100 block truncate">
-                          {grp.label}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-mono block truncate">
-                          {grp.description}
-                        </span>
-                      </div>
-                    </button>
-
-                    {/* Group Controls */}
-                    <div className="flex items-center space-x-1.5 shrink-0 pl-2">
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 border border-slate-700">
-                        {activeInGroup}/{groupLayers.length}
-                      </span>
-                      <button
-                        onClick={() => toggleGroup(grp.id, !allActive)}
-                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold cursor-pointer transition-colors ${
-                          allActive
-                            ? 'bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                        title={allActive ? 'Disable all in group' : 'Enable all in group'}
-                      >
-                        {allActive ? 'Disable' : 'Enable'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Group Layers */}
-                  {!isCollapsed && (
-                    <div className="p-2 space-y-2">
-                      {groupLayers.map((def) => {
-                        const isActive = Boolean(layers[def.key]);
-
-                        return (
-                          <div
-                            key={def.key}
-                            onClick={() => def.available && toggleLayer(def.key)}
-                            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start space-x-2.5 ${
-                              !def.available
-                                ? 'bg-slate-900/30 border-slate-800/50 opacity-50 cursor-not-allowed'
-                                : isActive
-                                ? 'bg-cyan-950/40 border-cyan-500/60 shadow-xs'
-                                : 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700 opacity-75 hover:opacity-100'
-                            }`}
-                          >
-                            {/* Checkbox */}
-                            <div className="pt-0.5 shrink-0">
-                              <div
-                                className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
-                                  !def.available
-                                    ? 'bg-slate-800 border border-slate-700 text-transparent'
-                                    : isActive
-                                    ? 'bg-cyan-500 text-white font-bold shadow-sm shadow-cyan-500/50'
-                                    : 'bg-slate-800 border border-slate-700 text-transparent'
-                                }`}
-                              >
-                                <Check className="w-3 h-3 stroke-[3]" />
-                              </div>
-                            </div>
-
-                            {/* Layer Details */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="flex items-center space-x-1.5 min-w-0">
-                                  {/* Symbol Swatch */}
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs ring-1 ring-white/20"
-                                    style={{ backgroundColor: def.color }}
-                                    title={`Symbol: ${def.symbolType}`}
-                                  />
-                                  <span
-                                    className={`text-xs font-bold truncate font-mono ${
-                                      isActive ? 'text-white' : 'text-slate-300'
-                                    }`}
-                                  >
-                                    {def.label}
-                                  </span>
-                                </div>
-
-                                {/* Status Tag */}
-                                <span
-                                  className={`text-[8px] font-mono uppercase px-1 py-0.2 rounded font-bold shrink-0 ${
-                                    !def.available
-                                      ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                                      : def.status === 'live'
-                                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                      : def.status === 'computed'
-                                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                                      : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                  }`}
-                                >
-                                  {def.status}
-                                </span>
-                              </div>
-
-                              <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                                {def.description}
-                              </p>
-
-                              {/* Source & Confidence Metadata */}
-                              <div className="mt-1.5 pt-1 border-t border-slate-800/60 text-[9px] font-mono text-slate-500 space-y-0.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="truncate">Source: {def.source}</span>
-                                  <span className={isActive ? 'text-cyan-400 font-bold' : 'text-slate-500'}>
-                                    {isActive ? 'ENABLED' : 'DISABLED'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between text-slate-400">
-                                  <span className="truncate">Updated: {def.updated}</span>
-                                  {def.confidence && (
-                                    <span className="text-cyan-300/80 truncate ml-2">
-                                      {def.confidence}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })
           )}
         </div>
 
-        {/* Panel Footer: Bulk Reset / All Controls */}
-        <div className="px-4 py-2.5 border-t border-slate-800 bg-[#0c1424] flex items-center justify-between shrink-0 text-xs font-mono">
-          <button
-            onClick={resetTacticalDefaults}
-            className="flex items-center space-x-1 text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer text-[11px]"
-            title="Reset to recommended operational tactical defaults"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset Defaults</span>
-          </button>
+        {/* Category Jump Pills & Expand/Collapse All */}
+        <div className="flex items-center justify-between text-[11px] font-mono">
+          <div className="flex items-center space-x-1 overflow-x-auto custom-scrollbar pb-0.5 max-w-[280px]">
+            <button
+              type="button"
+              onClick={() => setSelectedCategoryFilter('all')}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                selectedCategoryFilter === 'all'
+                  ? 'bg-cyan-950 border border-cyan-500/70 text-cyan-200 font-bold'
+                  : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              All ({TACTICAL_LAYERS.length})
+            </button>
+            {LAYER_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategoryFilter(cat.id)}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all shrink-0 cursor-pointer ${
+                  selectedCategoryFilter === cat.id
+                    ? 'bg-cyan-950 border border-cyan-500/70 text-cyan-200 font-bold'
+                    : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {cat.label.split(' ')[0]}
+              </button>
+            ))}
+          </div>
 
-          <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={toggleAllCollapse}
+            className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-semibold cursor-pointer shrink-0 ml-2"
+          >
+            {areAllCollapsed ? 'Expand All' : 'Collapse All'}
+          </button>
+        </div>
+      </div>
+
+      {/* ================================================================= */}
+      {/* 3. LAYER CATEGORIES & TOGGLES (Scrollable Viewport)               */}
+      {/* ================================================================= */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 font-sans">
+        {filteredLayers.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 font-mono text-xs">
+            <AlertTriangle className="w-6 h-6 text-amber-400/80 mx-auto mb-2" />
+            <p className="font-bold text-slate-300">No matching layers found</p>
+            <p className="text-[11px] text-slate-500 mt-1">
+              No tactical layer matches &quot;{searchQuery}&quot;
+            </p>
             <button
-              onClick={() => setAllLayers(true)}
-              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold transition-colors cursor-pointer"
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategoryFilter('all');
+              }}
+              className="mt-3 px-3 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 text-xs font-bold transition-all cursor-pointer"
             >
-              Enable All
-            </button>
-            <button
-              onClick={() => setAllLayers(false)}
-              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold transition-colors cursor-pointer"
-            >
-              Clear All
-            </button>
-            <button
-              onClick={onClose}
-              className="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] transition-colors cursor-pointer shadow-xs"
-            >
-              Done
+              Clear filters
             </button>
           </div>
+        ) : (
+          LAYER_CATEGORIES.map((category) => {
+            const catLayers = filteredLayers.filter((l) => l.category === category.id);
+            if (catLayers.length === 0) return null;
+
+            const isCollapsed = Boolean(collapsedCategories[category.id]);
+            const stats = getCategoryStats(category.id);
+            const Icon = category.icon;
+
+            return (
+              <div
+                key={category.id}
+                className="rounded-lg border border-slate-800/90 bg-[#070d1a]/80 overflow-hidden shadow-xs transition-colors hover:border-slate-700/80"
+              >
+                {/* Category Header */}
+                <div
+                  className="px-3 py-2 bg-[#091122]/90 flex items-center justify-between cursor-pointer select-none hover:bg-[#0c162d] transition-colors"
+                  onClick={() => toggleCategoryCollapse(category.id)}
+                >
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <Icon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="font-bold font-mono text-xs text-slate-100 uppercase tracking-wide truncate">
+                      {category.label}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold shrink-0">
+                      {category.isExclusive
+                        ? `${stats.active} selected`
+                        : `${stats.active}/${stats.available} active`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    {/* Bulk Enable / Disable for Overlay Categories */}
+                    {!category.isExclusive && !isCollapsed && (
+                      <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategoryAll(category.id, true)}
+                          className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-950 text-slate-300 hover:text-cyan-200 border border-slate-700 transition-colors cursor-pointer"
+                          title={`Enable all available ${category.label} layers`}
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategoryAll(category.id, false)}
+                          className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-300 border border-slate-700 transition-colors cursor-pointer"
+                          title={`Disable all ${category.label} layers`}
+                        >
+                          None
+                        </button>
+                      </div>
+                    )}
+
+                    {isCollapsed ? (
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Category Layer Items */}
+                {!isCollapsed && (
+                  <div className="p-2 space-y-1.5 divide-y divide-slate-800/40">
+                    {catLayers.map((layer) => {
+                      const isBasemap = Boolean(layer.isBasemap);
+                      const isBasemapActive =
+                        isBasemap &&
+                        (layers.basemap === layer.basemapValue ||
+                          (layer.basemapValue === 'dark' && layers.basemap === 'tactical-dark'));
+                      const isOverlayActive =
+                        Boolean(layer.key && layers[layer.key]) && layer.available;
+                      const isActive = isBasemap ? isBasemapActive : isOverlayActive;
+
+                      return (
+                        <div
+                          key={layer.id}
+                          onClick={() => handleToggleLayer(layer)}
+                          className={`pt-1.5 first:pt-0 p-2 rounded-md transition-all cursor-pointer flex items-start justify-between space-x-2.5 ${
+                            !layer.available
+                              ? 'opacity-55 hover:bg-transparent cursor-not-allowed'
+                              : isActive
+                              ? 'bg-cyan-950/30 border border-cyan-500/30'
+                              : 'hover:bg-slate-900/60 border border-transparent'
+                          }`}
+                        >
+                          {/* Left: Indicator + Label + Description */}
+                          <div className="flex items-start space-x-2.5 min-w-0 flex-1">
+                            {/* Color Legend Badge */}
+                            <div
+                              className="w-3 h-3 rounded-xs shrink-0 mt-0.5 flex items-center justify-center border shadow-xs"
+                              style={{
+                                backgroundColor: layer.available ? layer.color : '#334155',
+                                borderColor: layer.available ? layer.color : '#475569',
+                              }}
+                              title={`Legend color: ${layer.color}`}
+                            />
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center space-x-2 flex-wrap">
+                                <span
+                                  className={`text-xs font-semibold leading-tight ${
+                                    isActive ? 'text-cyan-200 font-bold' : 'text-slate-200'
+                                  }`}
+                                >
+                                  {layer.label}
+                                </span>
+
+                                {/* Status Tag */}
+                                {layer.available ? (
+                                  <span
+                                    className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold uppercase ${
+                                      layer.status === 'live'
+                                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                        : layer.status === 'computed'
+                                        ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                                        : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                    }`}
+                                  >
+                                    {layer.status}
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-mono px-1 py-0.2 rounded font-bold bg-amber-950 text-amber-300 border border-amber-800 uppercase">
+                                    {layer.unavailableReason?.includes('Coming soon')
+                                      ? 'Coming soon'
+                                      : 'Data unavailable'}
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                {layer.description}
+                              </p>
+
+                              {/* Source / Telemetry Meta */}
+                              <div className="flex items-center space-x-2 mt-1 text-[10px] font-mono text-slate-400">
+                                <span className="truncate max-w-[200px]">{layer.source}</span>
+                                {layer.confidence && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-cyan-400/90 truncate">{layer.confidence}</span>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Explicit reason why layer is unavailable */}
+                              {!layer.available && layer.unavailableReason && (
+                                <p className="text-[10px] font-mono text-amber-400/90 mt-1 flex items-center space-x-1">
+                                  <Info className="w-3 h-3 shrink-0" />
+                                  <span>{layer.unavailableReason}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: Toggle Switch or Radio Button */}
+                          <div className="shrink-0 pt-0.5">
+                            {isBasemap ? (
+                              /* Radio-style indicator for mutually exclusive basemaps */
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                  isActive
+                                    ? 'border-cyan-400 bg-cyan-500 shadow-sm shadow-cyan-500/50'
+                                    : 'border-slate-600 bg-slate-900'
+                                }`}
+                              >
+                                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                              </div>
+                            ) : (
+                              /* Tactical Toggle Switch for individual layers */
+                              <button
+                                type="button"
+                                disabled={!layer.available}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleLayer(layer);
+                                }}
+                                className={`w-9 h-5 rounded-full transition-colors relative focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer ${
+                                  !layer.available
+                                    ? 'bg-slate-800/80 cursor-not-allowed opacity-60'
+                                    : isActive
+                                    ? 'bg-cyan-500 shadow-xs shadow-cyan-500/40'
+                                    : 'bg-slate-800 hover:bg-slate-700'
+                                }`}
+                                role="switch"
+                                aria-checked={isActive}
+                                aria-label={`Toggle ${layer.label}`}
+                              >
+                                <span
+                                  className={`block w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                                    isActive ? 'translate-x-4.5 bg-slate-950' : 'translate-x-0.5 bg-slate-400'
+                                  }`}
+                                />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ================================================================= */}
+      {/* 4. FOOTER STATUS BAR                                              */}
+      {/* ================================================================= */}
+      <div className="p-3 border-t border-slate-800/90 bg-[#070b16]/90 flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0 select-none">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span>
+            Basemap: <strong className="text-slate-200 capitalize">{layers.basemap}</strong>
+          </span>
+          <span>•</span>
+          <span>
+            Active Overlays: <strong className="text-cyan-300">{overlayStats.enabled}</strong> / {overlayStats.available}
+          </span>
         </div>
-      </aside>
-    </>
+
+        <button
+          type="button"
+          onClick={handleResetDefaults}
+          className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold underline cursor-pointer"
+        >
+          Reset Defaults
+        </button>
+      </div>
+    </AnchoredPopover>
   );
 };

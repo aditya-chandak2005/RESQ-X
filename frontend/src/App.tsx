@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { MapLayersPanel } from './components/MapLayersPanel';
 import { CommandCenterView } from './pages/CommandCenterView';
 import { DisasterMappingView } from './pages/DisasterMappingView';
 import { ImpactAssessmentView } from './pages/ImpactAssessmentView';
@@ -99,12 +98,14 @@ export const App: React.FC = () => {
     bridges: true,
     roads: true,
     blockedRoads: true,
+    buildings: true,
     hospitals: true,
     shelters: true,
     rescueTeams: true,
     routes: true,
     alternateRoutes: true,
     floodPath: false,
+    elevationContours: false,
   });
 
   const loadAllTelemetry = async (disasterId: number = selectedIncidentId) => {
@@ -437,15 +438,6 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Tactical Map Layers Panel Drawer */}
-          <MapLayersPanel
-            isOpen={isLayersOpen}
-            onClose={() => setIsLayersOpen(false)}
-            layers={layers}
-            setLayers={setLayers}
-            isSidebarCollapsed={isSidebarCollapsed}
-            isSidebarHidden={isSidebarHidden}
-          />
         </main>
 
         {/* Floating AI Chat Assistant Quick Button (Available when not on Copilot area) */}

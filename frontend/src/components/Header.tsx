@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Waves,
   Building,
@@ -30,6 +30,7 @@ import { OperationalSettingsModal } from './OperationalSettingsModal';
 import { TelemetryDetailsModal } from './TelemetryDetailsModal';
 import { TheaterSelectorDropdown } from './TheaterSelectorDropdown';
 import { SatelliteBasemapPopover } from './SatelliteBasemapPopover';
+import { MapLayersPanel, TACTICAL_LAYERS } from './MapLayersPanel';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
@@ -106,6 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
   const basemapMenuRef = useRef<HTMLDivElement>(null);
   const incidentButtonRef = useRef<HTMLButtonElement>(null);
   const basemapButtonRef = useRef<HTMLButtonElement>(null);
+  const layersButtonRef = useRef<HTMLButtonElement>(null);
 
   // Clock tick
   useEffect(() => {
@@ -249,10 +251,17 @@ export const Header: React.FC<HeaderProps> = ({
   // Active sidebar collapse state (checking both desktop rail and mobile hidden)
   const isNavCollapsed = isSidebarCollapsed || isSidebarHidden;
 
-  // Active Map Layers Count
-  const activeLayersCount = layers
-    ? Object.entries(layers).filter(([k, v]) => k !== 'basemap' && Boolean(v)).length
-    : 11;
+  // Active and Available Map Layers Count (Accurate non-hardcoded counts)
+  const availableLayersCount = useMemo(() => {
+    return TACTICAL_LAYERS.filter((l) => !l.isBasemap && l.available).length;
+  }, []);
+
+  const activeLayersCount = useMemo(() => {
+    if (!layers) return 12;
+    return TACTICAL_LAYERS.filter(
+      (l) => !l.isBasemap && l.available && l.key && Boolean(layers[l.key])
+    ).length;
+  }, [layers]);
 
   return (
     <header className="bg-[#0b1222] border-b border-slate-800/90 z-40 relative shrink-0 font-sans select-none">
@@ -499,24 +508,39 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </div>
 
-          {/* Tactical Map Layers Panel Button */}
+          {/* Tactical Map Layers Panel Button & Translucent Popover */}
           {onToggleLayers && (
-            <button
-              type="button"
-              onClick={onToggleLayers}
-              className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${
-                isLayersOpen
-                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
-                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
-              }`}
-              title="Open Tactical Map Layers Panel (8 Groups, 14 Overlays)"
-            >
-              <Layers className="w-3 h-3 text-cyan-400 shrink-0" />
-              <span className="font-semibold hidden sm:inline">Layers</span>
-              <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-800 font-bold font-mono">
-                {activeLayersCount}
-              </span>
-            </button>
+            <div className="relative shrink-0">
+              <button
+                ref={layersButtonRef}
+                type="button"
+                onClick={onToggleLayers}
+                className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${
+                  isLayersOpen
+                    ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
+                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
+                }`}
+                title="Open Tactical Map Layers Panel (6 Categories, 16 Overlays)"
+                aria-haspopup="dialog"
+                aria-expanded={isLayersOpen}
+              >
+                <Layers className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span className="font-semibold hidden sm:inline">Layers</span>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-800 font-bold font-mono">
+                  {activeLayersCount} / {availableLayersCount}
+                </span>
+              </button>
+
+              {layers && setLayers && (
+                <MapLayersPanel
+                  isOpen={isLayersOpen}
+                  onClose={() => onToggleLayers && onToggleLayers()}
+                  triggerRef={layersButtonRef}
+                  layers={layers}
+                  setLayers={setLayers}
+                />
+              )}
+            </div>
           )}
 
           {/* Telemetry & System Diagnostics Modal Button */}
