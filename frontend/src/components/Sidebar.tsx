@@ -37,6 +37,9 @@ interface SidebarProps {
   setIsCollapsed?: (collapsed: boolean) => void;
   isHidden?: boolean;
   setIsHidden?: (hidden: boolean) => void;
+  onToggleLayers?: () => void;
+  isLayersOpen?: boolean;
+  activeLayersCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,6 +51,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsCollapsed,
   isHidden = false,
   setIsHidden,
+  onToggleLayers,
+  isLayersOpen = false,
+  activeLayersCount = 11,
 }) => {
   const applicationAreas = [
     {
@@ -60,13 +66,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800',
     },
     {
-      id: 'mapping',
+      id: 'layers',
       number: '2',
-      label: 'Disaster Mapping',
-      sublabel: 'Satellite SAR & extent',
+      label: 'Map Layers',
+      sublabel: 'Tactical GIS overlays',
       icon: Layers,
-      badge: 'S1/S2',
-      badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-800',
+      badge: `${activeLayersCount} ACTIVE`,
+      badgeColor: isLayersOpen
+        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
+        : 'bg-cyan-950 text-cyan-300 border-cyan-800',
     },
     {
       id: 'impact',
@@ -125,6 +133,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const handleSelectTab = (tab: string) => {
+    if (tab === 'layers' || tab === 'mapping') {
+      if (onToggleLayers) {
+        onToggleLayers();
+      }
+      if (currentTab !== 'command') {
+        setCurrentTab('command');
+      }
+      if (window.innerWidth < 768 && setIsHidden) {
+        setIsHidden(true);
+      }
+      return;
+    }
     setCurrentTab(tab);
     if (window.innerWidth < 768 && setIsHidden) {
       setIsHidden(true);
@@ -248,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* 8 Mandated Areas */}
                 {applicationAreas.map((area) => {
                   const Icon = area.icon;
-                  const isActive = currentTab === area.id;
+                  const isActive = area.id === 'layers' ? isLayersOpen : currentTab === area.id;
 
                   return (
                     <button
@@ -320,7 +340,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {applicationAreas.map((area) => {
                   const Icon = area.icon;
-                  const isActive = currentTab === area.id;
+                  const isActive = area.id === 'layers' ? isLayersOpen : currentTab === area.id;
 
                   return (
                     <button

@@ -226,3 +226,4 @@ export const TelemetryDetailsModal: React.FC<TelemetryDetailsModalProps> = ({
     </PortalModal>
   );
 };
+

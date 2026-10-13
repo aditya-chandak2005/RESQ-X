@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { MapLayersPanel } from './components/MapLayersPanel';
 import { CommandCenterView } from './pages/CommandCenterView';
 import { DisasterMappingView } from './pages/DisasterMappingView';
 import { ImpactAssessmentView } from './pages/ImpactAssessmentView';
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
   const [isCitizenGuideOpen, setIsCitizenGuideOpen] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
 
   // Sidebar navigation visibility & responsive collapse state
   const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(false);
@@ -230,6 +232,10 @@ export const App: React.FC = () => {
     }
   };
 
+  const activeLayersCount = Object.entries(layers).filter(
+    ([k, v]) => k !== 'basemap' && Boolean(v)
+  ).length;
+
   const activeIncident = incidents.find((i) => i.id === selectedIncidentId) || (incidents[0] || null);
 
   return (
@@ -244,6 +250,9 @@ export const App: React.FC = () => {
         setIsCollapsed={setIsSidebarCollapsed}
         isHidden={isSidebarHidden}
         setIsHidden={setIsSidebarHidden}
+        onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
+        isLayersOpen={isLayersOpen}
+        activeLayersCount={activeLayersCount}
       />
 
       {/* 2. Main Content Canvas */}
@@ -286,6 +295,8 @@ export const App: React.FC = () => {
           onSelectBasemap={(bm) => setLayers((prev) => ({ ...prev, basemap: bm }))}
           layers={layers}
           setLayers={setLayers}
+          onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
+          isLayersOpen={isLayersOpen}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
@@ -425,6 +436,16 @@ export const App: React.FC = () => {
               initialPoint={inspectedPoint}
             />
           )}
+
+          {/* Tactical Map Layers Panel Drawer */}
+          <MapLayersPanel
+            isOpen={isLayersOpen}
+            onClose={() => setIsLayersOpen(false)}
+            layers={layers}
+            setLayers={setLayers}
+            isSidebarCollapsed={isSidebarCollapsed}
+            isSidebarHidden={isSidebarHidden}
+          />
         </main>
 
         {/* Floating AI Chat Assistant Quick Button (Available when not on Copilot area) */}

@@ -70,3 +70,4 @@ export const PortalModal: React.FC<PortalModalProps> = ({
 
   return createPortal(content, document.body);
 };
+
