@@ -20,6 +20,7 @@ import {
   RescueTeam,
   Route,
   LayerVisibility,
+  BasemapType,
   InfrastructureAsset,
   DisasterEvent,
   LocationAssessment,
@@ -39,7 +40,11 @@ import {
   Sun,
   Eye,
   ShieldAlert,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
+import { BasemapController } from './BasemapController';
+import { getBasemapDefinition } from '../services/basemapConfig';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -613,6 +618,30 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       ? 'topo'
       : 'satellite';
 
+  const [isBasemapLoading, setIsBasemapLoading] = useState(false);
+  const [targetBasemap, setTargetBasemap] = useState<BasemapType | null>(null);
+  const [basemapError, setBasemapError] = useState<string | null>(null);
+
+  const handleBasemapLoadingChange = (loading: boolean, target: BasemapType | null) => {
+    setIsBasemapLoading(loading);
+    setTargetBasemap(target);
+    if (loading) {
+      setBasemapError(null);
+    }
+  };
+
+  const handleBasemapStyleApplied = (_appliedStyle: BasemapType) => {
+    setIsBasemapLoading(false);
+    setTargetBasemap(null);
+    setBasemapError(null);
+  };
+
+  const handleBasemapError = (_failedStyle: BasemapType, errorMsg: string) => {
+    setIsBasemapLoading(false);
+    setTargetBasemap(null);
+    setBasemapError(errorMsg);
+  };
+
   // Sync center when active incident or inspected point changes
   useEffect(() => {
     if (inspectedPoint) {
@@ -637,6 +666,30 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   return (
     <div className={`w-full h-full relative ${isInspectMode ? 'cursor-crosshair' : ''}`}>
       
+      {/* Basemap Loading Status Indicator */}
+      {isBasemapLoading && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+          <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-cyan-300 font-bold uppercase tracking-wider">
+            Loading {getBasemapDefinition(targetBasemap || activeBasemap).label}...
+          </span>
+        </div>
+      )}
+
+      {/* Basemap Error Toast */}
+      {basemapError && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+          <span className="text-red-200 text-[11px]">{basemapError}</span>
+          <button
+            onClick={() => setBasemapError(null)}
+            className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* 1. Tactical HUD Banner (Top Center) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
         <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
@@ -701,76 +754,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
 
         {/* ============================================================== */}
-        {/* BASEMAP TILE LAYERS & REFERENCE LABELS OVERLAY                 */}
+        {/* NATIVE LEAFLET BASEMAP CONTROLLER (SATELLITE, DARK, TERRAIN)   */}
         {/* ============================================================== */}
-
-        {/* 1. SATELLITE HYBRID: ESRI World Imagery + World Boundaries & Places Labels */}
-        {activeBasemap === 'satellite' && (
-          <>
-            <TileLayer
-              attribution='&copy; ESRI World Imagery, Copernicus, DigitalGlobe'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-            />
-            {/* Essential Reference Layer: Draws national/state boundaries, highways, and place labels ON TOP of satellite photos */}
-            <TileLayer
-              attribution='&copy; ESRI Reference Boundaries & Places'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              opacity={0.88}
-              zIndex={400}
-            />
-          </>
-        )}
-
-        {/* 2. GOOGLE MAPS STYLE DARK MODE: CartoDB Dark Matter with Crisp Roads & Soft Highway Accents */}
-        {activeBasemap === 'dark' && (
-          <>
-            <TileLayer
-              attribution='&copy; CartoDB & OpenStreetMap contributors'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              maxZoom={19}
-              subdomains="abcd"
-              className="google-dark-tiles"
-            />
-            {/* Subtle arterial road and highway reference layer for Google Maps style legibility */}
-            <TileLayer
-              attribution='&copy; ESRI Transportation'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              opacity={0.35}
-              zIndex={350}
-            />
-          </>
-        )}
-
-        {/* 3. ENHANCED TOPO TERRAIN: Elevation Contours, 3D Hillshade & Topographic Relief */}
-        {activeBasemap === 'topo' && (
-          <>
-            <TileLayer
-              attribution='&copy; ESRI World Topo Map, USGS, FAO'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              className="topo-tiles"
-            />
-            {/* High-Resolution 3D Shaded Relief / Hillshade Overlay */}
-            <TileLayer
-              attribution='&copy; ESRI World Hillshade'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              opacity={0.42}
-              zIndex={250}
-            />
-            {/* Topographic reference boundaries, river network, and place labels */}
-            <TileLayer
-              attribution='&copy; ESRI Reference'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              opacity={0.7}
-              zIndex={300}
-            />
-          </>
-        )}
+        <BasemapController
+          activeBasemap={activeBasemap}
+          onLoadingChange={handleBasemapLoadingChange}
+          onStyleApplied={handleBasemapStyleApplied}
+          onError={handleBasemapError}
+        />
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
         {activeBasemap === 'topo' &&
