@@ -323,46 +323,62 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans select-none">
       
-      {/* 1. Main Operational Ribbon - 3-Column Responsive Grid with Guaranteed True Center */}
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,440px)_minmax(0,1fr)] items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs bg-[#0c1322]">
+      {/* 1. Main Operational Ribbon - High-Precision 3-Column Responsive Grid */}
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(200px,460px)_minmax(0,1fr)] items-center gap-2 sm:gap-3 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/90 text-xs bg-[#0b1222] select-none">
         
-        {/* COLUMN 1 (LEFT): Sidebar Toggle + Incident Selector */}
+        {/* ============================================================== */}
+        {/* COLUMN 1 (LEFT): Mission Identity & Operational Theater       */}
+        {/* ============================================================== */}
         <div className="flex items-center justify-start space-x-1.5 sm:space-x-2 min-w-0">
+          
           {/* Navigation Sidebar Toggle Button */}
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className={`px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm shrink-0 ${
+              className={`h-8 px-2.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm shrink-0 ${
                 isSidebarHidden
                   ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
-                  : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500'
+                  : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
               }`}
               title={isSidebarHidden ? 'Show Navigation Sidebar (Ctrl+B)' : 'Hide Navigation Sidebar (Ctrl+B)'}
             >
-              {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400" /> : <PanelLeftClose className="w-4 h-4" />}
+              {isSidebarHidden ? <PanelLeftOpen className="w-4 h-4 text-cyan-400 shrink-0" /> : <PanelLeftClose className="w-4 h-4 shrink-0" />}
               <span className="font-semibold text-[11px] hidden md:inline">
                 {isSidebarHidden ? 'Show Nav' : 'Hide Nav'}
               </span>
             </button>
           )}
 
-          {/* Incident Selector Dropdown */}
+          {/* Platform Identity Anchor (visible on large screens) */}
+          <div className="hidden xl:flex items-center space-x-1.5 px-2 py-1 rounded-md bg-slate-900/60 border border-slate-800 text-[10px] font-mono text-slate-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="font-bold text-slate-200">RESQ-X</span>
+            <span className="text-slate-600">|</span>
+            <span className="text-cyan-400/90 font-medium">OPS</span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-800/80 hidden sm:block shrink-0" />
+
+          {/* Operational Theater / Incident Selector */}
           <div className="relative shrink min-w-0">
             <button
               onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm max-w-full"
+              className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm max-w-full"
             >
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-              <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline shrink-0">INCIDENT:</span>
-              <span className="text-white font-mono truncate max-w-[90px] sm:max-w-[130px] md:max-w-[160px] lg:max-w-[210px] xl:max-w-[260px]">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline shrink-0">THEATER:</span>
+              <span className="text-white font-mono truncate max-w-[85px] sm:max-w-[130px] md:max-w-[160px] lg:max-w-[210px] xl:max-w-[260px]">
                 {activeIncident?.name || 'Assam Barak Valley Inundation'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
 
             {showIncidentDropdown && (
-              <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#0e172a] border border-slate-700 shadow-2xl z-50 text-xs space-y-1">
-                <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold">
+              <div className="absolute left-0 mt-1.5 w-72 p-2 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-50 text-xs space-y-1">
+                <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider border-b border-slate-800">
                   SELECT OPERATIONAL THEATER
                 </div>
                 {incidents.map((inc) => (
@@ -375,17 +391,17 @@ export const Header: React.FC<HeaderProps> = ({
                     className={`w-full text-left p-2 rounded-lg transition-all flex items-center justify-between cursor-pointer ${
                       activeIncident?.id === inc.id
                         ? 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-200'
-                        : 'hover:bg-slate-800 text-slate-300'
+                        : 'hover:bg-slate-800/80 text-slate-300'
                     }`}
                   >
                     <div>
-                      <div className="font-semibold">{inc.name}</div>
+                      <div className="font-semibold text-slate-100">{inc.name}</div>
                       <div className="text-[10px] text-slate-400 font-mono">
                         Status: {inc.status.toUpperCase()} • {inc.disaster_type}
                       </div>
                     </div>
                     {activeIncident?.id === inc.id && (
-                      <span className="text-[9px] font-mono bg-cyan-900 text-cyan-200 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-mono bg-cyan-900 text-cyan-200 px-1.5 py-0.5 rounded font-bold">
                         ACTIVE
                       </span>
                     )}
@@ -409,14 +425,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* COLUMN 2 (CENTER): Mathematically Centered Search Omnibar */}
+        {/* ============================================================== */}
+        {/* COLUMN 2 (CENTER): Mathematically Centered Search Omnibar      */}
+        {/* ============================================================== */}
         <div className="flex items-center justify-center w-full min-w-0">
           <div
             ref={searchContainerRef}
-            className="relative w-full max-w-[420px] min-w-0"
+            className="relative w-full max-w-[440px] min-w-0"
           >
             <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-              <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 sm:left-3 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -424,10 +442,13 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={(e) => setSearchVal(e.target.value)}
                 onFocus={() => setIsSearchDropdownOpen(true)}
                 placeholder="Search place, coords, or hotspots... (Ctrl+K)"
-                className="w-full pl-8 sm:pl-9 pr-14 sm:pr-16 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner truncate"
+                className="w-full h-8 pl-9 pr-20 sm:pr-24 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner truncate"
               />
+              <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700 rounded absolute right-14 pointer-events-none">
+                Ctrl+K
+              </kbd>
               {isSearching && (
-                <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-12 sm:right-14" />
+                <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-14" />
               )}
               {searchVal && (
                 <button
@@ -436,14 +457,15 @@ export const Header: React.FC<HeaderProps> = ({
                     setSearchVal('');
                     setSuggestions([]);
                   }}
-                  className="absolute right-10 sm:right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
+                  className="absolute right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
+                  title="Clear input"
                 >
                   <X className="w-3 h-3" />
                 </button>
               )}
               <button
                 type="submit"
-                className="absolute right-1 sm:right-1.5 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm"
+                className="absolute right-1 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center"
               >
                 FIND
               </button>
@@ -594,12 +616,14 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* COLUMN 3 (RIGHT): Fluid Operational Action Tools (Collapses Gracefully on Smaller Displays) */}
-        <div className="flex items-center justify-end space-x-1 sm:space-x-1.5 min-w-0">
+        {/* ============================================================== */}
+        {/* COLUMN 3 (RIGHT): Operational Actions & Far-Right Map Controls */}
+        {/* ============================================================== */}
+        <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 min-w-0">
           
-          {/* Active Location Inspection Intel Pill */}
+          {/* 1. Active Location Inspection Intel Pill (if an area is inspected) */}
           {currentAssessment && (
-            <div className="flex items-center space-x-1 px-1.5 sm:px-2 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono shrink min-w-0">
+            <div className="h-8 flex items-center space-x-1 px-2 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono shrink min-w-0">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   currentAssessment.overall_status.is_inundated
@@ -638,173 +662,192 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
-          <div ref={basemapMenuRef} className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
-              title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
-            >
-              {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
-              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
-              {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-              <span className="font-semibold text-[11px] hidden xl:inline">
-                {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-            </button>
+          {/* 2. Operations Group: AI Pipeline, Copilot, SITREP */}
+          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+            {/* Quick AI Run Pipeline Button */}
+            {onRunAnalysis && (
+              <button
+                onClick={onRunAnalysis}
+                className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono text-xs font-semibold shadow-md shadow-cyan-950/50 transition-all cursor-pointer shrink-0"
+                title="Run AI Flood Segmentation Pipeline"
+              >
+                <Play className="w-3 h-3 fill-current shrink-0" />
+                <span className="hidden sm:inline">RUN</span>
+                <span className="hidden 2xl:inline">PIPELINE</span>
+              </button>
+            )}
 
-            {showBasemapMenu && (
-              <div className="absolute right-0 mt-1.5 w-60 p-1.5 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] space-y-1 text-xs font-mono">
-                <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
-                  MAP DISPLAY MODE
-                </div>
+            {/* Copilot */}
+            {onOpenCopilot && (
+              <button
+                onClick={onOpenCopilot}
+                className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/60 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
+                title="Open RESQ AI Disaster Copilot"
+              >
+                <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="hidden xl:inline">COPILOT</span>
+              </button>
+            )}
 
-                {/* Option 1: Satellite Hybrid */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onSelectBasemap) onSelectBasemap('satellite');
-                    setShowBasemapMenu(false);
-                  }}
-                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                    activeBasemap === 'satellite'
-                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                      : 'hover:bg-slate-800/80 text-slate-300'
-                  }`}
-                >
-                  <Globe className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                      <span>Satellite Hybrid</span>
-                      {activeBasemap === 'satellite' && <Check className="w-3 h-3 text-cyan-400" />}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      High-res ESRI imagery + labels
-                    </div>
-                  </div>
-                </button>
-
-                {/* Option 2: Dark Mode (Google Maps style) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onSelectBasemap) onSelectBasemap('dark');
-                    setShowBasemapMenu(false);
-                  }}
-                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                    activeBasemap === 'dark' || activeBasemap === 'tactical-dark'
-                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                      : 'hover:bg-slate-800/80 text-slate-300'
-                  }`}
-                >
-                  <Moon className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                      <span>Dark Mode</span>
-                      {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Check className="w-3 h-3 text-cyan-400" />}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Google Maps dark palette & roads
-                    </div>
-                  </div>
-                </button>
-
-                {/* Option 3: Terrain Mode */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onSelectBasemap) onSelectBasemap('topo');
-                    setShowBasemapMenu(false);
-                  }}
-                  className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
-                    activeBasemap === 'topo'
-                      ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
-                      : 'hover:bg-slate-800/80 text-slate-300'
-                  }`}
-                >
-                  <Mountain className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="font-bold text-[11px] flex items-center space-x-1.5">
-                      <span>Terrain Mode</span>
-                      {activeBasemap === 'topo' && <Check className="w-3 h-3 text-cyan-400" />}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Hillshade, elevation contours & summits
-                    </div>
-                  </div>
-                </button>
-              </div>
+            {/* SITREP */}
+            {onOpenSitrep && (
+              <button
+                onClick={onOpenSitrep}
+                className="h-8 hidden sm:flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
+                title="View NDMA Official Situation Report"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="hidden 2xl:inline">SITREP</span>
+              </button>
             )}
           </div>
 
-          {/* Quick AI Run Pipeline Button */}
-          {onRunAnalysis && (
+          {/* Group Divider */}
+          <div className="h-4 w-px bg-slate-800/80 shrink-0 hidden sm:block" />
+
+          {/* 3. Dedicated Top-Right Map & View Controls Group */}
+          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+            
+            {/* Telemetry Bar Toggle */}
             <button
-              onClick={onRunAnalysis}
-              className="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer shrink-0"
-              title="Run AI Flood Segmentation Pipeline"
+              onClick={() => setShowKpis(!showKpis)}
+              className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shrink-0 ${
+                showKpis
+                  ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-400 hover:text-white'
+                  : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+              }`}
+              title={showKpis ? 'Minimize Telemetry Bar' : 'Show Telemetry Bar'}
             >
-              <Play className="w-3 h-3 fill-current shrink-0" />
-              <span className="hidden sm:inline">RUN</span>
-              <span className="hidden 2xl:inline">PIPELINE</span>
+              <Sliders className="w-3.5 h-3.5" />
             </button>
-          )}
 
-          {/* Copilot */}
-          {onOpenCopilot && (
-            <button
-              onClick={onOpenCopilot}
-              className="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-              title="Open RESQ AI Disaster Copilot"
-            >
-              <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span className="hidden xl:inline">COPILOT</span>
-            </button>
-          )}
+            {/* Citizen Survival Guide */}
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                className="h-8 w-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white transition-all flex items-center justify-center cursor-pointer shrink-0"
+                title="Citizen Survival Guide & Safety Checklist"
+              >
+                <HelpCircle className="w-4 h-4 text-cyan-300" />
+              </button>
+            )}
 
-          {/* SITREP */}
-          {onOpenSitrep && (
-            <button
-              onClick={onOpenSitrep}
-              className="hidden sm:flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-              title="View NDMA Official Situation Report"
-            >
-              <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="hidden 2xl:inline">SITREP</span>
-            </button>
-          )}
+            {/* ============================================================== */}
+            {/* MAP DISPLAY MODE SELECTOR (SATELLITE / DARK MODE / TERRAIN)    */}
+            {/* PROMINENTLY POSITIONED AT THE TOP RIGHT CORNER                 */}
+            {/* ============================================================== */}
+            <div ref={basemapMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowBasemapMenu(!showBasemapMenu)}
+                className={`h-8 flex items-center space-x-1.5 px-2.5 rounded-lg border transition-all cursor-pointer shadow-sm ${
+                  activeBasemap === 'satellite'
+                    ? 'bg-slate-900 border-cyan-500/50 hover:border-cyan-400 text-cyan-200'
+                    : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark')
+                    ? 'bg-slate-900 border-amber-500/50 hover:border-amber-400 text-amber-200'
+                    : 'bg-slate-900 border-emerald-500/50 hover:border-emerald-400 text-emerald-200'
+                }`}
+                title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
+              >
+                {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
+                {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                <span className="font-mono font-semibold text-[11px] hidden md:inline">
+                  {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </button>
 
-          {/* Citizen Guide */}
-          {onOpenGuide && (
-            <button
-              onClick={onOpenGuide}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
-              title="Citizen Survival Guide & Safety Checklist"
-            >
-              <HelpCircle className="w-4 h-4 text-cyan-300" />
-            </button>
-          )}
+              {showBasemapMenu && (
+                <div className="absolute right-0 mt-1.5 w-60 p-1.5 rounded-xl bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/40 shadow-2xl z-[1300] space-y-1 text-xs font-mono">
+                  <div className="px-2 py-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                    MAP DISPLAY MODE
+                  </div>
 
-          {/* Telemetry Bar Toggle */}
-          <button
-            onClick={() => setShowKpis(!showKpis)}
-            className={`p-1.5 rounded-lg border transition-all cursor-pointer shrink-0 ${
-              showKpis
-                ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400 hover:text-white'
-                : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
-            }`}
-            title={showKpis ? 'Minimize Telemetry Bar' : 'Show Telemetry Bar'}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-          </button>
+                  {/* Option 1: Satellite Hybrid */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectBasemap) onSelectBasemap('satellite');
+                      setShowBasemapMenu(false);
+                    }}
+                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                      activeBasemap === 'satellite'
+                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                        : 'hover:bg-slate-800/80 text-slate-300'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                        <span>Satellite Hybrid</span>
+                        {activeBasemap === 'satellite' && <Check className="w-3 h-3 text-cyan-400" />}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        High-res ESRI imagery + labels
+                      </div>
+                    </div>
+                  </button>
 
-          {/* Live Operational Status & UTC Clock */}
-          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700 shrink-0">
+                  {/* Option 2: Dark Mode */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectBasemap) onSelectBasemap('dark');
+                      setShowBasemapMenu(false);
+                    }}
+                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                      activeBasemap === 'dark' || activeBasemap === 'tactical-dark'
+                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                        : 'hover:bg-slate-800/80 text-slate-300'
+                    }`}
+                  >
+                    <Moon className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                        <span>Dark Mode</span>
+                        {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Check className="w-3 h-3 text-cyan-400" />}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Google Maps dark palette & roads
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Option 3: Terrain Mode */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectBasemap) onSelectBasemap('topo');
+                      setShowBasemapMenu(false);
+                    }}
+                    className={`w-full p-2 rounded-lg flex items-start space-x-2.5 text-left transition-all cursor-pointer ${
+                      activeBasemap === 'topo'
+                        ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-200'
+                        : 'hover:bg-slate-800/80 text-slate-300'
+                    }`}
+                  >
+                    <Mountain className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-bold text-[11px] flex items-center space-x-1.5">
+                        <span>Terrain Mode</span>
+                        {activeBasemap === 'topo' && <Check className="w-3 h-3 text-cyan-400" />}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Hillshade, elevation contours & summits
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Live Operational Status & UTC Clock */}
+          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">LIVE</span>
-            <span className="text-slate-500">|</span>
+            <span className="text-slate-600">|</span>
             <Clock className="w-3 h-3 text-cyan-400" />
             <span>{time}</span>
           </div>
