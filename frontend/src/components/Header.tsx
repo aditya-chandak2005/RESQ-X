@@ -86,6 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
   const [showBasemapMenu, setShowBasemapMenu] = useState(false);
+  const [showKpis, setShowKpis] = useState(true);
   const basemapMenuRef = useRef<HTMLDivElement>(null);
 
   // Top Nav Search & Omnibar State
@@ -322,16 +323,16 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-[#0c1322] border-b border-slate-800/80 z-20 shrink-0 font-sans select-none">
       
-      {/* 1. Main Operational Ribbon - Rigid Single-Row Responsive Layout */}
-      <div className="relative px-3 sm:px-4 h-13 min-h-[52px] flex items-center justify-between border-b border-slate-800/80 text-xs overflow-visible">
+      {/* 1. Main Operational Ribbon - 3-Column Responsive Grid with Guaranteed True Center */}
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,440px)_minmax(0,1fr)] items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs bg-[#0c1322]">
         
-        {/* Left Operational Controls: Sidebar Toggle + Incident Selector */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0 z-10">
+        {/* COLUMN 1 (LEFT): Sidebar Toggle + Incident Selector */}
+        <div className="flex items-center justify-start space-x-1.5 sm:space-x-2 min-w-0">
           {/* Navigation Sidebar Toggle Button */}
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className={`px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm ${
+              className={`px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all flex items-center space-x-1.5 font-mono text-xs cursor-pointer shadow-sm shrink-0 ${
                 isSidebarHidden
                   ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
                   : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500'
@@ -346,14 +347,14 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* Incident Selector Dropdown */}
-          <div className="relative">
+          <div className="relative shrink min-w-0">
             <button
               onClick={() => setShowIncidentDropdown(!showIncidentDropdown)}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/60 text-slate-100 transition-all text-xs font-semibold cursor-pointer shadow-sm max-w-full"
             >
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-              <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline">INCIDENT:</span>
-              <span className="text-white font-mono truncate max-w-[110px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[260px]">
+              <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline shrink-0">INCIDENT:</span>
+              <span className="text-white font-mono truncate max-w-[90px] sm:max-w-[130px] md:max-w-[160px] lg:max-w-[210px] xl:max-w-[260px]">
                 {activeIncident?.name || 'Assam Barak Valley Inundation'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -408,197 +409,197 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* ========================================================= */}
-        {/* CENTER: TRUE CENTER OMNIBAR SEARCH (LOCKED AT EXACT 50%) */}
-        {/* ========================================================= */}
-        <div
-          ref={searchContainerRef}
-          className="absolute left-1/2 -translate-x-1/2 w-[34%] min-w-[200px] max-w-xs sm:max-w-md lg:max-w-lg z-20 pointer-events-auto"
-        >
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-            <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 pointer-events-none" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)}
-              onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="Search place, coords, or hotspots... (Ctrl+K)"
-              className="w-full pl-8 pr-16 sm:pr-20 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner"
-            />
-            {isSearching && (
-              <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-16" />
-            )}
-            {searchVal && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchVal('');
-                  setSuggestions([]);
-                }}
-                className="absolute right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-            <button
-              type="submit"
-              className="absolute right-1.5 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all cursor-pointer"
-            >
-              FIND
-            </button>
-          </form>
-
-          {/* POPOVER: Popped on need for search / focus */}
-          {isSearchDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#090e1a]/95 backdrop-blur-xl border border-cyan-500/50 rounded-xl shadow-2xl z-[1200] p-3 text-xs font-mono space-y-2.5 animate-fadeIn">
-              
-              {/* Quick Actions Strip */}
-              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-800 text-[11px]">
-                {/* 1. Device GPS */}
+        {/* COLUMN 2 (CENTER): Mathematically Centered Search Omnibar */}
+        <div className="flex items-center justify-center w-full min-w-0">
+          <div
+            ref={searchContainerRef}
+            className="relative w-full max-w-[420px] min-w-0"
+          >
+            <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
+              <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 sm:left-3 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                onFocus={() => setIsSearchDropdownOpen(true)}
+                placeholder="Search place, coords, or hotspots... (Ctrl+K)"
+                className="w-full pl-8 sm:pl-9 pr-14 sm:pr-16 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-slate-400 transition-all font-mono shadow-inner truncate"
+              />
+              {isSearching && (
+                <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-12 sm:right-14" />
+              )}
+              {searchVal && (
                 <button
                   type="button"
-                  onClick={handleUseMyLocation}
-                  className="px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 flex items-center space-x-1.5 transition-all cursor-pointer"
-                  title="Use my device GPS location"
+                  onClick={() => {
+                    setSearchVal('');
+                    setSuggestions([]);
+                  }}
+                  className="absolute right-10 sm:right-12 text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
                 >
-                  <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>My GPS</span>
+                  <X className="w-3 h-3" />
                 </button>
+              )}
+              <button
+                type="submit"
+                className="absolute right-1 sm:right-1.5 px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm"
+              >
+                FIND
+              </button>
+            </form>
 
-                {/* 2. Map Crosshair Inspection Mode */}
-                {setIsInspectMode && (
+            {/* POPOVER: Popped on need for search / focus - Symmetrically Centered */}
+            {isSearchDropdownOpen && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] sm:w-[460px] md:w-[480px] max-w-[500px] mt-1.5 bg-[#090e1a]/98 backdrop-blur-xl border border-cyan-500/50 rounded-xl shadow-2xl z-[1200] p-3 text-xs font-mono space-y-2.5 animate-fadeIn">
+                
+                {/* Quick Actions Strip */}
+                <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-800 text-[11px]">
+                  {/* 1. Device GPS */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsInspectMode(!isInspectMode);
-                      setIsSearchDropdownOpen(false);
-                    }}
-                    className={`px-2.5 py-1 rounded-md border flex items-center space-x-1.5 transition-all cursor-pointer ${
-                      isInspectMode
-                        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20'
-                        : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                    }`}
-                    title="Click anywhere on the map to inspect risk"
+                    onClick={handleUseMyLocation}
+                    className="px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 flex items-center space-x-1.5 transition-all cursor-pointer"
+                    title="Use my device GPS location"
                   >
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{isInspectMode ? 'Click Map Mode Active' : 'Inspect Pin'}</span>
+                    <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>My GPS</span>
                   </button>
+
+                  {/* 2. Map Crosshair Inspection Mode */}
+                  {setIsInspectMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsInspectMode(!isInspectMode);
+                        setIsSearchDropdownOpen(false);
+                      }}
+                      className={`px-2.5 py-1 rounded-md border flex items-center space-x-1.5 transition-all cursor-pointer ${
+                        isInspectMode
+                          ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-lg shadow-cyan-500/20'
+                          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                      }`}
+                      title="Click anywhere on the map to inspect risk"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{isInspectMode ? 'Click Map Active' : 'Inspect Pin'}</span>
+                    </button>
+                  )}
+
+                  {/* 3. Toggle Exact Lat/Lon inputs */}
+                  <button
+                    type="button"
+                    onClick={() => setShowManualCoords(!showManualCoords)}
+                    className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
+                    title="Enter exact coordinates manually"
+                  >
+                    ± Exact Lat/Lon
+                  </button>
+
+                  <div className="ml-auto text-[10px] text-slate-500 hidden sm:block">
+                    Esc to close
+                  </div>
+                </div>
+
+                {/* Exact Lat/Lon Form Strip */}
+                {showManualCoords && (
+                  <form
+                    onSubmit={handleManualCoordsSubmit}
+                    className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center gap-2 text-xs"
+                  >
+                    <span className="text-[10px] text-slate-400 uppercase">COORDS:</span>
+                    <input
+                      type="text"
+                      value={manualLat}
+                      onChange={(e) => setManualLat(e.target.value)}
+                      placeholder="Lat (e.g. 24.8333)"
+                      className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
+                    />
+                    <input
+                      type="text"
+                      value={manualLon}
+                      onChange={(e) => setManualLon(e.target.value)}
+                      placeholder="Lon (e.g. 92.7789)"
+                      className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
+                    >
+                      Evaluate
+                    </button>
+                  </form>
                 )}
 
-                {/* 3. Toggle Exact Lat/Lon inputs */}
-                <button
-                  type="button"
-                  onClick={() => setShowManualCoords(!showManualCoords)}
-                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
-                  title="Enter exact coordinates manually"
-                >
-                  ± Exact Lat/Lon
-                </button>
-
-                <div className="ml-auto text-[10px] text-slate-500 hidden sm:block">
-                  Esc to close
-                </div>
-              </div>
-
-              {/* Exact Lat/Lon Form Strip */}
-              {showManualCoords && (
-                <form
-                  onSubmit={handleManualCoordsSubmit}
-                  className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center gap-2 text-xs"
-                >
-                  <span className="text-[10px] text-slate-400 uppercase">COORDS:</span>
-                  <input
-                    type="text"
-                    value={manualLat}
-                    onChange={(e) => setManualLat(e.target.value)}
-                    placeholder="Lat (e.g. 24.8333)"
-                    className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
-                  />
-                  <input
-                    type="text"
-                    value={manualLon}
-                    onChange={(e) => setManualLon(e.target.value)}
-                    placeholder="Lon (e.g. 92.7789)"
-                    className="w-24 bg-[#070b14] px-2 py-1 rounded text-xs font-mono text-slate-100 border border-slate-700 focus:outline-none focus:border-cyan-400"
-                  />
-                  <button
-                    type="submit"
-                    className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
-                  >
-                    Evaluate
-                  </button>
-                </form>
-              )}
-
-              {/* Live Geocoding Results (when typing) */}
-              {suggestions.length > 0 && (
-                <div>
-                  <div className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
-                    <span>Locations Found</span>
-                    <span>{suggestions.length} matching</span>
-                  </div>
-                  <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1">
-                    {suggestions.map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSelectLocation(item.latitude, item.longitude, item.name)}
-                        className="w-full text-left p-2 rounded-lg hover:bg-cyan-950/60 border border-transparent hover:border-cyan-800/80 transition-all flex items-start space-x-2 cursor-pointer"
-                      >
-                        <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-slate-100 truncate">{item.name}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
-                          <div className="text-[9px] text-cyan-400/80 mt-0.5">
-                            [{item.latitude.toFixed(4)}°, {item.longitude.toFixed(4)}°] • {item.source}
+                {/* Live Geocoding Results (when typing) */}
+                {suggestions.length > 0 && (
+                  <div>
+                    <div className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
+                      <span>Locations Found</span>
+                      <span>{suggestions.length} matching</span>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1">
+                      {suggestions.map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectLocation(item.latitude, item.longitude, item.name)}
+                          className="w-full text-left p-2 rounded-lg hover:bg-cyan-950/60 border border-transparent hover:border-cyan-800/80 transition-all flex items-start space-x-2 cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold text-slate-100 truncate">{item.name}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{item.formatted_address}</div>
+                            <div className="text-[9px] text-cyan-400/80 mt-0.5">
+                              [{item.latitude.toFixed(4)}°, {item.longitude.toFixed(4)}°] • {item.source}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Operational Disaster Hotspots Grid (when input has no results or upon initial focus) */}
-              {suggestions.length === 0 && (
-                <div>
-                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>OPERATIONAL DISASTER HOTSPOTS</span>
-                    <span className="text-[9px] text-slate-500">1-Click Jump</span>
+                {/* Operational Disaster Hotspots Grid (when input has no results or upon initial focus) */}
+                {suggestions.length === 0 && (
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1.5 flex items-center justify-between">
+                      <span>OPERATIONAL DISASTER HOTSPOTS</span>
+                      <span className="text-[9px] text-slate-500">1-Click Jump</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {DISASTER_HOTSPOTS.map((spot, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => handleSelectLocation(spot.lat, spot.lon, spot.name)}
+                          className="p-1.5 rounded-lg bg-slate-900/90 hover:bg-cyan-950/70 border border-slate-800 hover:border-cyan-700/80 text-left transition-all cursor-pointer group"
+                        >
+                          <div className="font-bold text-slate-200 group-hover:text-cyan-300 text-[11px] truncate flex items-center justify-between">
+                            <span>{spot.name}</span>
+                            <span className="text-[8px] font-mono px-1 rounded bg-slate-800 text-cyan-400">
+                              {spot.tag}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-slate-400 truncate mt-0.5">
+                            {spot.desc}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    {DISASTER_HOTSPOTS.map((spot, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleSelectLocation(spot.lat, spot.lon, spot.name)}
-                        className="p-1.5 rounded-lg bg-slate-900/90 hover:bg-cyan-950/70 border border-slate-800 hover:border-cyan-700/80 text-left transition-all cursor-pointer group"
-                      >
-                        <div className="font-bold text-slate-200 group-hover:text-cyan-300 text-[11px] truncate flex items-center justify-between">
-                          <span>{spot.name}</span>
-                          <span className="text-[8px] font-mono px-1 rounded bg-slate-800 text-cyan-400">
-                            {spot.tag}
-                          </span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 truncate mt-0.5">
-                          {spot.desc}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right Active Assessment Pill (if an area is inspected) + Operational Actions */}
-        <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-2 shrink-0 z-10 ml-auto">
+        {/* COLUMN 3 (RIGHT): Fluid Operational Action Tools (Collapses Gracefully on Smaller Displays) */}
+        <div className="flex items-center justify-end space-x-1 sm:space-x-1.5 min-w-0">
           
           {/* Active Location Inspection Intel Pill */}
           {currentAssessment && (
-            <div className="flex items-center space-x-1 sm:space-x-1.5 px-2 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono">
+            <div className="flex items-center space-x-1 px-1.5 sm:px-2 py-1 rounded-lg bg-[#071324] border border-cyan-500/60 shadow-md text-xs font-mono shrink min-w-0">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   currentAssessment.overall_status.is_inundated
@@ -606,24 +607,24 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-emerald-400 animate-pulse'
                 }`}
               />
-              <span className="font-bold text-cyan-300 truncate max-w-[80px] sm:max-w-[120px] hidden md:inline">
+              <span className="font-bold text-cyan-300 truncate max-w-[50px] sm:max-w-[80px] 2xl:max-w-[120px] hidden md:inline">
                 {currentAssessment.query.location_label}
               </span>
               <span
-                className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
+                className={`px-1 py-0.2 rounded text-[9px] sm:text-[10px] font-bold shrink-0 ${
                   currentAssessment.overall_status.is_inundated
                     ? 'bg-red-950 text-red-300 border border-red-700'
                     : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                 }`}
               >
-                {currentAssessment.overall_status.safety_score}% SAFE
+                {currentAssessment.overall_status.safety_score}%<span className="hidden sm:inline"> SAFE</span>
               </span>
               <button
                 onClick={() => setIsIntelModalOpen(true)}
-                className="px-1.5 sm:px-2 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
+                className="px-1.5 py-0.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold border border-cyan-700 transition-all cursor-pointer shrink-0"
                 title="Open Multi-Source SAR/DEM/GloFAS Intelligence Report"
               >
-                <span className="hidden sm:inline">Intel </span>Report ▾
+                <span>Intel</span><span className="hidden 2xl:inline"> Report</span> ▾
               </button>
               {onClearAssessment && (
                 <button
@@ -631,27 +632,27 @@ export const Header: React.FC<HeaderProps> = ({
                   className="text-slate-400 hover:text-red-400 p-0.5 transition-colors cursor-pointer shrink-0"
                   title="Clear Pin Target"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
                 </button>
               )}
             </div>
           )}
 
           {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
-          <div ref={basemapMenuRef} className="relative">
+          <div ref={basemapMenuRef} className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
-              title="Change Map Display Mode"
+              className="flex items-center space-x-1 sm:space-x-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
+              title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
             >
-              {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400" />}
-              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300" />}
-              {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400" />}
-              <span className="font-semibold text-[11px] hidden md:inline">
+              {activeBasemap === 'satellite' && <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
+              {activeBasemap === 'topo' && <Mountain className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+              <span className="font-semibold text-[11px] hidden xl:inline">
                 {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
               </span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
             {showBasemapMenu && (
@@ -742,12 +743,12 @@ export const Header: React.FC<HeaderProps> = ({
           {onRunAnalysis && (
             <button
               onClick={onRunAnalysis}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              className="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-all cursor-pointer shrink-0"
               title="Run AI Flood Segmentation Pipeline"
             >
-              <Play className="w-3 h-3 fill-current" />
+              <Play className="w-3 h-3 fill-current shrink-0" />
               <span className="hidden sm:inline">RUN</span>
-              <span className="hidden lg:inline">PIPELINE</span>
+              <span className="hidden 2xl:inline">PIPELINE</span>
             </button>
           )}
 
@@ -755,11 +756,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenCopilot && (
             <button
               onClick={onOpenCopilot}
-              className="flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              className="flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
               title="Open RESQ AI Disaster Copilot"
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden md:inline">COPILOT</span>
+              <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="hidden xl:inline">COPILOT</span>
             </button>
           )}
 
@@ -767,11 +768,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenSitrep && (
             <button
               onClick={onOpenSitrep}
-              className="hidden sm:flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer"
+              className="hidden sm:flex items-center space-x-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
               title="View NDMA Official Situation Report"
             >
-              <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden lg:inline">SITREP</span>
+              <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="hidden 2xl:inline">SITREP</span>
             </button>
           )}
 
@@ -779,15 +780,28 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenGuide && (
             <button
               onClick={onOpenGuide}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
-              title="Citizen Survival Guide"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+              title="Citizen Survival Guide & Safety Checklist"
             >
               <HelpCircle className="w-4 h-4 text-cyan-300" />
             </button>
           )}
 
+          {/* Telemetry Bar Toggle */}
+          <button
+            onClick={() => setShowKpis(!showKpis)}
+            className={`p-1.5 rounded-lg border transition-all cursor-pointer shrink-0 ${
+              showKpis
+                ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400 hover:text-white'
+                : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+            }`}
+            title={showKpis ? 'Minimize Telemetry Bar' : 'Show Telemetry Bar'}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+          </button>
+
           {/* Live Operational Status & UTC Clock */}
-          <div className="hidden xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
+          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">LIVE</span>
             <span className="text-slate-500">|</span>
@@ -797,34 +811,36 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Analytical KPI Metrics Ribbon */}
-      <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/90">
-        {kpiItems.map((kpi, idx) => {
-          const Icon = kpi.icon;
-          return (
-            <div
-              key={idx}
-              onClick={() => onSelectKpiFilter && onSelectKpiFilter(kpi.id)}
-              className={`p-1.5 rounded-lg border ${kpi.border} ${kpi.bg} flex flex-col justify-between transition-all hover:scale-[1.02] cursor-pointer`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] text-slate-400 font-medium uppercase truncate font-mono">
-                  {kpi.label}
-                </span>
-                <Icon className={`w-3 h-3 ${kpi.color} shrink-0`} />
+      {/* 2. Analytical KPI Metrics Ribbon (Collapsible for Maximum Map Canvas) */}
+      {showKpis && (
+        <div className="px-3 py-1.5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 bg-[#090e1a]/90 transition-all">
+          {kpiItems.map((kpi, idx) => {
+            const Icon = kpi.icon;
+            return (
+              <div
+                key={idx}
+                onClick={() => onSelectKpiFilter && onSelectKpiFilter(kpi.id)}
+                className={`p-1.5 rounded-lg border ${kpi.border} ${kpi.bg} flex flex-col justify-between transition-all hover:scale-[1.02] cursor-pointer`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-slate-400 font-medium uppercase truncate font-mono">
+                    {kpi.label}
+                  </span>
+                  <Icon className={`w-3 h-3 ${kpi.color} shrink-0`} />
+                </div>
+                <div className="mt-0.5 flex items-baseline justify-between">
+                  <span className={`text-sm font-extrabold font-mono ${kpi.color}`}>
+                    {kpi.value}
+                  </span>
+                  <span className="text-[8px] text-slate-400 font-mono truncate">
+                    {kpi.sub}
+                  </span>
+                </div>
               </div>
-              <div className="mt-0.5 flex items-baseline justify-between">
-                <span className={`text-sm font-extrabold font-mono ${kpi.color}`}>
-                  {kpi.value}
-                </span>
-                <span className="text-[8px] text-slate-400 font-mono truncate">
-                  {kpi.sub}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 3. Detailed Multi-Source Assessment Intelligence Modal */}
       {isIntelModalOpen && currentAssessment && (
