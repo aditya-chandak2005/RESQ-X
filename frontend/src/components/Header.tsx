@@ -9,10 +9,6 @@ import {
   Clock,
   AlertOctagon,
   ChevronDown,
-  Layers,
-  FileCheck2,
-  Bot,
-  Play,
   HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
@@ -23,8 +19,6 @@ import {
   Mountain,
   Check,
   Settings,
-  Wifi,
-  WifiOff,
 } from 'lucide-react';
 import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType } from '../types';
 import { api } from '../services/api';
@@ -248,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* =================================================================== */}
       {/* 1. PRIMARY ROW: Navigation, Incident Context, Search & Core Actions */}
       {/* =================================================================== */}
-      <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[minmax(0,1fr)_minmax(240px,480px)_minmax(0,1fr)] items-center gap-2 sm:gap-3 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs">
+      <div className="grid grid-cols-[1fr_auto] md:grid-cols-[minmax(0,1fr)_minmax(260px,500px)_minmax(0,1fr)] items-center gap-2 sm:gap-4 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs">
         
         {/* LEFT SECTION: Sleek Nav Toggle, App Identifier & Theater Selector */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
@@ -358,52 +352,14 @@ export const Header: React.FC<HeaderProps> = ({
             onSearchQuery={onSearchQuery}
             isInspectMode={isInspectMode}
             setIsInspectMode={setIsInspectMode}
-            className="w-full max-w-[460px] min-w-0"
+            className="w-full max-w-[480px] min-w-0"
+            placeholder="Search…"
           />
         </div>
 
-        {/* RIGHT SECTION: Core Operational Actions, Help, Settings & System Status */}
-        <div className="flex items-center justify-end space-x-1 sm:space-x-1.5 min-w-0">
+        {/* RIGHT SECTION: Help, Operational Settings & Live System Status */}
+        <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 min-w-0">
           
-          {/* AI Pipeline Trigger */}
-          {onRunAnalysis && (
-            <button
-              onClick={onRunAnalysis}
-              className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono text-xs font-semibold shadow-md shadow-cyan-950/50 transition-all cursor-pointer shrink-0"
-              title="Run AI Flood Segmentation Pipeline"
-            >
-              <Play className="w-3 h-3 fill-current shrink-0" />
-              <span className="hidden sm:inline">RUN</span>
-              <span className="hidden xl:inline">PIPELINE</span>
-            </button>
-          )}
-
-          {/* Copilot Assistant */}
-          {onOpenCopilot && (
-            <button
-              onClick={onOpenCopilot}
-              className="h-8 flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/60 text-cyan-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-              title="Open RESQ AI Disaster Copilot"
-            >
-              <Bot className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span className="hidden xl:inline">COPILOT</span>
-            </button>
-          )}
-
-          {/* SITREP Situation Report */}
-          {onOpenSitrep && (
-            <button
-              onClick={onOpenSitrep}
-              className="h-8 hidden sm:flex items-center space-x-1.5 px-2.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 text-slate-300 font-mono text-xs font-medium transition-all cursor-pointer shrink-0"
-              title="View Official Situation Report (SITREP)"
-            >
-              <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="hidden 2xl:inline">SITREP</span>
-            </button>
-          )}
-
-          <div className="h-4 w-px bg-slate-800 hidden sm:block shrink-0" />
-
           {/* Citizen Survival Guide (Help) */}
           {onOpenGuide && (
             <button
@@ -424,8 +380,8 @@ export const Header: React.FC<HeaderProps> = ({
             <Settings className="w-4 h-4" />
           </button>
 
-          {/* Live Data Connection & UTC Clock */}
-          <div className="hidden 2xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
+          {/* Live Data Connection & UTC Clock (Desktop & Tablet) */}
+          <div className="hidden lg:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
             {isOnline ? (
               <span className="flex items-center space-x-1 text-emerald-400 text-[10px] font-bold" title="Connected to Disaster Intelligence API">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -439,7 +395,12 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <span className="text-slate-600">|</span>
             <Clock className="w-3 h-3 text-cyan-400" />
-            <span>{time}</span>
+            <span className="tabular-nums">{time}</span>
+          </div>
+
+          {/* Compact Live Status Dot for Mobile / Small Screens */}
+          <div className="flex lg:hidden items-center pl-1 shrink-0" title={isOnline ? "Connected (Online)" : "Offline"}>
+            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
           </div>
         </div>
       </div>
@@ -455,6 +416,7 @@ export const Header: React.FC<HeaderProps> = ({
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           className="w-full"
+          placeholder="Search…"
         />
       </div>
 

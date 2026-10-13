@@ -41,7 +41,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   isInspectMode = false,
   setIsInspectMode,
   className = '',
-  placeholder = 'Search places, rivers, incidents, or coordinates... (Ctrl+K)',
+  placeholder = 'Search…',
 }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -370,12 +370,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full h-8 pl-9 pr-20 sm:pr-24 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none text-xs text-slate-100 placeholder-slate-400 font-mono shadow-inner transition-all truncate"
+          className="w-full h-8 pl-8.5 pr-26 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none text-xs text-slate-100 placeholder-slate-400 font-mono shadow-inner transition-all"
         />
 
         {/* Loading Spinner */}
         {isLoading && (
-          <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-16 pointer-events-none" />
+          <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-20 pointer-events-none" />
         )}
 
         {/* Clear Button */}
@@ -388,16 +388,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
               setIncidentMatches([]);
               inputRef.current?.focus();
             }}
-            className="absolute right-12 text-slate-400 hover:text-white p-0.5 cursor-pointer transition-colors"
+            className="absolute right-13 text-slate-400 hover:text-white p-1 cursor-pointer transition-colors"
             title="Clear search query"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
 
-        {/* Shortcut Badge (Desktop) */}
+        {/* Shortcut Badge (Desktop / Tablet) */}
         {!query && (
-          <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700 rounded absolute right-12 pointer-events-none">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700/80 rounded absolute right-13 pointer-events-none select-none">
             Ctrl+K
           </kbd>
         )}
@@ -405,7 +405,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         {/* FIND Action Button */}
         <button
           type="submit"
-          className="absolute right-1 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center"
+          className="absolute right-1 px-2.5 py-0.5 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
         >
           FIND
         </button>
