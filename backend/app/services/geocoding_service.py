@@ -94,22 +94,6 @@ CURATED_PLACES: List[Dict[str, Any]] = [
         "keywords": ["kamrup metro", "guwahati", "dispur", "silsako", "bharalu"]
     },
     {
-        "place_id": "in-as-guwahati",
-        "name": "Guwahati",
-        "display_name": "Guwahati City, Kamrup Metropolitan, Assam, India",
-        "feature_type": "city",
-        "district": "Kamrup Metropolitan",
-        "state": "Assam",
-        "country": "India",
-        "latitude": 26.1445,
-        "longitude": 91.7362,
-        "bbox": [91.60, 26.08, 91.88, 26.22],
-        "boundary_geojson": None,
-        "provider": "ASDMA / Census of India",
-        "confidence": 1.0,
-        "keywords": ["guwahati", "gauhati", "dispur", "paltan bazaar", "jalukbari", "silsako", "bharalu"]
-    },
-    {
         "place_id": "in-as-kamrup-rural",
         "name": "Kamrup Rural",
         "display_name": "Kamrup Rural District, Assam, India",
