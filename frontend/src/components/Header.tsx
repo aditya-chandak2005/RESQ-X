@@ -31,6 +31,7 @@ import { TelemetryDetailsModal } from './TelemetryDetailsModal';
 import { TheaterSelectorDropdown } from './TheaterSelectorDropdown';
 import { SatelliteBasemapPopover } from './SatelliteBasemapPopover';
 import { MapLayersPanel, TACTICAL_LAYERS } from './MapLayersPanel';
+import { normalizeBasemapId } from '../services/basemapConfig';
 
 interface HeaderProps {
   kpis: DashboardKpis | null;
@@ -475,29 +476,34 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
           <div ref={basemapMenuRef} className="relative shrink-0">
-            <button
-              ref={basemapButtonRef}
-              type="button"
-              onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-              className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${
-                activeBasemap === 'satellite'
-                  ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
-                  : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark')
-                  ? 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
-                  : 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
-              }`}
-              title="Change Map Display Mode (Satellite, Dark Mode, Terrain)"
-              aria-haspopup="dialog"
-              aria-expanded={showBasemapMenu}
-            >
-              {activeBasemap === 'satellite' && <Globe className="w-3 h-3 text-cyan-400 shrink-0" />}
-              {(activeBasemap === 'dark' || activeBasemap === 'tactical-dark') && <Moon className="w-3 h-3 text-amber-300 shrink-0" />}
-              {activeBasemap === 'topo' && <Mountain className="w-3 h-3 text-emerald-400 shrink-0" />}
-              <span className="font-semibold">
-                {activeBasemap === 'satellite' ? 'Satellite' : (activeBasemap === 'dark' || activeBasemap === 'tactical-dark') ? 'Dark Mode' : 'Terrain'}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showBasemapMenu ? 'rotate-180 text-cyan-400' : ''}`} />
-            </button>
+            {(() => {
+              const currentId = normalizeBasemapId(activeBasemap);
+              return (
+                <button
+                  ref={basemapButtonRef}
+                  type="button"
+                  onClick={() => setShowBasemapMenu(!showBasemapMenu)}
+                  className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${
+                    currentId === 'satellite'
+                      ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
+                      : currentId === 'terrain'
+                      ? 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
+                      : 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
+                  }`}
+                  title="Change Map Display Mode (Satellite, Terrain, Dark Mode)"
+                  aria-haspopup="dialog"
+                  aria-expanded={showBasemapMenu}
+                >
+                  {currentId === 'satellite' && <Globe className="w-3 h-3 text-cyan-400 shrink-0" />}
+                  {currentId === 'terrain' && <Mountain className="w-3 h-3 text-emerald-400 shrink-0" />}
+                  {currentId === 'dark' && <Moon className="w-3 h-3 text-amber-300 shrink-0" />}
+                  <span className="font-semibold">
+                    {currentId === 'satellite' ? 'Satellite' : currentId === 'terrain' ? 'Terrain' : 'Dark Mode'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showBasemapMenu ? 'rotate-180 text-cyan-400' : ''}`} />
+                </button>
+              );
+            })()}
 
             <SatelliteBasemapPopover
               isOpen={showBasemapMenu}

@@ -43,7 +43,7 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-react';
-import { getBasemapDefinition } from '../services/basemapConfig';
+import { getBasemapDefinition, normalizeBasemapId } from '../services/basemapConfig';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -610,16 +610,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const activeBasemap: 'satellite' | 'dark' | 'topo' =
-    layers.basemap === 'dark' || layers.basemap === 'tactical-dark'
-      ? 'dark'
-      : layers.basemap === 'topo'
-      ? 'topo'
-      : 'satellite';
-
+  const activeBasemap: 'satellite' | 'terrain' | 'dark' = normalizeBasemapId(layers.basemap);
   const currentBasemapDef = getBasemapDefinition(activeBasemap);
   const [isBasemapLoading, setIsBasemapLoading] = useState(false);
   const [basemapError, setBasemapError] = useState<string | null>(null);
+  const lastWorkingBasemapRef = useRef<'satellite' | 'terrain' | 'dark'>('satellite');
+
+  // Automatic timeout for tile loading to prevent silent hanging
+  useEffect(() => {
+    if (!isBasemapLoading) return;
+    const timeout = setTimeout(() => {
+      setIsBasemapLoading(false);
+      setBasemapError(
+        `Tile request timed out for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check your network connection.`
+      );
+    }, 7500);
+    return () => clearTimeout(timeout);
+  }, [isBasemapLoading, currentBasemapDef]);
 
   const handleTileLoading = () => {
     setIsBasemapLoading(true);
@@ -629,12 +636,22 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const handleTileLoaded = () => {
     setIsBasemapLoading(false);
     setBasemapError(null);
+    lastWorkingBasemapRef.current = activeBasemap;
   };
 
   const handleTileError = (e: any) => {
     console.warn(`[RESQ-X Basemap] Tile failed to load for ${currentBasemapDef.label}:`, e);
-    setBasemapError(`Tile server issue for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check connection.`);
+    setBasemapError(
+      `Tile server issue for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check connection or try another style.`
+    );
     setIsBasemapLoading(false);
+  };
+
+  const handleRevertBasemap = () => {
+    if (setLayers) {
+      setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
+      setBasemapError(null);
+    }
   };
 
   // Sync center when active incident or inspected point changes
@@ -671,14 +688,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       )}
 
-      {/* Basemap Error Toast */}
+      {/* Basemap Error Toast with Revert Action */}
       {basemapError && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
           <span className="text-red-200 text-[11px]">{basemapError}</span>
+          {setLayers && lastWorkingBasemapRef.current !== activeBasemap && (
+            <button
+              onClick={handleRevertBasemap}
+              className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer ml-1"
+            >
+              Revert
+            </button>
+          )}
           <button
             onClick={() => setBasemapError(null)}
             className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
+            title="Dismiss"
           >
             <X className="w-3 h-3" />
           </button>
@@ -771,7 +797,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         ))}
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
-        {(activeBasemap === 'topo' || layers.elevationContours) &&
+        {(activeBasemap === 'terrain' || layers.elevationContours) &&
           TERRAIN_LANDMARKS.map((landmark, idx) => (
             <Marker
               key={`terrain-${idx}`}

@@ -11,7 +11,10 @@ import {
 } from 'lucide-react';
 import { BasemapType } from '../types';
 import { AnchoredPopover } from './AnchoredPopover';
-import { BASEMAP_DEFINITIONS } from '../services/basemapConfig';
+import {
+  BASEMAP_DEFINITIONS,
+  normalizeBasemapId,
+} from '../services/basemapConfig';
 
 interface SatelliteBasemapPopoverProps {
   isOpen: boolean;
@@ -30,12 +33,15 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
 }) => {
   const [switchingTo, setSwitchingTo] = useState<BasemapType | null>(null);
 
+  const currentNormalized = normalizeBasemapId(activeBasemap);
+
   const handleSelect = (id: BasemapType) => {
-    if (id === activeBasemap) {
+    const targetNormalized = normalizeBasemapId(id);
+    if (targetNormalized === currentNormalized) {
       onClose();
       return;
     }
-    const def = BASEMAP_DEFINITIONS[id];
+    const def = BASEMAP_DEFINITIONS[id] || BASEMAP_DEFINITIONS[targetNormalized];
     if (!def || !def.isAvailable) return;
 
     setSwitchingTo(id);
@@ -43,11 +49,13 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
     setTimeout(() => {
       setSwitchingTo(null);
       onClose();
-    }, 320);
+    }, 280);
   };
 
-  const isDarkActive = activeBasemap === 'dark' || activeBasemap === 'tactical-dark';
-
+  // Three primary options strictly ordered:
+  // 1. Satellite
+  // 2. Terrain
+  // 3. Dark Mode
   const supportedOptions = [
     {
       def: BASEMAP_DEFINITIONS.satellite,
@@ -55,14 +63,14 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
       iconColor: 'text-cyan-400',
     },
     {
+      def: BASEMAP_DEFINITIONS.terrain,
+      icon: Mountain,
+      iconColor: 'text-emerald-400',
+    },
+    {
       def: BASEMAP_DEFINITIONS.dark,
       icon: Moon,
       iconColor: 'text-amber-400',
-    },
-    {
-      def: BASEMAP_DEFINITIONS.topo,
-      icon: Mountain,
-      iconColor: 'text-emerald-400',
     },
   ];
 
@@ -82,23 +90,22 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
           <div className="flex items-center space-x-1.5">
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <h3 className="font-mono text-xs font-bold text-white tracking-wider uppercase">
-              Map Display Mode
+              Map View Selector
             </h3>
           </div>
           <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-            Operational geospatial basemap styles
+            Select high-speed operational basemap
           </p>
         </div>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold shrink-0">
-          3 STYLES ACTIVE
+          3 MODES CONFIGURED
         </span>
       </div>
 
       {/* Style Choices */}
       <div className="p-2 space-y-1.5 overflow-y-auto max-h-[360px] custom-scrollbar flex-1">
         {supportedOptions.map(({ def, icon: Icon, iconColor }) => {
-          const isSelected =
-            def.id === 'dark' ? isDarkActive : activeBasemap === def.id;
+          const isSelected = currentNormalized === def.id;
           const isPending = switchingTo === def.id;
           const isAvailable = def.isAvailable;
 
@@ -171,9 +178,9 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
       <div className="p-2 border-t border-slate-800 bg-[#0c1424] flex items-center justify-between text-[10px] font-mono text-slate-400 shrink-0">
         <span className="flex items-center space-x-1 text-emerald-400">
           <ShieldCheck className="w-3 h-3" />
-          <span>Real Raster Tiles Connected</span>
+          <span>Real Raster Tiles Active</span>
         </span>
-        <span className="text-slate-500">FastAPI & Leaflet 1.9</span>
+        <span className="text-slate-500">Leaflet 1.9 & FastAPI</span>
       </div>
     </AnchoredPopover>
   );

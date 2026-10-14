@@ -188,7 +188,7 @@ export interface Resource {
   base_location_name: string;
 }
 
-export type BasemapType = 'satellite' | 'dark' | 'tactical-dark' | 'topo' | 'street';
+export type BasemapType = 'satellite' | 'terrain' | 'topo' | 'dark' | 'tactical-dark' | 'street';
 
 export interface LayerVisibility {
   basemap: BasemapType;

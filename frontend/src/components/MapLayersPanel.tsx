@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { LayerVisibility, BasemapType } from '../types';
 import { AnchoredPopover } from './AnchoredPopover';
-import { BASEMAP_DEFINITIONS } from '../services/basemapConfig';
+import { BASEMAP_DEFINITIONS, normalizeBasemapId } from '../services/basemapConfig';
 
 export interface MapLayersPanelProps {
   isOpen: boolean;
@@ -131,6 +131,20 @@ export const TACTICAL_LAYERS: TacticalLayerDefinition[] = [
     basemapValue: 'satellite',
   },
   {
+    id: 'bm-terrain',
+    label: 'Terrain / topographic basemap',
+    description: 'ESRI World Topo with elevation contours, shaded relief, and ridgeline terrain.',
+    category: 'basemaps',
+    color: '#10b981',
+    symbolType: 'polygon',
+    source: 'ESRI World Topo & Shaded Relief',
+    updated: 'Global 2026',
+    available: true,
+    status: 'live',
+    isBasemap: true,
+    basemapValue: 'terrain',
+  },
+  {
     id: 'bm-dark',
     label: 'Dark basemap',
     description: 'CartoDB high-contrast dark geographic vector tiles for nighttime command ops.',
@@ -143,20 +157,6 @@ export const TACTICAL_LAYERS: TacticalLayerDefinition[] = [
     status: 'live',
     isBasemap: true,
     basemapValue: 'dark',
-  },
-  {
-    id: 'bm-topo',
-    label: 'Terrain / topographic basemap',
-    description: 'ESRI World Topo with elevation contours, shaded relief, and ridgeline terrain.',
-    category: 'basemaps',
-    color: '#10b981',
-    symbolType: 'polygon',
-    source: 'ESRI World Topo & Shaded Relief',
-    updated: 'Global 2026',
-    available: true,
-    status: 'live',
-    isBasemap: true,
-    basemapValue: 'topo',
   },
 
   // =========================================================================
@@ -804,8 +804,7 @@ export const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
                       const isBasemap = Boolean(layer.isBasemap);
                       const isBasemapActive =
                         isBasemap &&
-                        (layers.basemap === layer.basemapValue ||
-                          (layer.basemapValue === 'dark' && layers.basemap === 'tactical-dark'));
+                        normalizeBasemapId(layers.basemap) === normalizeBasemapId(layer.basemapValue);
                       const isOverlayActive =
                         Boolean(layer.key && layers[layer.key]) && layer.available;
                       const isActive = isBasemap ? isBasemapActive : isOverlayActive;
