@@ -133,19 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Click outside to dismiss menus
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (incidentDropdownRef.current && !incidentDropdownRef.current.contains(e.target as Node)) {
-        setShowIncidentDropdown(false);
-      }
-      if (basemapMenuRef.current && !basemapMenuRef.current.contains(e.target as Node)) {
-        setShowBasemapMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
 
   // Keyboard shortcut Ctrl+B for Sidebar toggle & Escape
   useEffect(() => {

@@ -500,7 +500,7 @@ export const MapLayersPanel: React.FC<MapLayersPanelProps> = ({
     if (!item.available) return;
 
     if (item.isBasemap && item.basemapValue) {
-      setLayers((prev) => ({ ...prev, basemap: item.basemapValue! }));
+      setLayers((prev) => ({ ...prev, basemap: normalizeBasemapId(item.basemapValue) }));
       return;
     }
 

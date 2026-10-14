@@ -37,19 +37,15 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
 
   const handleSelect = (id: BasemapType) => {
     const targetNormalized = normalizeBasemapId(id);
-    if (targetNormalized === currentNormalized) {
-      onClose();
-      return;
-    }
-    const def = BASEMAP_DEFINITIONS[id] || BASEMAP_DEFINITIONS[targetNormalized];
+    const def = BASEMAP_DEFINITIONS[targetNormalized];
     if (!def || !def.isAvailable) return;
 
-    setSwitchingTo(id);
-    onSelectBasemap(id);
+    setSwitchingTo(targetNormalized);
+    onSelectBasemap(targetNormalized);
     setTimeout(() => {
       setSwitchingTo(null);
       onClose();
-    }, 280);
+    }, 180);
   };
 
   // Three primary options strictly ordered:
