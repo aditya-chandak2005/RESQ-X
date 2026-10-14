@@ -117,8 +117,9 @@ class KnowledgeService:
                 score += 1.5
 
             # Require meaningful score and token coverage threshold
+            min_coverage = 0.5 if len(q_tokens) >= 3 else 0.4
             token_coverage = len(matched_terms) / len(q_tokens) if q_tokens else 0
-            if (score >= 3.0 and token_coverage >= 0.4) or (len(q_tokens) == 1 and score >= 2.0):
+            if (score >= 3.0 and token_coverage >= min_coverage) or (len(q_tokens) == 1 and score >= 2.0):
                 snippet = KnowledgeService._extract_best_passage(doc.content_text, q_tokens)
                 scored_docs.append({
                     "id": doc.id,
