@@ -87,25 +87,23 @@ path:focus {
   box-shadow: none !important;
 }
 
-/* Google Maps Style Basemaps - crisp contrast, authentic rendering */
-.leaflet-tile-pane .google-dark-tiles {
-  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(96%) !important;
-}
-
-.leaflet-tile-pane .google-terrain-tiles {
-  filter: contrast(1.04) brightness(1.01) saturate(1.06) !important;
-}
-
+/* Google Satellite Tiles - preserved completely untouched */
 .leaflet-tile-pane .google-satellite-tiles {
   filter: contrast(1.05) brightness(1.02) saturate(1.08) !important;
 }
 
-.leaflet-tile-pane .google-roadmap-tiles {
-  filter: contrast(1.02) brightness(1.0) !important;
+/* ESRI Topographic Tiles - clean hillshade & contour readability */
+.leaflet-tile-pane .topo-tiles {
+  filter: contrast(1.06) brightness(1.01) saturate(1.04) !important;
 }
 
-.leaflet-tile-pane .topo-tiles {
-  filter: contrast(1.08) brightness(1.0);
+/* Genuine Dark Geographic Basemap - high readability, tactical contrast */
+.leaflet-tile-pane .dark-base-tiles {
+  filter: brightness(1.08) contrast(1.15) saturate(1.1) !important;
+}
+
+.leaflet-tile-pane .dark-ref-tiles {
+  filter: brightness(1.2) contrast(1.15) !important;
 }
 
 .leaflet-tile-pane .satellite-tiles {

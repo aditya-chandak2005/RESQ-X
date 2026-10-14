@@ -620,47 +620,91 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const activeBasemap: 'satellite' | 'terrain' | 'dark' = normalizeBasemapId(layers.basemap);
-  const currentBasemapDef = getBasemapDefinition(activeBasemap);
+  const requestedBasemap: 'satellite' | 'terrain' | 'dark' = normalizeBasemapId(layers.basemap);
+  const [renderedBasemap, setRenderedBasemap] = useState<'satellite' | 'terrain' | 'dark'>(requestedBasemap);
+  const [pendingBasemap, setPendingBasemap] = useState<'satellite' | 'terrain' | 'dark' | null>(null);
+  const lastWorkingBasemapRef = useRef<'satellite' | 'terrain' | 'dark'>(requestedBasemap);
   const [isBasemapLoading, setIsBasemapLoading] = useState(false);
   const [basemapError, setBasemapError] = useState<string | null>(null);
-  const lastWorkingBasemapRef = useRef<'satellite' | 'terrain' | 'dark'>('satellite');
 
-  // Automatic timeout for tile loading to prevent silent hanging
+  const initialTilesLoadedRef = useRef<boolean>(true);
+  const failedTilesCountRef = useRef<number>(0);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Synchronize basemap requests from shared application state
   useEffect(() => {
-    if (!isBasemapLoading) return;
-    const timeout = setTimeout(() => {
+    const target = normalizeBasemapId(layers.basemap);
+    if (target === renderedBasemap) {
+      setPendingBasemap(null);
       setIsBasemapLoading(false);
-      setBasemapError(
-        `Tile request timed out for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check your network connection.`
-      );
-    }, 7500);
-    return () => clearTimeout(timeout);
-  }, [isBasemapLoading, currentBasemapDef]);
+      return;
+    }
 
-  const handleTileLoading = () => {
+    // Begin safe transition to new style while preserving renderedBasemap
+    setPendingBasemap(target);
     setIsBasemapLoading(true);
     setBasemapError(null);
+    initialTilesLoadedRef.current = false;
+    failedTilesCountRef.current = 0;
+
+    // Failsafe timeout (8 seconds): if no tiles load, revert to last working basemap
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      if (!initialTilesLoadedRef.current) {
+        const failedDef = getBasemapDefinition(target);
+        const fallbackDef = getBasemapDefinition(lastWorkingBasemapRef.current);
+        console.warn(`[RESQ-X Basemap] Style transition to ${failedDef.label} timed out. Retaining ${fallbackDef.label}.`);
+        setIsBasemapLoading(false);
+        setPendingBasemap(null);
+        setBasemapError(`Could not load ${failedDef.label} tiles. Retaining ${fallbackDef.label}.`);
+        if (setLayers) {
+          setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
+        }
+      }
+    }, 8000);
+
+    return () => {
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    };
+  }, [layers.basemap, renderedBasemap, setLayers]);
+
+  const handlePendingTileLoad = () => {
+    initialTilesLoadedRef.current = true;
+    failedTilesCountRef.current = 0;
   };
 
-  const handleTileLoaded = () => {
+  const handlePendingLayerLoad = (styleId: 'satellite' | 'terrain' | 'dark') => {
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    initialTilesLoadedRef.current = true;
+    setRenderedBasemap(styleId);
+    lastWorkingBasemapRef.current = styleId;
+    setPendingBasemap(null);
     setIsBasemapLoading(false);
     setBasemapError(null);
-    lastWorkingBasemapRef.current = activeBasemap;
   };
 
-  const handleTileError = (e: any) => {
-    console.warn(`[RESQ-X Basemap] Tile failed to load for ${currentBasemapDef.label}:`, e);
-    setBasemapError(
-      `Tile server issue for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check connection or try another style.`
-    );
-    setIsBasemapLoading(false);
+  const handlePendingTileError = (styleId: 'satellite' | 'terrain' | 'dark', e: any) => {
+    if (!initialTilesLoadedRef.current) {
+      failedTilesCountRef.current += 1;
+      if (failedTilesCountRef.current >= 6) {
+        if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+        const failedDef = getBasemapDefinition(styleId);
+        const fallbackDef = getBasemapDefinition(lastWorkingBasemapRef.current);
+        console.warn(`[RESQ-X Basemap] Persistent tile errors for ${failedDef.label}. Retaining ${fallbackDef.label}:`, e);
+        setIsBasemapLoading(false);
+        setPendingBasemap(null);
+        setBasemapError(`Persistent tile error for ${failedDef.label}. Retaining ${fallbackDef.label}.`);
+        if (setLayers) {
+          setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
+        }
+      }
+    }
   };
 
-  const handleRevertBasemap = () => {
+  const handleRetryPending = (styleId: 'satellite' | 'terrain' | 'dark') => {
+    setBasemapError(null);
     if (setLayers) {
-      setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
-      setBasemapError(null);
+      setLayers((prev) => ({ ...prev, basemap: styleId }));
     }
   };
 
@@ -688,29 +732,27 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   return (
     <div className={`w-full h-full relative ${isInspectMode ? 'cursor-crosshair' : ''}`}>
       
-      {/* Basemap Loading Status Indicator */}
-      {isBasemapLoading && (
+      {/* Basemap Loading Status Indicator (Subtle, non-blocking) */}
+      {isBasemapLoading && pendingBasemap && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-cyan-300 font-bold uppercase tracking-wider">
-            Loading {currentBasemapDef.label}...
+            Loading {getBasemapDefinition(pendingBasemap).label}...
           </span>
         </div>
       )}
 
-      {/* Basemap Error Toast with Revert Action */}
+      {/* Basemap Error Toast with Non-Blocking Dismiss & Retry */}
       {basemapError && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
           <span className="text-red-200 text-[11px]">{basemapError}</span>
-          {setLayers && lastWorkingBasemapRef.current !== activeBasemap && (
-            <button
-              onClick={handleRevertBasemap}
-              className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer ml-1"
-            >
-              Revert
-            </button>
-          )}
+          <button
+            onClick={() => handleRetryPending(normalizeBasemapId(layers.basemap))}
+            className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer ml-1"
+          >
+            Retry
+          </button>
           <button
             onClick={() => setBasemapError(null)}
             className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
@@ -785,26 +827,38 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
 
         {/* ============================================================== */}
-        {/* BASEMAP TILE LAYERS (SATELLITE, DARK, TERRAIN)                 */}
+        {/* BASEMAP TILE LAYERS (SAFE MULTI-STAGE TRANSITION)              */}
         {/* ============================================================== */}
-        {currentBasemapDef.layers.map((layerDef, idx) => (
+        {/* 1. Confirmed Rendered Base Layer (Always visible, never blank) */}
+        {getBasemapDefinition(renderedBasemap).layers.map((layerDef, idx) => (
           <TileLayer
-            key={`basemap-${activeBasemap}-${idx}-${layerDef.url}`}
+            key={`rendered-${renderedBasemap}-${idx}-${layerDef.url}`}
             url={layerDef.url}
             {...layerDef.options}
-            eventHandlers={{
-              loading: () => {
-                if (idx === 0) handleTileLoading();
-              },
-              load: () => {
-                if (idx === 0) handleTileLoaded();
-              },
-              tileerror: (e) => {
-                if (idx === 0) handleTileError(e);
-              },
-            }}
           />
         ))}
+
+        {/* 2. Pending Style Layer (Pre-loading on top; promotes on successful load) */}
+        {pendingBasemap && pendingBasemap !== renderedBasemap &&
+          getBasemapDefinition(pendingBasemap).layers.map((layerDef, idx) => (
+            <TileLayer
+              key={`pending-${pendingBasemap}-${idx}-${layerDef.url}`}
+              url={layerDef.url}
+              {...layerDef.options}
+              zIndex={idx === 0 ? 150 : 260}
+              eventHandlers={{
+                tileload: () => {
+                  if (idx === 0) handlePendingTileLoad();
+                },
+                load: () => {
+                  if (idx === 0) handlePendingLayerLoad(pendingBasemap);
+                },
+                tileerror: (e) => {
+                  if (idx === 0) handlePendingTileError(pendingBasemap, e);
+                },
+              }}
+            />
+          ))}
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
         {layers.elevationContours &&
@@ -1244,18 +1298,27 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         )}
       </MapContainer>
 
-      {/* Official Google Maps Watermark Badge (Bottom-Left) */}
-      <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none select-none flex items-center space-x-1.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded shadow-md border border-slate-200/80">
-        <svg width="58" height="19" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 drop-shadow-2xs">
-          <path d="M9.25 18.06C4.19 18.06 0 14.02 0 8.97 0 3.93 4.19 0 9.25 0c2.82 0 4.88 1.11 6.4 2.55l-1.8 1.8c-1.1-1.03-2.58-1.82-4.6-1.82-3.76 0-6.7 3.03-6.7 6.79s2.94 6.79 6.7 6.79c2.44 0 3.83-.98 4.72-1.87.73-.73 1.21-1.77 1.39-3.21H9.25V8.52h8.04c.08.45.12.98.12 1.57 0 1.87-.51 4.14-2.18 5.81-1.63 1.7-3.79 2.6-6.4 2.6z" fill="#4285F4"/>
-          <path d="M24.5 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#EA4335"/>
-          <path d="M36.75 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#FBBC05"/>
-          <path d="M48.5 7.02v10.36c0 4.26-2.51 6.01-5.5 6.01-2.8 0-4.49-1.87-5.13-3.39l2.19-.91c.39.94 1.35 2.03 2.94 2.03 1.93 0 3.12-1.19 3.12-3.42v-.83h-.09c-.58.71-1.7 1.33-3.11 1.33-2.95 0-5.65-2.57-5.65-5.74 0-3.2 2.7-5.77 5.65-5.77 1.41 0 2.53.62 3.11 1.31h.09V7.02h2.38zm-2.28 5.36c0-2.1-1.41-3.63-3.21-3.63-1.83 0-3.24 1.53-3.24 3.63 0 2.07 1.41 3.57 3.24 3.57 1.8 0 3.21-1.5 3.21-3.57z" fill="#4285F4"/>
-          <path d="M52.5 1.07v16.99h-2.54V1.07h2.54z" fill="#34A853"/>
-          <path d="M60.8 14.15l1.97 1.31c-.64.95-2.18 2.6-4.94 2.6-4.21 0-7.3-3.26-7.3-5.71 0-3.44 3.12-5.71 6.96-5.71 3.87 0 5.76 2.33 6.37 3.63l.26.68-7.85 3.25c.6 1.19 1.54 1.79 2.87 1.79 1.33 0 2.25-.66 2.93-1.84zm-4.7-2.02l5.24-2.17c-.29-.73-1.14-1.25-2.17-1.25-1.32 0-2.85 1.17-3.07 3.42z" fill="#EA4335"/>
-        </svg>
-        <span className="text-[10px] text-slate-700 font-medium font-sans">Maps</span>
-      </div>
+      {/* Basemap Provider Watermark Badge (Bottom-Left) */}
+      {renderedBasemap === 'satellite' ? (
+        <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none select-none flex items-center space-x-1.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded shadow-md border border-slate-200/80">
+          <svg width="58" height="19" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 drop-shadow-2xs">
+            <path d="M9.25 18.06C4.19 18.06 0 14.02 0 8.97 0 3.93 4.19 0 9.25 0c2.82 0 4.88 1.11 6.4 2.55l-1.8 1.8c-1.1-1.03-2.58-1.82-4.6-1.82-3.76 0-6.7 3.03-6.7 6.79s2.94 6.79 6.7 6.79c2.44 0 3.83-.98 4.72-1.87.73-.73 1.21-1.77 1.39-3.21H9.25V8.52h8.04c.08.45.12.98.12 1.57 0 1.87-.51 4.14-2.18 5.81-1.63 1.7-3.79 2.6-6.4 2.6z" fill="#4285F4"/>
+            <path d="M24.5 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#EA4335"/>
+            <path d="M36.75 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#FBBC05"/>
+            <path d="M48.5 7.02v10.36c0 4.26-2.51 6.01-5.5 6.01-2.8 0-4.49-1.87-5.13-3.39l2.19-.91c.39.94 1.35 2.03 2.94 2.03 1.93 0 3.12-1.19 3.12-3.42v-.83h-.09c-.58.71-1.7 1.33-3.11 1.33-2.95 0-5.65-2.57-5.65-5.74 0-3.2 2.7-5.77 5.65-5.77 1.41 0 2.53.62 3.11 1.31h.09V7.02h2.38zm-2.28 5.36c0-2.1-1.41-3.63-3.21-3.63-1.83 0-3.24 1.53-3.24 3.63 0 2.07 1.41 3.57 3.24 3.57 1.8 0 3.21-1.5 3.21-3.57z" fill="#4285F4"/>
+            <path d="M52.5 1.07v16.99h-2.54V1.07h2.54z" fill="#34A853"/>
+            <path d="M60.8 14.15l1.97 1.31c-.64.95-2.18 2.6-4.94 2.6-4.21 0-7.3-3.26-7.3-5.71 0-3.44 3.12-5.71 6.96-5.71 3.87 0 5.76 2.33 6.37 3.63l.26.68-7.85 3.25c.6 1.19 1.54 1.79 2.87 1.79 1.33 0 2.25-.66 2.93-1.84zm-4.7-2.02l5.24-2.17c-.29-.73-1.14-1.25-2.17-1.25-1.32 0-2.85 1.17-3.07 3.42z" fill="#EA4335"/>
+          </svg>
+          <span className="text-[10px] text-slate-700 font-medium font-sans">Maps</span>
+        </div>
+      ) : (
+        <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none select-none flex items-center space-x-1.5 bg-[#0e1629]/95 backdrop-blur-md px-2.5 py-1 rounded shadow-md border border-cyan-500/30 font-mono text-[10px]">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="text-cyan-300 font-bold tracking-wider">RESQ-X</span>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-300 uppercase">{renderedBasemap === 'terrain' ? 'Topo 3D' : 'Dark Canvas'}</span>
+        </div>
+      )}
 
       {/* Tactical Map Legend (Bottom-Left next to Google watermark) */}
       <div className="absolute bottom-3 left-28 z-[1000] hidden md:flex items-center space-x-3 bg-[#0a0f1d]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] font-mono select-none text-slate-300 shadow-xl">
