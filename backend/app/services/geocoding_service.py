@@ -320,6 +320,22 @@ CURATED_PLACES: List[Dict[str, Any]] = [
         "keywords": ["raini", "reini", "rishi ganga", "bridge b-17"]
     },
     {
+        "place_id": "in-uk-tapovan",
+        "name": "Tapovan Hydro Project",
+        "display_name": "Tapovan Vishnugad Barrage Sector, Chamoli, Uttarakhand",
+        "feature_type": "settlement",
+        "district": "Chamoli",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.4945,
+        "longitude": 79.6278,
+        "bbox": [79.61, 30.48, 79.65, 30.51],
+        "boundary_geojson": None,
+        "provider": "NTPC / Local Chamoli Emergency Registry",
+        "confidence": 1.0,
+        "keywords": ["tapovan", "tapovan barrage", "vishnugad", "tunnel intake", "chamoli"]
+    },
+    {
         "place_id": "in-uk-state",
         "name": "Uttarakhand",
         "display_name": "Uttarakhand State, Garhwal & Kumaon Himalayas, India",
