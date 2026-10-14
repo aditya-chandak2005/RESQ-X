@@ -320,20 +320,292 @@ CURATED_PLACES: List[Dict[str, Any]] = [
         "keywords": ["raini", "reini", "rishi ganga", "bridge b-17"]
     },
     {
-        "place_id": "in-uk-tapovan",
-        "name": "Tapovan Hydro Project",
-        "display_name": "Tapovan Vishnugad Barrage, Dhauliganga, Chamoli, Uttarakhand",
-        "feature_type": "infrastructure",
+        "place_id": "in-uk-state",
+        "name": "Uttarakhand",
+        "display_name": "Uttarakhand State, Garhwal & Kumaon Himalayas, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.0668,
+        "longitude": 79.0193,
+        "bbox": [77.55, 28.71, 81.05, 31.46],
+        "boundary_geojson": None,
+        "provider": "Survey of India / Uttarakhand SDMA",
+        "confidence": 1.0,
+        "keywords": ["uttarakhand", "uk", "uttaranchal", "garhwal", "kumaon", "himalayas"]
+    },
+    {
+        "place_id": "in-uk-dehradun",
+        "name": "Dehradun",
+        "display_name": "Dehradun Capital City, Uttarakhand, India",
+        "feature_type": "city",
+        "district": "Dehradun",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.3165,
+        "longitude": 78.0322,
+        "bbox": [77.95, 30.25, 78.15, 30.40],
+        "boundary_geojson": None,
+        "provider": "Uttarakhand SDMA / Survey of India",
+        "confidence": 0.99,
+        "keywords": ["dehradun", "doon", "rajpur", "capital"]
+    },
+    {
+        "place_id": "in-uk-rishikesh",
+        "name": "Rishikesh",
+        "display_name": "Rishikesh, Dehradun & Tehri Garhwal, Uttarakhand, India",
+        "feature_type": "town",
+        "district": "Dehradun",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.0869,
+        "longitude": 78.2676,
+        "bbox": [78.23, 30.05, 78.32, 30.14],
+        "boundary_geojson": None,
+        "provider": "Uttarakhand Tourism / Survey of India",
+        "confidence": 0.99,
+        "keywords": ["rishikesh", "lakshman jhula", "ram jhula", "ganga staging"]
+    },
+    {
+        "place_id": "in-uk-haridwar",
+        "name": "Haridwar",
+        "display_name": "Haridwar City, Uttarakhand, India",
+        "feature_type": "city",
+        "district": "Haridwar",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 29.9457,
+        "longitude": 78.1642,
+        "bbox": [78.10, 29.90, 78.22, 30.00],
+        "boundary_geojson": None,
+        "provider": "Uttarakhand SDMA",
+        "confidence": 0.98,
+        "keywords": ["haridwar", "har ki pauri", "ganga basin"]
+    },
+    {
+        "place_id": "in-river-dhauliganga",
+        "name": "Dhauliganga River",
+        "display_name": "Dhauliganga River Gorge, Chamoli, Uttarakhand, India",
+        "feature_type": "river",
         "district": "Chamoli",
         "state": "Uttarakhand",
         "country": "India",
-        "latitude": 30.4945,
-        "longitude": 79.6278,
-        "bbox": [79.61, 30.48, 79.64, 30.51],
+        "latitude": 30.5000,
+        "longitude": 79.6400,
+        "bbox": [79.55, 30.40, 79.75, 30.60],
         "boundary_geojson": None,
-        "provider": "Local Chamoli Emergency Registry (Verified)",
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["dhauliganga", "dhauli ganga", "tapovan river", "gorge"]
+    },
+    {
+        "place_id": "in-river-rishiganga",
+        "name": "Rishi Ganga River",
+        "display_name": "Rishi Ganga River Basin, Chamoli, Uttarakhand, India",
+        "feature_type": "river",
+        "district": "Chamoli",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.4880,
+        "longitude": 79.6900,
+        "bbox": [79.65, 30.45, 79.75, 30.55],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["rishi ganga", "rishiganga", "raini river", "nanda devi"]
+    },
+    {
+        "place_id": "in-river-alaknanda",
+        "name": "Alaknanda River",
+        "display_name": "Alaknanda River Corridor, Garhwal Himalayas, Uttarakhand, India",
+        "feature_type": "river",
+        "district": "Chamoli",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.4500,
+        "longitude": 79.4500,
+        "bbox": [79.20, 30.20, 79.70, 30.60],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["alaknanda", "ganga tributary", "helang", "pipalkoti", "joshimath river"]
+    },
+    {
+        "place_id": "in-as-kampur",
+        "name": "Kampur",
+        "display_name": "Kampur Town, Kopili River Basin, Nagaon, Assam, India",
+        "feature_type": "town",
+        "district": "Nagaon",
+        "state": "Assam",
+        "country": "India",
+        "latitude": 26.1500,
+        "longitude": 92.8300,
+        "bbox": [92.78, 26.11, 92.88, 26.19],
+        "boundary_geojson": None,
+        "provider": "ASDMA / Census of India",
+        "confidence": 0.98,
+        "keywords": ["kampur", "kopili flood", "nagaon flood", "hojai"]
+    },
+    {
+        "place_id": "in-as-barpeta-town",
+        "name": "Barpeta Town",
+        "display_name": "Barpeta Municipal Town, Lower Assam, India",
+        "feature_type": "town",
+        "district": "Barpeta",
+        "state": "Assam",
+        "country": "India",
+        "latitude": 26.3200,
+        "longitude": 91.0000,
+        "bbox": [90.95, 26.28, 91.05, 26.36],
+        "boundary_geojson": None,
+        "provider": "ASDMA / Survey of India",
+        "confidence": 0.98,
+        "keywords": ["barpeta town", "barpeta satra", "lower assam"]
+    },
+    {
+        "place_id": "in-river-beki",
+        "name": "Beki River",
+        "display_name": "Beki River Corridor, Manas & Barpeta, Assam, India",
+        "feature_type": "river",
+        "district": "Barpeta",
+        "state": "Assam",
+        "country": "India",
+        "latitude": 26.3500,
+        "longitude": 90.9300,
+        "bbox": [90.80, 26.20, 91.10, 26.80],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["beki", "beki river", "manas river", "barpeta flood"]
+    },
+    {
+        "place_id": "in-hp-mandi",
+        "name": "Mandi",
+        "display_name": "Mandi District & Town, Beas Valley, Himachal Pradesh, India",
+        "feature_type": "district",
+        "district": "Mandi",
+        "state": "Himachal Pradesh",
+        "country": "India",
+        "latitude": 31.7087,
+        "longitude": 76.9320,
+        "bbox": [76.60, 31.30, 77.40, 32.10],
+        "boundary_geojson": None,
+        "provider": "HPSDMA / Survey of India",
+        "confidence": 0.98,
+        "keywords": ["mandi", "beas", "himachal", "pandoh"]
+    },
+    {
+        "place_id": "in-river-beas",
+        "name": "Beas River",
+        "display_name": "Beas River Basin, Mandi & Kullu, Himachal Pradesh, India",
+        "feature_type": "river",
+        "district": "Mandi & Kullu",
+        "state": "Himachal Pradesh",
+        "country": "India",
+        "latitude": 31.7100,
+        "longitude": 76.9400,
+        "bbox": [76.70, 31.40, 77.30, 32.20],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["beas", "beas river", "himachal flood", "mandi flood"]
+    },
+    {
+        "place_id": "in-mh-chiplun",
+        "name": "Chiplun",
+        "display_name": "Chiplun City, Ratnagiri District, Maharashtra, India",
+        "feature_type": "town",
+        "district": "Ratnagiri",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 17.5323,
+        "longitude": 73.5186,
+        "bbox": [73.47, 17.50, 73.56, 17.57],
+        "boundary_geojson": None,
+        "provider": "Maharashtra SDMA",
+        "confidence": 0.99,
+        "keywords": ["chiplun", "vashishti", "konkan", "ratnagiri"]
+    },
+    {
+        "place_id": "in-river-vashishti",
+        "name": "Vashishti River",
+        "display_name": "Vashishti River Basin, Konkan, Maharashtra, India",
+        "feature_type": "river",
+        "district": "Ratnagiri",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 17.5400,
+        "longitude": 73.5000,
+        "bbox": [73.30, 17.40, 73.70, 17.70],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.98,
+        "keywords": ["vashishti", "chiplun flood", "konkan river"]
+    },
+    {
+        "place_id": "in-mh-mumbai",
+        "name": "Mumbai",
+        "display_name": "Mumbai Metropolitan Region, Maharashtra, India",
+        "feature_type": "city",
+        "district": "Mumbai Suburban",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 19.0760,
+        "longitude": 72.8777,
+        "bbox": [72.75, 18.88, 73.00, 19.30],
+        "boundary_geojson": None,
+        "provider": "MCGM / Maharashtra SDMA",
         "confidence": 1.0,
-        "keywords": ["tapovan", "barrage", "ntpc", "tunnel"]
+        "keywords": ["mumbai", "bombay", "mithi river", "mahim creek", "deluge"]
+    },
+    {
+        "place_id": "in-river-mithi",
+        "name": "Mithi River",
+        "display_name": "Mithi River Corridor, Mumbai, Maharashtra, India",
+        "feature_type": "river",
+        "district": "Mumbai Suburban",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 19.0550,
+        "longitude": 72.8550,
+        "bbox": [72.82, 19.02, 72.90, 19.12],
+        "boundary_geojson": None,
+        "provider": "MCGM / CWC",
+        "confidence": 0.99,
+        "keywords": ["mithi", "mithi river", "mumbai flood", "mahim"]
+    },
+    {
+        "place_id": "in-kl-kochi",
+        "name": "Kochi (Cochin)",
+        "display_name": "Kochi City, Ernakulam District, Kerala, India",
+        "feature_type": "city",
+        "district": "Ernakulam",
+        "state": "Kerala",
+        "country": "India",
+        "latitude": 9.9312,
+        "longitude": 76.2673,
+        "bbox": [76.20, 9.88, 76.35, 10.02],
+        "boundary_geojson": None,
+        "provider": "Kerala SDMA",
+        "confidence": 1.0,
+        "keywords": ["kochi", "cochin", "ernakulam", "periyar", "aluva"]
+    },
+    {
+        "place_id": "in-river-periyar",
+        "name": "Periyar River",
+        "display_name": "Periyar River Basin, Idukki & Ernakulam, Kerala, India",
+        "feature_type": "river",
+        "district": "Ernakulam & Idukki",
+        "state": "Kerala",
+        "country": "India",
+        "latitude": 10.1100,
+        "longitude": 76.3500,
+        "bbox": [76.20, 9.80, 77.20, 10.30],
+        "boundary_geojson": None,
+        "provider": "Central Water Commission (CWC)",
+        "confidence": 0.99,
+        "keywords": ["periyar", "periyar river", "aluva", "idukki", "kerala flood"]
     }
 ]
 
@@ -346,10 +618,7 @@ class GeocodingService:
 
     @staticmethod
     def search_places(query: str, limit: int = 8) -> Dict[str, Any]:
-        """Search places by text query.
-
-        Resolves local registry first, then queries external OSM/Photon with strict timeouts and caching.
-        """
+        """Search places by text query with natural language normalization and relevance ranking."""
         if not query or len(query.strip()) < 1:
             return {
                 "query": query,
@@ -372,41 +641,99 @@ class GeocodingService:
                     "provider_attribution": "RESQ-X Geocoding Engine (Cached)"
                 }
 
-        results: List[Dict[str, Any]] = []
+        # Extract geographic entity by stripping hazard, disaster, and temporal words
+        import re
+        DISASTER_WORDS = {
+            'flood', 'floods', 'flooding', 'inundation', 'deluge',
+            'landslide', 'landslides', 'rockfall', 'debris', 'outburst',
+            'glof', 'cyclone', 'cloudburst', 'storm', 'disaster', 'disasters',
+            'in', 'near', 'around', 'of', 'at', 'during', 'and', 'for', 'with', 'from', 'to'
+        }
+        no_year = re.sub(r'\b(19\d\d|20\d\d)\b', ' ', q_clean)
+        geo_tokens = [w for w in re.sub(r'[^\w\s]', ' ', no_year).split() if w not in DISASTER_WORDS]
+        geo_q = " ".join(geo_tokens).strip()
 
-        # 1. Search Curated India Registry
+        scored_places: List[Tuple[float, Dict[str, Any]]] = []
+
+        # 1. Search Curated India Registry with Relevance Scoring
         for item in CURATED_PLACES:
-            match = False
-            # Check name or keywords
-            if q_clean == item["name"].lower() or q_clean in item["name"].lower():
-                match = True
-            elif any(q_clean in kw for kw in item.get("keywords", [])):
-                match = True
-            elif item["district"] and q_clean in item["district"].lower():
-                match = True
-            elif item["state"] and q_clean in item["state"].lower():
-                match = True
+            name_lower = item["name"].lower()
+            keywords = [kw.lower() for kw in item.get("keywords", [])]
+            district_lower = item.get("district", "").lower() if item.get("district") else ""
+            state_lower = item.get("state", "").lower() if item.get("state") else ""
 
-            if match:
+            score = 0.0
+            targets = [q_clean]
+            if geo_q and geo_q != q_clean:
+                targets.append(geo_q)
+
+            for t in targets:
+                if not t:
+                    continue
+                # Exact name
+                if t == name_lower:
+                    score = max(score, 120.0)
+                # Starts with name
+                elif name_lower.startswith(t):
+                    score = max(score, 80.0)
+                # Substring in name
+                elif t in name_lower:
+                    score = max(score, 60.0)
+                # Token overlap in name
+                elif any(word in name_lower.split() for word in t.split()):
+                    score = max(score, 45.0)
+
+                # Exact keyword
+                if any(t == kw for kw in keywords):
+                    score = max(score, 70.0)
+                elif any(t in kw for kw in keywords):
+                    score = max(score, 40.0)
+
+                # District match
+                if district_lower:
+                    if t == district_lower:
+                        score = max(score, 65.0)
+                    elif t in district_lower:
+                        score = max(score, 35.0)
+
+                # State match
+                if state_lower:
+                    if t == state_lower:
+                        score = max(score, 25.0)
+                    elif t in state_lower:
+                        score = max(score, 15.0)
+
+            if score > 0:
                 res_obj = dict(item)
                 res_obj.pop("keywords", None)
-                results.append(res_obj)
+                scored_places.append((score, res_obj))
 
-        # Detect ambiguity in local results (e.g. searching "Kamrup" returns both Metro and Rural)
-        is_ambiguous = len(results) > 1 and any(
-            r["name"] != results[0]["name"] for r in results
-        )
-        if is_ambiguous:
-            for r in results:
+        # Sort places by score descending
+        scored_places.sort(key=lambda x: x[0], reverse=True)
+        results: List[Dict[str, Any]] = [p[1] for p in scored_places]
+
+        # Detect ambiguity in results (e.g. searching "Kamrup" returns both Metro and Rural)
+        for r in results:
+            alternates = [
+                {"name": o["name"], "place_id": o["place_id"], "feature_type": o["feature_type"]}
+                for o in results
+                if o["place_id"] != r["place_id"] and (
+                    r["name"].lower() in o["name"].lower() or 
+                    o["name"].lower() in r["name"].lower() or
+                    (r.get("district") and o.get("district") and r["district"] == o["district"])
+                )
+            ]
+            if len(alternates) >= 1 and r["feature_type"] in ["district", "town", "city", "locality"]:
                 r["is_ambiguous"] = True
-                r["alternate_matches"] = [
-                    {"name": o["name"], "place_id": o["place_id"], "feature_type": o["feature_type"]}
-                    for o in results if o["place_id"] != r["place_id"]
-                ]
+                r["alternate_matches"] = alternates[:3]
+            else:
+                r["is_ambiguous"] = False
+                r["alternate_matches"] = []
 
         # 2. If limited local results, query external Photon (Komoot OSM) with timeout & rate limit
         if len(results) < limit:
-            external_places = GeocodingService._query_photon_external(query, limit - len(results))
+            external_query = geo_q if len(geo_q) >= 2 else query
+            external_places = GeocodingService._query_photon_external(external_query, limit - len(results))
             for ep in external_places:
                 # Avoid duplicate coordinates or names
                 if not any(abs(ep["latitude"] - r["latitude"]) < 0.01 and abs(ep["longitude"] - r["longitude"]) < 0.01 for r in results):

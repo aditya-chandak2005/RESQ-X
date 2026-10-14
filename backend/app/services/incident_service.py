@@ -3,6 +3,7 @@
 multi-criteria search, administrative filtering, spatial queries, deduplication,
 source metadata, and honest data availability reporting.
 """
+import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -49,18 +50,59 @@ class IncidentService:
         if district and district.lower() != "all":
             q = q.filter(DisasterEvent.district.ilike(f"%{district}%"))
 
-        # 2. Free-text Search across names, descriptions, and places
+        # 2. Free-text Search across names, descriptions, places with natural language support
         if query and query.strip():
-            term = f"%{query.strip()}%"
-            q = q.filter(
-                or_(
-                    DisasterEvent.name.ilike(term),
-                    DisasterEvent.description.ilike(term),
-                    DisasterEvent.district.ilike(term),
-                    DisasterEvent.place_name.ilike(term),
-                    DisasterEvent.state.ilike(term)
-                )
+            raw_query = query.strip()
+
+            # Extract 4-digit years (e.g. 2024, 2022, 2021)
+            year_matches = re.findall(r'\b(19\d\d|20\d\d)\b', raw_query)
+            extracted_year = int(year_matches[0]) if year_matches else None
+            if extracted_year and not year_from and not year_to:
+                q = q.filter(DisasterEvent.incident_date >= datetime(extracted_year, 1, 1))
+                q = q.filter(DisasterEvent.incident_date <= datetime(extracted_year, 12, 31, 23, 59, 59))
+
+            # Stopwords & connector words
+            STOPWORDS = {'in', 'near', 'of', 'the', 'at', 'during', 'and', 'around', 'on', 'by', 'for', 'with', 'from', 'to', 'all'}
+            cleaned_text = re.sub(r'\b(19\d\d|20\d\d)\b', ' ', raw_query)
+            tokens = [w for w in re.sub(r'[^\w\s]', ' ', cleaned_text).split() if len(w) > 2 and w.lower() not in STOPWORDS]
+
+            direct_term = f"%{raw_query}%"
+            direct_condition = or_(
+                DisasterEvent.name.ilike(direct_term),
+                DisasterEvent.description.ilike(direct_term),
+                DisasterEvent.district.ilike(direct_term),
+                DisasterEvent.place_name.ilike(direct_term),
+                DisasterEvent.state.ilike(direct_term)
             )
+
+            if tokens:
+                token_conditions = []
+                for t in tokens:
+                    term = f"%{t}%"
+                    synonym_conditions = [
+                        DisasterEvent.name.ilike(term),
+                        DisasterEvent.description.ilike(term),
+                        DisasterEvent.district.ilike(term),
+                        DisasterEvent.place_name.ilike(term),
+                        DisasterEvent.state.ilike(term),
+                        DisasterEvent.disaster_type.ilike(term)
+                    ]
+                    # Synonym expansion: 'landslide' / 'landslides' matches debris, rockfall, slope, outburst
+                    if t.lower() in ['landslide', 'landslides']:
+                        for syn in ['%debris%', '%rockfall%', '%slope%', '%outburst%']:
+                            synonym_conditions.append(DisasterEvent.description.ilike(syn))
+                            synonym_conditions.append(DisasterEvent.disaster_type.ilike(syn))
+                    # Synonym expansion: 'flood' / 'floods' matches inundation, deluge, overflow
+                    elif t.lower() in ['flood', 'floods']:
+                        for syn in ['%inundation%', '%deluge%', '%overflow%']:
+                            synonym_conditions.append(DisasterEvent.description.ilike(syn))
+                            synonym_conditions.append(DisasterEvent.disaster_type.ilike(syn))
+
+                    token_conditions.append(or_(*synonym_conditions))
+
+                q = q.filter(or_(direct_condition, and_(*token_conditions)))
+            else:
+                q = q.filter(direct_condition)
 
         if location and location.strip() and location.lower() != "all":
             loc_term = f"%{location.strip()}%"
