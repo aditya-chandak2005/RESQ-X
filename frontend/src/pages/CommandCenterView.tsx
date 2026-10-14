@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { InteractiveMap } from '../components/InteractiveMap';
-import { LayerControl } from '../components/LayerControl';
 import { ContextPanel } from '../components/ContextPanel';
 import {
   FloodResult,
@@ -113,9 +112,6 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             onMapDoubleClick={handleMapClick}
             isInspectMode={isInspectMode}
           />
-
-          {/* Layer Controls */}
-          <LayerControl layers={layers} setLayers={setLayers} />
 
           {/* Collapsible Right Context Panel */}
           {selectedItem && (

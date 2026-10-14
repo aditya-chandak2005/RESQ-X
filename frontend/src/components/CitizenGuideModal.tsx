@@ -16,6 +16,8 @@ import {
   Navigation
 } from 'lucide-react';
 
+import { PortalModal } from './PortalModal';
+
 interface CitizenGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,11 +31,8 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
   onNavigateTab,
   onOpenCopilot,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-text">
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#0b1220] border border-cyan-500/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+    <PortalModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-800 bg-gradient-to-r from-cyan-950/60 via-slate-900 to-indigo-950/60 flex items-center justify-between shrink-0">
@@ -234,7 +233,6 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
           </button>
         </div>
 
-      </div>
-    </div>
+    </PortalModal>
   );
 };

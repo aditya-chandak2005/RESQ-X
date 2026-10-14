@@ -188,7 +188,7 @@ export interface Resource {
   base_location_name: string;
 }
 
-export type BasemapType = 'satellite' | 'dark' | 'tactical-dark' | 'topo' | 'street';
+export type BasemapType = 'satellite' | 'terrain' | 'topo' | 'dark' | 'tactical-dark' | 'street';
 
 export interface LayerVisibility {
   basemap: BasemapType;
@@ -201,12 +201,14 @@ export interface LayerVisibility {
   bridges: boolean;
   roads: boolean;
   blockedRoads: boolean;
+  buildings?: boolean;
   hospitals: boolean;
   shelters: boolean;
   rescueTeams: boolean;
   routes: boolean;
   alternateRoutes: boolean;
   floodPath: boolean;
+  elevationContours?: boolean;
 }
 
 export interface LocationAssessment {

@@ -20,6 +20,7 @@ import {
   RescueTeam,
   Route,
   LayerVisibility,
+  BasemapType,
   InfrastructureAsset,
   DisasterEvent,
   LocationAssessment,
@@ -39,7 +40,10 @@ import {
   Sun,
   Eye,
   ShieldAlert,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
+import { getBasemapDefinition, normalizeBasemapId } from '../services/basemapConfig';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -245,38 +249,35 @@ const TERRAIN_LANDMARKS: TerrainLandmark[] = [
 
 const createTerrainIcon = (landmark: TerrainLandmark) => {
   const isHigh = landmark.type === 'summit' || landmark.type === 'ridge' || landmark.type === 'plateau';
-  const color = isHigh ? '#34d399' : '#fbbf24';
-  const bg = isHigh ? 'rgba(6, 78, 59, 0.92)' : 'rgba(120, 53, 15, 0.92)';
-  const border = isHigh ? '#10b981' : '#f59e0b';
-  const symbol = landmark.type === 'summit' ? '▲' : landmark.type === 'ridge' ? '⛰️' : landmark.type === 'plateau' ? '⊞' : '▼';
+  const color = isHigh ? '#10b981' : '#f59e0b';
+  const symbol = landmark.type === 'summit' ? '▲' : '⌂';
 
   return L.divIcon({
     className: 'terrain-landmark-marker',
     html: `
       <div style="
-        background: ${bg};
-        border: 1px solid ${border};
-        border-radius: 6px;
-        padding: 2px 6px;
-        font-family: ui-monospace, monospace;
-        font-size: 9px;
-        color: #ffffff;
-        font-weight: bold;
-        letter-spacing: 0.04em;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(0, 0, 0, 0.16);
+        border-radius: 12px;
+        padding: 1px 6px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Google Sans', sans-serif;
+        font-size: 10px;
+        color: #202124;
+        font-weight: 600;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.24);
         cursor: pointer;
         display: flex;
         align-items: center;
         gap: 3px;
       ">
-        <span style="color: ${color}; font-size: 10px;">${symbol}</span>
+        <span style="color: ${color}; font-size: 9px;">${symbol}</span>
         <span>${landmark.name.split(' ')[0]}</span>
-        <span style="background: rgba(0,0,0,0.4); padding: 1px 3px; border-radius: 3px; color: ${color}; font-size: 8px;">${landmark.elevation_m}m</span>
+        <span style="color: #5f6368; font-size: 9px; font-weight: 500;">${landmark.elevation_m}m</span>
       </div>
     `,
-    iconSize: [85, 20],
-    iconAnchor: [42, 10],
+    iconSize: [75, 18],
+    iconAnchor: [37, 9],
   });
 };
 
@@ -541,7 +542,7 @@ const InspectPinMarker: React.FC<{
   );
 };
 
-// Map Sub-component for interactive Zoom Controls
+// Google Maps Style Floating Interactive Controls
 const CustomZoomControls: React.FC<{
   onRecenter: () => void;
   onJumpIndia: () => void;
@@ -549,35 +550,48 @@ const CustomZoomControls: React.FC<{
   const map = useMap();
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] flex flex-col space-y-1.5 select-none">
-      <button
-        onClick={() => map.zoomIn()}
-        className="w-8 h-8 rounded-lg bg-[#0e1629]/90 hover:bg-slate-800 border border-slate-700/80 text-white font-mono font-bold text-sm flex items-center justify-center shadow-lg transition-all"
-        title="Zoom In"
-      >
-        +
-      </button>
-      <button
-        onClick={() => map.zoomOut()}
-        className="w-8 h-8 rounded-lg bg-[#0e1629]/90 hover:bg-slate-800 border border-slate-700/80 text-white font-mono font-bold text-sm flex items-center justify-center shadow-lg transition-all"
-        title="Zoom Out"
-      >
-        −
-      </button>
-      <button
-        onClick={onRecenter}
-        className="w-8 h-8 rounded-lg bg-[#0e1629]/90 hover:bg-cyan-950/80 border border-cyan-500/50 text-cyan-400 flex items-center justify-center shadow-lg transition-all"
-        title="Recenter on Operational Theater"
-      >
-        <Crosshair className="w-4 h-4" />
-      </button>
-      <button
-        onClick={onJumpIndia}
-        className="w-8 h-8 rounded-lg bg-[#0e1629]/90 hover:bg-slate-800 border border-slate-700/80 text-amber-400 flex items-center justify-center shadow-lg transition-all"
-        title="All-India National Boundary View"
-      >
-        <Globe className="w-4 h-4" />
-      </button>
+    <div className="absolute bottom-12 right-4 z-[1000] flex flex-col space-y-2 select-none">
+      {/* Google Maps Re-center & Overview Cards */}
+      <div className="flex flex-col space-y-1.5">
+        <button
+          onClick={onRecenter}
+          className="w-10 h-10 rounded-lg bg-white/95 hover:bg-white text-slate-700 hover:text-[#1a73e8] shadow-[0_1px_4px_rgba(0,0,0,0.3)] border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+          title="Re-center on Operational Incident Theater"
+          aria-label="Re-center"
+        >
+          <Crosshair className="w-5 h-5 text-slate-600 group-hover:text-[#1a73e8] transition-colors" />
+        </button>
+
+        <button
+          onClick={onJumpIndia}
+          className="w-10 h-10 rounded-lg bg-white/95 hover:bg-white text-slate-700 hover:text-[#1a73e8] shadow-[0_1px_4px_rgba(0,0,0,0.3)] border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+          title="Overview: National Boundary"
+          aria-label="National overview"
+        >
+          <Globe className="w-5 h-5 text-slate-600 group-hover:text-[#1a73e8] transition-colors" />
+        </button>
+      </div>
+
+      {/* Google Maps Floating Vertical Zoom Segmented Card */}
+      <div className="flex flex-col rounded-lg bg-white/95 shadow-[0_1px_4px_rgba(0,0,0,0.3)] border border-slate-200/80 overflow-hidden">
+        <button
+          onClick={() => map.zoomIn()}
+          className="w-10 h-10 hover:bg-[#f1f3f4] text-slate-700 hover:text-[#1a73e8] font-normal text-2xl flex items-center justify-center transition-colors cursor-pointer active:bg-slate-200 leading-none pb-0.5"
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+        <div className="h-px bg-slate-200 w-full" />
+        <button
+          onClick={() => map.zoomOut()}
+          className="w-10 h-10 hover:bg-[#f1f3f4] text-slate-700 hover:text-[#1a73e8] font-normal text-2xl flex items-center justify-center transition-colors cursor-pointer active:bg-slate-200 leading-none pb-1"
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+      </div>
     </div>
   );
 };
@@ -606,12 +620,49 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const activeBasemap: 'satellite' | 'dark' | 'topo' =
-    layers.basemap === 'dark' || layers.basemap === 'tactical-dark'
-      ? 'dark'
-      : layers.basemap === 'topo'
-      ? 'topo'
-      : 'satellite';
+  const activeBasemap: 'satellite' | 'terrain' | 'dark' = normalizeBasemapId(layers.basemap);
+  const currentBasemapDef = getBasemapDefinition(activeBasemap);
+  const [isBasemapLoading, setIsBasemapLoading] = useState(false);
+  const [basemapError, setBasemapError] = useState<string | null>(null);
+  const lastWorkingBasemapRef = useRef<'satellite' | 'terrain' | 'dark'>('satellite');
+
+  // Automatic timeout for tile loading to prevent silent hanging
+  useEffect(() => {
+    if (!isBasemapLoading) return;
+    const timeout = setTimeout(() => {
+      setIsBasemapLoading(false);
+      setBasemapError(
+        `Tile request timed out for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check your network connection.`
+      );
+    }, 7500);
+    return () => clearTimeout(timeout);
+  }, [isBasemapLoading, currentBasemapDef]);
+
+  const handleTileLoading = () => {
+    setIsBasemapLoading(true);
+    setBasemapError(null);
+  };
+
+  const handleTileLoaded = () => {
+    setIsBasemapLoading(false);
+    setBasemapError(null);
+    lastWorkingBasemapRef.current = activeBasemap;
+  };
+
+  const handleTileError = (e: any) => {
+    console.warn(`[RESQ-X Basemap] Tile failed to load for ${currentBasemapDef.label}:`, e);
+    setBasemapError(
+      `Tile server issue for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check connection or try another style.`
+    );
+    setIsBasemapLoading(false);
+  };
+
+  const handleRevertBasemap = () => {
+    if (setLayers) {
+      setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
+      setBasemapError(null);
+    }
+  };
 
   // Sync center when active incident or inspected point changes
   useEffect(() => {
@@ -637,6 +688,39 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   return (
     <div className={`w-full h-full relative ${isInspectMode ? 'cursor-crosshair' : ''}`}>
       
+      {/* Basemap Loading Status Indicator */}
+      {isBasemapLoading && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+          <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-cyan-300 font-bold uppercase tracking-wider">
+            Loading {currentBasemapDef.label}...
+          </span>
+        </div>
+      )}
+
+      {/* Basemap Error Toast with Revert Action */}
+      {basemapError && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+          <span className="text-red-200 text-[11px]">{basemapError}</span>
+          {setLayers && lastWorkingBasemapRef.current !== activeBasemap && (
+            <button
+              onClick={handleRevertBasemap}
+              className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer ml-1"
+            >
+              Revert
+            </button>
+          )}
+          <button
+            onClick={() => setBasemapError(null)}
+            className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
+            title="Dismiss"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* 1. Tactical HUD Banner (Top Center) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
         <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
@@ -701,79 +785,29 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
 
         {/* ============================================================== */}
-        {/* BASEMAP TILE LAYERS & REFERENCE LABELS OVERLAY                 */}
+        {/* BASEMAP TILE LAYERS (SATELLITE, DARK, TERRAIN)                 */}
         {/* ============================================================== */}
-
-        {/* 1. SATELLITE HYBRID: ESRI World Imagery + World Boundaries & Places Labels */}
-        {activeBasemap === 'satellite' && (
-          <>
-            <TileLayer
-              attribution='&copy; ESRI World Imagery, Copernicus, DigitalGlobe'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-            />
-            {/* Essential Reference Layer: Draws national/state boundaries, highways, and place labels ON TOP of satellite photos */}
-            <TileLayer
-              attribution='&copy; ESRI Reference Boundaries & Places'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              opacity={0.88}
-              zIndex={400}
-            />
-          </>
-        )}
-
-        {/* 2. GOOGLE MAPS STYLE DARK MODE: CartoDB Dark Matter with Crisp Roads & Soft Highway Accents */}
-        {activeBasemap === 'dark' && (
-          <>
-            <TileLayer
-              attribution='&copy; CartoDB & OpenStreetMap contributors'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              maxZoom={19}
-              subdomains="abcd"
-              className="google-dark-tiles"
-            />
-            {/* Subtle arterial road and highway reference layer for Google Maps style legibility */}
-            <TileLayer
-              attribution='&copy; ESRI Transportation'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              opacity={0.35}
-              zIndex={350}
-            />
-          </>
-        )}
-
-        {/* 3. ENHANCED TOPO TERRAIN: Elevation Contours, 3D Hillshade & Topographic Relief */}
-        {activeBasemap === 'topo' && (
-          <>
-            <TileLayer
-              attribution='&copy; ESRI World Topo Map, USGS, FAO'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              className="topo-tiles"
-            />
-            {/* High-Resolution 3D Shaded Relief / Hillshade Overlay */}
-            <TileLayer
-              attribution='&copy; ESRI World Hillshade'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              opacity={0.42}
-              zIndex={250}
-            />
-            {/* Topographic reference boundaries, river network, and place labels */}
-            <TileLayer
-              attribution='&copy; ESRI Reference'
-              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
-              opacity={0.7}
-              zIndex={300}
-            />
-          </>
-        )}
+        {currentBasemapDef.layers.map((layerDef, idx) => (
+          <TileLayer
+            key={`basemap-${activeBasemap}-${idx}-${layerDef.url}`}
+            url={layerDef.url}
+            {...layerDef.options}
+            eventHandlers={{
+              loading: () => {
+                if (idx === 0) handleTileLoading();
+              },
+              load: () => {
+                if (idx === 0) handleTileLoaded();
+              },
+              tileerror: (e) => {
+                if (idx === 0) handleTileError(e);
+              },
+            }}
+          />
+        ))}
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
-        {activeBasemap === 'topo' &&
+        {layers.elevationContours &&
           TERRAIN_LANDMARKS.map((landmark, idx) => (
             <Marker
               key={`terrain-${idx}`}
@@ -1129,6 +1163,77 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               );
             })}
 
+        {/* Evacuation Shelters & Relief Camps */}
+        {layers.shelters &&
+          assets
+            .filter((a) => a.asset_type === 'shelter')
+            .map((s) => {
+              const icon = createCustomIcon('#059669', '#34d399', '⛺');
+              return (
+                <Marker
+                  key={`shelter-${s.id}`}
+                  position={[s.latitude, s.longitude]}
+                  icon={icon}
+                  eventHandlers={{
+                    click: () => onSelectItem({ type: 'asset', data: s }),
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs font-mono">
+                      <span className="font-bold text-emerald-400">{s.name}</span>
+                      <br />
+                      Type: Relief Shelter & Camp
+                      <br />
+                      Status: <span className="text-emerald-400 font-bold">{s.status.toUpperCase()}</span>
+                    </div>
+                  </Tooltip>
+                </Marker>
+              );
+            })}
+
+        {/* Exposed Buildings & Infrastructure */}
+        {layers.buildings &&
+          assets
+            .filter((a) => a.asset_type === 'building' || a.asset_type === 'infrastructure')
+            .map((b) => {
+              const isDestroyed = b.status === 'destroyed';
+              const isAffected = b.status === 'affected';
+              const color = isDestroyed ? '#ef4444' : isAffected ? '#f59e0b' : '#38bdf8';
+              const borderColor = isDestroyed ? '#fca5a5' : isAffected ? '#fcd34d' : '#7dd3fc';
+              const icon = createCustomIcon(color, borderColor, '🏛️');
+              return (
+                <Marker
+                  key={`building-${b.id}`}
+                  position={[b.latitude, b.longitude]}
+                  icon={icon}
+                  eventHandlers={{
+                    click: () => onSelectItem({ type: 'asset', data: b }),
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs font-mono">
+                      <span className="font-bold text-slate-200">{b.name}</span>
+                      <br />
+                      Status:{' '}
+                      <span
+                        className={
+                          isDestroyed
+                            ? 'text-red-400 font-bold'
+                            : isAffected
+                            ? 'text-amber-400 font-bold'
+                            : 'text-cyan-400'
+                        }
+                      >
+                        {b.status.toUpperCase()}
+                      </span>
+                      <br />
+                      Damage Prob: {(b.damage_probability * 100).toFixed(0)}%
+                    </div>
+                  </Tooltip>
+                </Marker>
+              );
+            })}
+
         {/* Pinned Individual Inspection Target */}
         {inspectedPoint && (
           <InspectPinMarker
@@ -1139,8 +1244,21 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         )}
       </MapContainer>
 
-      {/* 4. Bottom Right Tactical Map Legend */}
-      <div className="absolute bottom-4 right-4 z-[1000] hidden sm:flex items-center space-x-3 bg-[#0a0f1d]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] font-mono select-none text-slate-300 shadow-xl">
+      {/* Official Google Maps Watermark Badge (Bottom-Left) */}
+      <div className="absolute bottom-3 left-3 z-[1000] pointer-events-none select-none flex items-center space-x-1.5 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded shadow-md border border-slate-200/80">
+        <svg width="58" height="19" viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 drop-shadow-2xs">
+          <path d="M9.25 18.06C4.19 18.06 0 14.02 0 8.97 0 3.93 4.19 0 9.25 0c2.82 0 4.88 1.11 6.4 2.55l-1.8 1.8c-1.1-1.03-2.58-1.82-4.6-1.82-3.76 0-6.7 3.03-6.7 6.79s2.94 6.79 6.7 6.79c2.44 0 3.83-.98 4.72-1.87.73-.73 1.21-1.77 1.39-3.21H9.25V8.52h8.04c.08.45.12.98.12 1.57 0 1.87-.51 4.14-2.18 5.81-1.63 1.7-3.79 2.6-6.4 2.6z" fill="#4285F4"/>
+          <path d="M24.5 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#EA4335"/>
+          <path d="M36.75 12.35c0 3.32-2.54 5.71-5.75 5.71s-5.75-2.39-5.75-5.71c0-3.35 2.54-5.71 5.75-5.71s5.75 2.36 5.75 5.71zm-2.51 0c0-2.13-1.52-3.6-3.24-3.6s-3.24 1.47-3.24 3.6c0 2.1 1.52 3.6 3.24 3.6s3.24-1.5 3.24-3.6z" fill="#FBBC05"/>
+          <path d="M48.5 7.02v10.36c0 4.26-2.51 6.01-5.5 6.01-2.8 0-4.49-1.87-5.13-3.39l2.19-.91c.39.94 1.35 2.03 2.94 2.03 1.93 0 3.12-1.19 3.12-3.42v-.83h-.09c-.58.71-1.7 1.33-3.11 1.33-2.95 0-5.65-2.57-5.65-5.74 0-3.2 2.7-5.77 5.65-5.77 1.41 0 2.53.62 3.11 1.31h.09V7.02h2.38zm-2.28 5.36c0-2.1-1.41-3.63-3.21-3.63-1.83 0-3.24 1.53-3.24 3.63 0 2.07 1.41 3.57 3.24 3.57 1.8 0 3.21-1.5 3.21-3.57z" fill="#4285F4"/>
+          <path d="M52.5 1.07v16.99h-2.54V1.07h2.54z" fill="#34A853"/>
+          <path d="M60.8 14.15l1.97 1.31c-.64.95-2.18 2.6-4.94 2.6-4.21 0-7.3-3.26-7.3-5.71 0-3.44 3.12-5.71 6.96-5.71 3.87 0 5.76 2.33 6.37 3.63l.26.68-7.85 3.25c.6 1.19 1.54 1.79 2.87 1.79 1.33 0 2.25-.66 2.93-1.84zm-4.7-2.02l5.24-2.17c-.29-.73-1.14-1.25-2.17-1.25-1.32 0-2.85 1.17-3.07 3.42z" fill="#EA4335"/>
+        </svg>
+        <span className="text-[10px] text-slate-700 font-medium font-sans">Maps</span>
+      </div>
+
+      {/* Tactical Map Legend (Bottom-Left next to Google watermark) */}
+      <div className="absolute bottom-3 left-28 z-[1000] hidden md:flex items-center space-x-3 bg-[#0a0f1d]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] font-mono select-none text-slate-300 shadow-xl">
         <div className="flex items-center space-x-1">
           <span className="w-2.5 h-2.5 rounded bg-cyan-400 opacity-70" />
           <span>Flood SAR</span>
@@ -1151,7 +1269,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
         <div className="flex items-center space-x-1">
           <span className="w-2 h-2 rounded-full bg-amber-400" />
-          <span>Bridge B</span>
+          <span>Bridge</span>
         </div>
         <div className="flex items-center space-x-1">
           <span className="w-3 h-0.5 bg-red-500 border-dashed" />

@@ -37,6 +37,9 @@ interface SidebarProps {
   setIsCollapsed?: (collapsed: boolean) => void;
   isHidden?: boolean;
   setIsHidden?: (hidden: boolean) => void;
+  onToggleLayers?: () => void;
+  isLayersOpen?: boolean;
+  activeLayersCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,6 +51,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsCollapsed,
   isHidden = false,
   setIsHidden,
+  onToggleLayers,
+  isLayersOpen = false,
+  activeLayersCount = 11,
 }) => {
   const applicationAreas = [
     {
@@ -60,13 +66,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800',
     },
     {
-      id: 'mapping',
+      id: 'layers',
       number: '2',
-      label: 'Disaster Mapping',
-      sublabel: 'Satellite SAR & extent',
+      label: 'Map Layers',
+      sublabel: 'Tactical GIS overlays',
       icon: Layers,
-      badge: 'S1/S2',
-      badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-800',
+      badge: `${activeLayersCount} ACTIVE`,
+      badgeColor: isLayersOpen
+        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400'
+        : 'bg-cyan-950 text-cyan-300 border-cyan-800',
     },
     {
       id: 'impact',
@@ -124,9 +132,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  if (isHidden) return null;
-
   const handleSelectTab = (tab: string) => {
+    if (tab === 'layers' || tab === 'mapping') {
+      if (onToggleLayers) {
+        onToggleLayers();
+      }
+      if (currentTab !== 'command') {
+        setCurrentTab('command');
+      }
+      if (window.innerWidth < 768 && setIsHidden) {
+        setIsHidden(true);
+      }
+      return;
+    }
     setCurrentTab(tab);
     if (window.innerWidth < 768 && setIsHidden) {
       setIsHidden(true);
@@ -136,15 +154,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Mobile Drawer Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[1050] md:hidden cursor-pointer"
-        onClick={() => setIsHidden && setIsHidden(true)}
-      />
+      {!isHidden && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[1050] md:hidden cursor-pointer"
+          onClick={() => setIsHidden && setIsHidden(true)}
+        />
+      )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-[1100] md:z-30 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none shrink-0 font-sans transition-all duration-200 ${
-          isCollapsed ? 'w-16' : 'w-64'
-        }`}
+        className={`fixed md:static inset-y-0 left-0 z-[1100] md:z-30 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between h-screen select-none shrink-0 font-sans transition-all duration-300 ease-in-out ${
+          isHidden ? '-translate-x-full md:translate-x-0' : 'translate-x-0'
+        } ${isCollapsed ? 'w-16' : 'w-64'}`}
       >
         {/* ========================================================= */}
         {/* TOP SECTION: BRAND & NAVIGATION                           */}
@@ -248,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* 8 Mandated Areas */}
                 {applicationAreas.map((area) => {
                   const Icon = area.icon;
-                  const isActive = currentTab === area.id;
+                  const isActive = area.id === 'layers' ? isLayersOpen : currentTab === area.id;
 
                   return (
                     <button
@@ -320,7 +340,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {applicationAreas.map((area) => {
                   const Icon = area.icon;
-                  const isActive = currentTab === area.id;
+                  const isActive = area.id === 'layers' ? isLayersOpen : currentTab === area.id;
 
                   return (
                     <button

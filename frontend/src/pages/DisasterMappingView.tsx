@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { InteractiveMap } from '../components/InteractiveMap';
-import { LayerControl } from '../components/LayerControl';
 import {
   FloodResult,
   Settlement,
@@ -406,7 +405,6 @@ export const DisasterMappingView: React.FC<DisasterMappingViewProps> = ({
           activeIncident={activeIncident}
           center={activeIncident ? [activeIncident.center_lat, activeIncident.center_lon] : [24.8333, 92.7789]}
         />
-        <LayerControl layers={layers} setLayers={setLayers} />
       </div>
 
     </div>

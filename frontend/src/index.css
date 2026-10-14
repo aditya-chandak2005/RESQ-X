@@ -87,9 +87,21 @@ path:focus {
   box-shadow: none !important;
 }
 
-/* Google Maps Style Dark Mode - sleek dark navy water, crisp roads, soft contrast */
+/* Google Maps Style Basemaps - crisp contrast, authentic rendering */
 .leaflet-tile-pane .google-dark-tiles {
-  filter: brightness(0.98) contrast(1.12) saturate(1.15) !important;
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(96%) !important;
+}
+
+.leaflet-tile-pane .google-terrain-tiles {
+  filter: contrast(1.04) brightness(1.01) saturate(1.06) !important;
+}
+
+.leaflet-tile-pane .google-satellite-tiles {
+  filter: contrast(1.05) brightness(1.02) saturate(1.08) !important;
+}
+
+.leaflet-tile-pane .google-roadmap-tiles {
+  filter: contrast(1.02) brightness(1.0) !important;
 }
 
 .leaflet-tile-pane .topo-tiles {
@@ -98,6 +110,32 @@ path:focus {
 
 .leaflet-tile-pane .satellite-tiles {
   filter: contrast(1.15) brightness(1.05) saturate(1.1);
+}
+
+/* Authentic Google Maps Bottom-Right Attribution Bar */
+.leaflet-container .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  color: #3c4043 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", Arial, sans-serif !important;
+  font-size: 10px !important;
+  line-height: 14px !important;
+  padding: 2px 8px !important;
+  margin: 0 !important;
+  border-top-left-radius: 4px !important;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.15) !important;
+  user-select: none !important;
+}
+
+.leaflet-container .leaflet-control-attribution a {
+  color: #1a73e8 !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+}
+
+.leaflet-container .leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
 }
 
 @keyframes radar-pulse {

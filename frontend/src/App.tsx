@@ -51,6 +51,7 @@ export const App: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
   const [isCitizenGuideOpen, setIsCitizenGuideOpen] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
 
   // Sidebar navigation visibility & responsive collapse state
   const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(false);
@@ -61,7 +62,11 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setIsSidebarHidden((prev) => !prev);
+        if (window.innerWidth < 768) {
+          setIsSidebarHidden((prev) => !prev);
+        } else {
+          setIsSidebarCollapsed((prev) => !prev);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -93,12 +98,14 @@ export const App: React.FC = () => {
     bridges: true,
     roads: true,
     blockedRoads: true,
+    buildings: true,
     hospitals: true,
     shelters: true,
     rescueTeams: true,
     routes: true,
     alternateRoutes: true,
     floodPath: false,
+    elevationContours: false,
   });
 
   const loadAllTelemetry = async (disasterId: number = selectedIncidentId) => {
@@ -226,6 +233,10 @@ export const App: React.FC = () => {
     }
   };
 
+  const activeLayersCount = Object.entries(layers).filter(
+    ([k, v]) => k !== 'basemap' && Boolean(v)
+  ).length;
+
   const activeIncident = incidents.find((i) => i.id === selectedIncidentId) || (incidents[0] || null);
 
   return (
@@ -240,6 +251,9 @@ export const App: React.FC = () => {
         setIsCollapsed={setIsSidebarCollapsed}
         isHidden={isSidebarHidden}
         setIsHidden={setIsSidebarHidden}
+        onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
+        isLayersOpen={isLayersOpen}
+        activeLayersCount={activeLayersCount}
       />
 
       {/* 2. Main Content Canvas */}
@@ -261,8 +275,15 @@ export const App: React.FC = () => {
           onOpenSitrep={() => setIsSitrepOpen(true)}
           onOpenGuide={() => setIsCitizenGuideOpen(true)}
           onOpenExplore={() => setCurrentTab('explore')}
+          isSidebarCollapsed={isSidebarCollapsed}
           isSidebarHidden={isSidebarHidden}
-          onToggleSidebar={() => setIsSidebarHidden(!isSidebarHidden)}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 768) {
+              setIsSidebarHidden((prev) => !prev);
+            } else {
+              setIsSidebarCollapsed((prev) => !prev);
+            }
+          }}
           onLocationSelected={handleNavigateToLocation}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
@@ -273,6 +294,10 @@ export const App: React.FC = () => {
           }}
           activeBasemap={layers.basemap}
           onSelectBasemap={(bm) => setLayers((prev) => ({ ...prev, basemap: bm }))}
+          layers={layers}
+          setLayers={setLayers}
+          onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
+          isLayersOpen={isLayersOpen}
         />
 
         {/* Dynamic Viewport: Strict Mapping to the 8 Core Application Areas */}
@@ -412,6 +437,7 @@ export const App: React.FC = () => {
               initialPoint={inspectedPoint}
             />
           )}
+
         </main>
 
         {/* Floating AI Chat Assistant Quick Button (Available when not on Copilot area) */}
