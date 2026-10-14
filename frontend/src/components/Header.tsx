@@ -343,8 +343,8 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onToggleSidebar}
               className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shadow-sm shrink-0 focus:outline-none focus:ring-1 focus:ring-cyan-400 ${isNavCollapsed
-                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
-                  : 'bg-slate-900/90 border-slate-700/80 text-slate-400 hover:text-white hover:border-cyan-500/60'
+                ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-slate-400 hover:text-white hover:border-cyan-500/60'
                 }`}
               aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               title={isNavCollapsed ? 'Expand navigation (Ctrl+B)' : 'Collapse navigation (Ctrl+B)'}
@@ -503,8 +503,8 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-[#071324] border border-cyan-500/60 shadow-sm text-xs shrink min-w-0">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${currentAssessment.overall_status.is_inundated
-                    ? 'bg-red-400 animate-ping'
-                    : 'bg-emerald-400 animate-pulse'
+                  ? 'bg-red-400 animate-ping'
+                  : 'bg-emerald-400 animate-pulse'
                   }`}
               />
               <span className="font-bold text-cyan-300 truncate max-w-[90px] sm:max-w-[140px] md:max-w-[200px]">
@@ -512,8 +512,8 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <span
                 className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${currentAssessment.overall_status.is_inundated
-                    ? 'bg-red-950 text-red-300 border border-red-700'
-                    : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                  ? 'bg-red-950 text-red-300 border border-red-700'
+                  : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                   }`}
               >
                 {currentAssessment.overall_status.safety_score}% SAFE
@@ -559,10 +559,10 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={() => setShowBasemapMenu(!showBasemapMenu)}
                   className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${currentId === 'satellite'
-                      ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
-                      : currentId === 'terrain'
-                        ? 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
-                        : 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
+                    ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
+                    : currentId === 'terrain'
+                      ? 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
+                      : 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
                     }`}
                   title="Change Map Display Mode (Satellite, Terrain, Dark Mode)"
                   aria-haspopup="dialog"
@@ -596,8 +596,8 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onToggleLayers}
                 className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${isLayersOpen
-                    ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
-                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
+                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
+                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
                   }`}
                 title="Open Tactical Map Layers Panel (6 Categories, 16 Overlays)"
                 aria-haspopup="dialog"
@@ -638,8 +638,8 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={() => setShowKpis(!showKpis)}
             className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0 ${showKpis
-                ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300'
-                : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+              ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300'
+              : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
               }`}
             title={showKpis ? 'Minimize Analytical KPI Bar' : 'Show Analytical KPI Bar'}
           >
