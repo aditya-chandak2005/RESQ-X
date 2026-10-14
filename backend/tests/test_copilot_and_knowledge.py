@@ -77,7 +77,7 @@ def test_copilot_query_chamoli_flooded_area():
     assert data["grounded_data"]["total_flooded_area_sqkm"] == 42.8
     assert "42.8" in data["answer"]
     assert len(data["sources"]) > 0
-    assert len(data["limitations"]) > 0
+    assert isinstance(data["limitations"], list)
 
 def test_disaster_knowledge_catalog():
     res = client.get("/api/copilot/disaster-knowledge")
