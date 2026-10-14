@@ -54,7 +54,6 @@ interface Message {
   sources?: any[];
   limitations?: string[];
   suggestedFollowUp?: string[];
-  featuredLocations?: any[];
   quickReview?: QuickReviewData;
   modelInfo?: any;
   timestamp: string;
@@ -116,63 +115,6 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
       sender: 'copilot',
       text: `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** for **${incidentTitle}** (${incidentDistrict}, ${incidentState}).\n\nClick any **Quick Query** above to inspect detected flood extents, cut-off hamlets, bridge statuses, or ask me any question!`,
       answerStatus: 'success',
-      featuredLocations: selectedIncidentId === 2 ? [
-        {
-          name: "Silchar Municipal Urban Core",
-          latitude: 24.8333,
-          longitude: 92.7789,
-          risk_level: "CRITICAL",
-          distance_to_flood_km: 0.0,
-          is_isolated: true,
-          details: "Severe urban waterlogging (~172,000 residents affected). Power substation flooded.",
-        },
-        {
-          name: "Bethukandi Dyke Breach Point",
-          latitude: 24.8150,
-          longitude: 92.7650,
-          risk_level: "CRITICAL",
-          distance_to_flood_km: 0.0,
-          is_isolated: true,
-          details: "Ruptured Barak river embankment allowing continuous inundation into Silchar basin.",
-        },
-        {
-          name: "Sadarghat Bridge over Barak River",
-          latitude: 24.8380,
-          longitude: 92.7950,
-          risk_level: "HIGH",
-          distance_to_flood_km: 0.02,
-          is_isolated: false,
-          details: "Severe river scour around bridge piers. Heavy truck movement halted.",
-        }
-      ] : [
-        {
-          name: "Raini Village (North Bank)",
-          latitude: 30.4912,
-          longitude: 79.6841,
-          risk_level: "CRITICAL",
-          distance_to_flood_km: 0.05,
-          is_isolated: true,
-          details: "Epicenter of Rishi Ganga surge. Bridge B-17 washed out. Cut off from Joshimath road.",
-        },
-        {
-          name: "Tapovan Vishnugad Barrage",
-          latitude: 30.4945,
-          longitude: 79.6278,
-          risk_level: "CRITICAL",
-          distance_to_flood_km: 0.02,
-          is_isolated: true,
-          details: "Major hydropower site inundated with high-velocity silt. Head-race tunnel blocked.",
-        },
-        {
-          name: "Joshimath Incident Command Base",
-          latitude: 30.5580,
-          longitude: 79.5645,
-          risk_level: "SAFE",
-          distance_to_flood_km: 8.40,
-          is_isolated: false,
-          details: "Forward base for NDRF/SDRF helicopter sorting & Joshimath District Hospital.",
-        }
-      ],
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -297,7 +239,6 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
         sources: res.sources || [],
         limitations: res.limitations || [],
         suggestedFollowUp: res.suggested_follow_up || res.suggested_queries || [],
-        featuredLocations: res.featured_locations || [],
         quickReview: res.quick_review,
         modelInfo: res.model_info,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -708,53 +649,6 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
                             >
                               {fu}
                             </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Featured Hot Locations Cards */}
-                    {m.featuredLocations && m.featuredLocations.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-command-border/60 space-y-2">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold">
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                            Tactical Coordinates & Hot Zones
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {m.featuredLocations.map((loc, lIdx) => (
-                            <div
-                              key={lIdx}
-                              className="p-2.5 rounded-lg bg-black/40 border border-command-border hover:border-cyan-500/50 transition-all space-y-1"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-mono font-bold text-xs text-slate-100 truncate">{loc.name}</span>
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase ${
-                                  loc.risk_level === 'CRITICAL'
-                                    ? 'bg-red-950 text-red-300 border border-red-700'
-                                    : loc.risk_level === 'HIGH'
-                                    ? 'bg-amber-950 text-amber-300 border border-amber-700'
-                                    : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
-                                }`}>
-                                  {loc.risk_level}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 line-clamp-1">{loc.details}</p>
-                              <div className="flex items-center justify-between pt-1">
-                                <span className="text-[9px] font-mono text-slate-500">
-                                  [{loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}]
-                                </span>
-                                {onNavigateToLocation && (
-                                  <button
-                                    onClick={() => onNavigateToLocation(loc.latitude, loc.longitude, loc.name)}
-                                    className="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/60 cursor-pointer"
-                                  >
-                                    Fly on Map
-                                  </button>
-                                )}
-                              </div>
-                            </div>
                           ))}
                         </div>
                       </div>
