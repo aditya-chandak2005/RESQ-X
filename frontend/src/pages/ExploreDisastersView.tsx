@@ -38,21 +38,232 @@ interface ExploreDisastersViewProps {
   onNavigateTab: (tab: string) => void;
 }
 
-const ASSAM_DISTRICTS = [
-  'All Assam Districts',
-  'Cachar',
-  'Kamrup Metropolitan',
-  'Kamrup Rural',
-  'Nagaon',
-  'Golaghat',
-  'Barpeta',
-  'Dibrugarh',
-  'Jorhat',
-  'Majuli',
-  'Dhubri',
-  'Darrang',
-  'Morigaon',
-];
+export const INDIAN_STATES = [
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+] as const;
+
+export const INDIAN_UNION_TERRITORIES = [
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
+] as const;
+
+export const STATE_DISTRICTS: Record<string, string[]> = {
+  'Assam': [
+    'All Assam Districts',
+    'Cachar',
+    'Kamrup Metropolitan',
+    'Kamrup Rural',
+    'Nagaon',
+    'Golaghat',
+    'Barpeta',
+    'Dibrugarh',
+    'Jorhat',
+    'Majuli',
+    'Dhubri',
+    'Darrang',
+    'Morigaon',
+    'Sonitpur',
+    'Lakhimpur',
+    'Dhemaji',
+    'Karimganj',
+    'Hailakandi',
+    'Sivasagar',
+    'Charaideo',
+    'Bongaigaon',
+    'Goalpara',
+    'Kokrajhar',
+    'Baksa',
+    'Chirang',
+    'Udalguri',
+    'Biswanath',
+    'Hojai',
+    'West Karbi Anglong',
+    'Karbi Anglong',
+    'Dima Hasao',
+    'South Salmara-Mankachar',
+    'Bajali',
+    'Tamulpur',
+  ],
+  'Maharashtra': [
+    'All Maharashtra Districts',
+    'Mumbai City',
+    'Mumbai Suburban',
+    'Thane',
+    'Raigad',
+    'Ratnagiri',
+    'Sindhudurg',
+    'Pune',
+    'Kolhapur',
+    'Sangli',
+    'Satara',
+    'Solapur',
+    'Nashik',
+    'Ahmednagar',
+    'Jalgaon',
+    'Dhule',
+    'Nandurbar',
+    'Chhatrapati Sambhajinagar (Aurangabad)',
+    'Jalna',
+    'Beed',
+    'Latur',
+    'Dharashiv (Osmanabad)',
+    'Nanded',
+    'Parbhani',
+    'Hingoli',
+    'Amravati',
+    'Akola',
+    'Buldhana',
+    'Yavatmal',
+    'Washim',
+    'Nagpur',
+    'Wardha',
+    'Bhandara',
+    'Gondia',
+    'Chandrapur',
+    'Gadchiroli',
+  ],
+  'Uttarakhand': [
+    'All Uttarakhand Districts',
+    'Chamoli',
+    'Rudraprayag',
+    'Uttarkashi',
+    'Pauri Garhwal',
+    'Tehri Garhwal',
+    'Dehradun',
+    'Haridwar',
+    'Pithoragarh',
+    'Bageshwar',
+    'Almora',
+    'Champawat',
+    'Nainital',
+    'Udham Singh Nagar',
+  ],
+  'Kerala': [
+    'All Kerala Districts',
+    'Ernakulam',
+    'Idukki',
+    'Alappuzha',
+    'Wayanad',
+    'Thrissur',
+    'Kottayam',
+    'Pathanamthitta',
+    'Kozhikode',
+    'Malappuram',
+    'Palakkad',
+    'Kannur',
+    'Kasaragod',
+    'Kollam',
+    'Thiruvananthapuram',
+  ],
+  'Himachal Pradesh': [
+    'All Himachal Pradesh Districts',
+    'Mandi',
+    'Kullu',
+    'Shimla',
+    'Kangra',
+    'Kinnaur',
+    'Lahaul and Spiti',
+    'Chamba',
+    'Solan',
+    'Sirmaur',
+    'Bilaspur',
+    'Hamirpur',
+    'Una',
+  ],
+  'Bihar': [
+    'All Bihar Districts',
+    'Patna',
+    'Darbhanga',
+    'Muzaffarpur',
+    'Bhagalpur',
+    'Katihar',
+    'Purnia',
+    'Supaul',
+    'Saharsa',
+    'Madhepura',
+    'Samastipur',
+    'Begusarai',
+    'Khagaria',
+  ],
+  'West Bengal': [
+    'All West Bengal Districts',
+    'Kolkata',
+    'North 24 Parganas',
+    'South 24 Parganas',
+    'Howrah',
+    'Hooghly',
+    'Purba Medinipur',
+    'Paschim Medinipur',
+    'Murshidabad',
+    'Malda',
+    'Jalpaiguri',
+    'Darjeeling',
+    'Alipurduar',
+    'Cooch Behar',
+  ],
+  'Odisha': [
+    'All Odisha Districts',
+    'Puri',
+    'Cuttack',
+    'Khurda (Bhubaneswar)',
+    'Balasore',
+    'Bhadrak',
+    'Kendrapada',
+    'Jagatsinghpur',
+    'Ganjam',
+    'Jajpur',
+    'Mayurbhanj',
+    'Sambalpur',
+  ],
+  'Gujarat': [
+    'All Gujarat Districts',
+    'Ahmedabad',
+    'Surat',
+    'Vadodara',
+    'Rajkot',
+    'Kutch',
+    'Jamnagar',
+    'Bhavnagar',
+    'Junagadh',
+    'Navsari',
+    'Valsad',
+    'Bharuch',
+  ],
+};
+
 
 const HAZARD_TYPES = [
   { id: 'all', label: 'All Hazards' },
@@ -104,7 +315,7 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
       const res = await api.searchIncidents({
         q: query.trim() || undefined,
         state: selectedState === 'All India' ? undefined : selectedState,
-        district: selectedDistrict !== 'all' && selectedDistrict !== 'All Assam Districts' ? selectedDistrict : undefined,
+        district: selectedDistrict !== 'all' && !selectedDistrict.startsWith('All ') ? selectedDistrict : undefined,
         hazard_type: hazardType !== 'all' ? hazardType : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         verification: verificationFilter !== 'all' ? verificationFilter : undefined,
@@ -316,25 +527,37 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
               setSelectedState(e.target.value);
               setSelectedDistrict('all');
             }}
-            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
+            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[240px]"
           >
-            <option value="Assam">Assam, India (Default)</option>
-            <option value="Uttarakhand">Uttarakhand, India</option>
-            <option value="All India">All Indian States</option>
+            <option value="All India">All Indian States (Pan-India)</option>
+            <optgroup label="── States of India (28) ──">
+              {INDIAN_STATES.map((st) => (
+                <option key={st} value={st}>
+                  {st === 'Assam' ? 'Assam, India (Default)' : st}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="── Union Territories (8) ──">
+              {INDIAN_UNION_TERRITORIES.map((ut) => (
+                <option key={ut} value={ut}>
+                  {ut}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </div>
 
-        {/* District Selector (Assam Specific) */}
-        {selectedState === 'Assam' && (
+        {/* District Selector (State Specific if curated districts available) */}
+        {STATE_DISTRICTS[selectedState] && (
           <div className="flex items-center space-x-2">
             <span className="text-slate-400 font-mono text-[11px]">District:</span>
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
+              className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[200px]"
             >
-              {ASSAM_DISTRICTS.map((d) => (
-                <option key={d} value={d === 'All Assam Districts' ? 'all' : d}>
+              {STATE_DISTRICTS[selectedState].map((d) => (
+                <option key={d} value={d.startsWith('All ') ? 'all' : d}>
                   {d}
                 </option>
               ))}

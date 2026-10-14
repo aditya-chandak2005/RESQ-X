@@ -93,7 +93,12 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleLayers,
   isLayersOpen = false,
 }) => {
-  const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
+  // Operational Clock State & Timezone
+  type TimeMode = 'local-12' | 'local-24' | 'utc' | 'dual';
+  const [timeMode, setTimeMode] = useState<TimeMode>(() => {
+    return (localStorage.getItem('resqx_time_mode') as TimeMode) || 'local-12';
+  });
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
   const [showBasemapMenu, setShowBasemapMenu] = useState(false);
   const [showKpis, setShowKpis] = useState(true);
@@ -113,10 +118,80 @@ export const Header: React.FC<HeaderProps> = ({
   // Clock tick
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime(new Date().toUTCString().slice(17, 25) + ' UTC');
+      setCurrentDate(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const timezoneLabel = useMemo(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'IST';
+      const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(currentDate);
+      const val = parts.find((p) => p.type === 'timeZoneName')?.value;
+      if (val && !val.includes('+00:00')) return val;
+    } catch (e) { }
+    const offset = -currentDate.getTimezoneOffset();
+    if (offset === 330) return 'IST';
+    const sign = offset >= 0 ? '+' : '-';
+    const h = Math.floor(Math.abs(offset) / 60);
+    const m = Math.abs(offset) % 60;
+    return m ? `GMT${sign}${h}:${m < 10 ? '0' : ''}${m}` : `GMT${sign}${h}`;
+  }, [currentDate]);
+
+  const formattedTime = useMemo(() => {
+    const local12 = currentDate.toLocaleTimeString('en-US', {
+      hour12: true,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const local24 = currentDate.toLocaleTimeString('en-GB', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const utc = currentDate.toLocaleTimeString('en-GB', {
+      timeZone: 'UTC',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    switch (timeMode) {
+      case 'local-12':
+        return { main: local12, tag: timezoneLabel, title: 'Local 12-Hour Time' };
+      case 'local-24':
+        return { main: local24, tag: timezoneLabel, title: 'Local 24-Hour Time' };
+      case 'utc':
+        return { main: utc, tag: 'UTC', title: 'Coordinated Universal Time (UTC)' };
+      case 'dual':
+        return {
+          main: `${local24} ${timezoneLabel}`,
+          secondary: `${utc} UTC`,
+          tag: 'DUAL',
+          title: 'Dual Synchronized Time (Local + UTC)',
+        };
+      default:
+        return { main: local12, tag: timezoneLabel, title: 'Local Time' };
+    }
+  }, [currentDate, timeMode, timezoneLabel]);
+
+  const cycleTimeMode = () => {
+    setTimeMode((prev) => {
+      let next: TimeMode = 'local-12';
+      if (prev === 'local-12') next = 'local-24';
+      else if (prev === 'local-24') next = 'dual';
+      else if (prev === 'dual') next = 'utc';
+      else if (prev === 'utc') next = 'local-12';
+      try {
+        localStorage.setItem('resqx_time_mode', next);
+      } catch (e) { }
+      return next;
+    });
+  };
 
   // Backend Connectivity Heartbeat
   useEffect(() => {
@@ -254,24 +329,23 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-[#0b1222] border-b border-slate-800/90 z-40 relative shrink-0 font-sans select-none">
-      
+
       {/* =================================================================== */}
       {/* 1. PRIMARY ROW: Navigation, Incident Context, Search & Core Actions */}
       {/* =================================================================== */}
       <div className="grid grid-cols-[1fr_auto] md:grid-cols-[minmax(0,1fr)_minmax(260px,500px)_minmax(0,1fr)] items-center gap-2 sm:gap-4 px-3 sm:px-4 h-13 min-h-[52px] border-b border-slate-800/80 text-xs">
-        
+
         {/* LEFT SECTION: Sleek Nav Toggle, App Identifier & Theater Selector */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-          
+
           {/* Sleek Compact Navigation Toggle (Icon-only, no bulky 'Hide Nav' text) */}
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shadow-sm shrink-0 focus:outline-none focus:ring-1 focus:ring-cyan-400 ${
-                isNavCollapsed
-                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
-                  : 'bg-slate-900/90 border-slate-700/80 text-slate-400 hover:text-white hover:border-cyan-500/60'
-              }`}
+              className={`h-8 w-8 rounded-lg border transition-all flex items-center justify-center cursor-pointer shadow-sm shrink-0 focus:outline-none focus:ring-1 focus:ring-cyan-400 ${isNavCollapsed
+                ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/50'
+                : 'bg-slate-900/90 border-slate-700/80 text-slate-400 hover:text-white hover:border-cyan-500/60'
+                }`}
               aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               title={isNavCollapsed ? 'Expand navigation (Ctrl+B)' : 'Collapse navigation (Ctrl+B)'}
             >
@@ -341,7 +415,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* RIGHT SECTION: Help, Operational Settings & Live System Status */}
         <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 min-w-0">
-          
+
           {/* Citizen Survival Guide (Help) */}
           {onOpenGuide && (
             <button
@@ -362,8 +436,12 @@ export const Header: React.FC<HeaderProps> = ({
             <Settings className="w-4 h-4" />
           </button>
 
-          {/* Live Data Connection & UTC Clock (Desktop & Tablet) */}
-          <div className="hidden lg:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0">
+          {/* Live Data Connection & Interactive Telemetry Clock (Desktop & Tablet) */}
+          <div
+            onClick={cycleTimeMode}
+            className="hidden lg:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2.5 border-l border-slate-800 shrink-0 cursor-pointer select-none group hover:text-cyan-300 transition-colors"
+            title={`Operational Telemetry Clock (${formattedTime.title})\n• Click to switch: Local 12H → Local 24H → Dual → UTC\n• Current: ${formattedTime.main} ${formattedTime.tag}`}
+          >
             {isOnline ? (
               <span className="flex items-center space-x-1 text-emerald-400 text-[10px] font-bold" title="Connected to Disaster Intelligence API">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -376,8 +454,19 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             )}
             <span className="text-slate-600">|</span>
-            <Clock className="w-3 h-3 text-cyan-400" />
-            <span className="tabular-nums">{time}</span>
+            <Clock className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-45 transition-transform shrink-0" />
+            <span className="font-bold tracking-wide text-slate-100 group-hover:text-cyan-300 whitespace-nowrap tabular-nums">
+              {formattedTime.main}
+            </span>
+            {formattedTime.secondary && (
+              <>
+                <span className="text-slate-500 text-[10px]">/</span>
+                <span className="text-[11px] text-slate-400 whitespace-nowrap tabular-nums">{formattedTime.secondary}</span>
+              </>
+            )}
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-800 text-cyan-400 border border-slate-700 group-hover:border-cyan-500/60 group-hover:bg-cyan-950/60 transition-colors shrink-0">
+              {formattedTime.tag}
+            </span>
           </div>
 
           {/* Compact Live Status Dot for Mobile / Small Screens */}
@@ -406,28 +495,26 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 3. SECONDARY ROW: Contextual Toolbar (Map Styles, Active Pins)      */}
       {/* =================================================================== */}
       <div className="px-3 sm:px-4 py-1.5 bg-[#080d18] border-b border-slate-800/70 flex items-center justify-between text-xs font-mono">
-        
+
         {/* Left Context: Active Pinned Location Intel OR Incident Sub-context */}
         <div className="flex items-center space-x-2 min-w-0">
           {currentAssessment ? (
             /* Active Location Inspection Intel Pill */
             <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-[#071324] border border-cyan-500/60 shadow-sm text-xs shrink min-w-0">
               <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  currentAssessment.overall_status.is_inundated
-                    ? 'bg-red-400 animate-ping'
-                    : 'bg-emerald-400 animate-pulse'
-                }`}
+                className={`w-2 h-2 rounded-full shrink-0 ${currentAssessment.overall_status.is_inundated
+                  ? 'bg-red-400 animate-ping'
+                  : 'bg-emerald-400 animate-pulse'
+                  }`}
               />
               <span className="font-bold text-cyan-300 truncate max-w-[90px] sm:max-w-[140px] md:max-w-[200px]">
                 {currentAssessment.query.location_label}
               </span>
               <span
-                className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
-                  currentAssessment.overall_status.is_inundated
-                    ? 'bg-red-950 text-red-300 border border-red-700'
-                    : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
-                }`}
+                className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${currentAssessment.overall_status.is_inundated
+                  ? 'bg-red-950 text-red-300 border border-red-700'
+                  : 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                  }`}
               >
                 {currentAssessment.overall_status.safety_score}% SAFE
               </span>
@@ -461,7 +548,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Tools: Map Style Selector & Telemetry Toggle */}
         <div className="flex items-center space-x-1.5 shrink-0">
-          
+
           {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
           <div ref={basemapMenuRef} className="relative shrink-0">
             {(() => {
@@ -471,13 +558,12 @@ export const Header: React.FC<HeaderProps> = ({
                   ref={basemapButtonRef}
                   type="button"
                   onClick={() => setShowBasemapMenu(!showBasemapMenu)}
-                  className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${
-                    currentId === 'satellite'
-                      ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
-                      : currentId === 'terrain'
+                  className={`h-7 flex items-center space-x-1.5 px-2 rounded-md border text-[11px] font-medium transition-all cursor-pointer shadow-xs ${currentId === 'satellite'
+                    ? 'bg-slate-900 border-cyan-500/60 text-cyan-200 hover:border-cyan-400'
+                    : currentId === 'terrain'
                       ? 'bg-slate-900 border-emerald-500/60 text-emerald-200 hover:border-emerald-400'
                       : 'bg-slate-900 border-amber-500/60 text-amber-200 hover:border-amber-400'
-                  }`}
+                    }`}
                   title="Change Map Display Mode (Satellite, Terrain, Dark Mode)"
                   aria-haspopup="dialog"
                   aria-expanded={showBasemapMenu}
@@ -498,7 +584,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClose={() => setShowBasemapMenu(false)}
               triggerRef={basemapButtonRef}
               activeBasemap={activeBasemap}
-              onSelectBasemap={onSelectBasemap || (() => {})}
+              onSelectBasemap={onSelectBasemap || (() => { })}
             />
           </div>
 
@@ -509,11 +595,10 @@ export const Header: React.FC<HeaderProps> = ({
                 ref={layersButtonRef}
                 type="button"
                 onClick={onToggleLayers}
-                className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${
-                  isLayersOpen
-                    ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
-                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
-                }`}
+                className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${isLayersOpen
+                  ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
+                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-500/60'
+                  }`}
                 title="Open Tactical Map Layers Panel (6 Categories, 16 Overlays)"
                 aria-haspopup="dialog"
                 aria-expanded={isLayersOpen}
@@ -552,11 +637,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setShowKpis(!showKpis)}
-            className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0 ${
-              showKpis
-                ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300'
-                : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
-            }`}
+            className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0 ${showKpis
+              ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-300'
+              : 'bg-cyan-950/80 border-cyan-600/60 text-cyan-300'
+              }`}
             title={showKpis ? 'Minimize Analytical KPI Bar' : 'Show Analytical KPI Bar'}
           >
             <Sliders className="w-3 h-3" />
@@ -612,7 +696,7 @@ export const Header: React.FC<HeaderProps> = ({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         activeBasemap={activeBasemap}
-        onSelectBasemap={onSelectBasemap || (() => {})}
+        onSelectBasemap={onSelectBasemap || (() => { })}
         stateBoundariesEnabled={layers?.stateBoundaries ?? true}
         onToggleStateBoundaries={
           setLayers
