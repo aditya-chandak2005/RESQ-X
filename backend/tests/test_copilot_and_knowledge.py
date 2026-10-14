@@ -72,14 +72,12 @@ def test_copilot_query_chamoli_flooded_area():
     data = res.json()
     assert "answer" in data
     assert len(data["answer"]) > 10
-    # Verified metrics should be present
-    assert len(data["verified_metrics"]) > 0
-    # Check that flooded area matches ground truth ~42.8 km²
-    flooded_metric = next((m for m in data["verified_metrics"] if "area" in m["label"].lower()), None)
-    assert flooded_metric is not None
-    assert "42.8" in flooded_metric["value"]
-    assert len(data["citations"]) > 0
-    assert data["limitations"] is not None
+    # Grounded data should contain the exact verified telemetry
+    assert "grounded_data" in data
+    assert data["grounded_data"]["total_flooded_area_sqkm"] == 42.8
+    assert "42.8" in data["answer"]
+    assert len(data["sources"]) > 0
+    assert len(data["limitations"]) > 0
 
 def test_disaster_knowledge_catalog():
     res = client.get("/api/copilot/disaster-knowledge")
