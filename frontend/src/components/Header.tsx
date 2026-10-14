@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Waves,
   Building,
@@ -83,7 +83,12 @@ export const Header: React.FC<HeaderProps> = ({
   currentAssessment,
   onClearAssessment,
 }) => {
-  const [time, setTime] = useState(new Date().toUTCString().slice(17, 25) + ' UTC');
+  // Operational Clock State & Timezone
+  type TimeMode = 'local-12' | 'local-24' | 'utc' | 'dual';
+  const [timeMode, setTimeMode] = useState<TimeMode>(() => {
+    return (localStorage.getItem('resqx_time_mode') as TimeMode) || 'local-12';
+  });
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [showIncidentDropdown, setShowIncidentDropdown] = useState(false);
   const [showBasemapMenu, setShowBasemapMenu] = useState(false);
   const basemapMenuRef = useRef<HTMLDivElement>(null);
@@ -117,10 +122,80 @@ export const Header: React.FC<HeaderProps> = ({
   // Clock tick
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime(new Date().toUTCString().slice(17, 25) + ' UTC');
+      setCurrentDate(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const timezoneLabel = useMemo(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'IST';
+      const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(currentDate);
+      const val = parts.find((p) => p.type === 'timeZoneName')?.value;
+      if (val && !val.includes('+00:00')) return val;
+    } catch (e) {}
+    const offset = -currentDate.getTimezoneOffset();
+    if (offset === 330) return 'IST';
+    const sign = offset >= 0 ? '+' : '-';
+    const h = Math.floor(Math.abs(offset) / 60);
+    const m = Math.abs(offset) % 60;
+    return m ? `GMT${sign}${h}:${m < 10 ? '0' : ''}${m}` : `GMT${sign}${h}`;
+  }, [currentDate]);
+
+  const formattedTime = useMemo(() => {
+    const local12 = currentDate.toLocaleTimeString('en-US', {
+      hour12: true,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const local24 = currentDate.toLocaleTimeString('en-GB', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const utc = currentDate.toLocaleTimeString('en-GB', {
+      timeZone: 'UTC',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    switch (timeMode) {
+      case 'local-12':
+        return { main: local12, tag: timezoneLabel, title: 'Local 12-Hour Time' };
+      case 'local-24':
+        return { main: local24, tag: timezoneLabel, title: 'Local 24-Hour Time' };
+      case 'utc':
+        return { main: utc, tag: 'UTC', title: 'Coordinated Universal Time (UTC)' };
+      case 'dual':
+        return {
+          main: `${local24} ${timezoneLabel}`,
+          secondary: `${utc} UTC`,
+          tag: 'DUAL',
+          title: 'Dual Synchronized Time (Local + UTC)',
+        };
+      default:
+        return { main: local12, tag: timezoneLabel, title: 'Local Time' };
+    }
+  }, [currentDate, timeMode, timezoneLabel]);
+
+  const cycleTimeMode = () => {
+    setTimeMode((prev) => {
+      let next: TimeMode = 'local-12';
+      if (prev === 'local-12') next = 'local-24';
+      else if (prev === 'local-24') next = 'dual';
+      else if (prev === 'dual') next = 'utc';
+      else if (prev === 'utc') next = 'local-12';
+      try {
+        localStorage.setItem('resqx_time_mode', next);
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // Debounced geocoding search
   useEffect(() => {
@@ -786,13 +861,30 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Live Operational Status & UTC Clock */}
-          <div className="hidden xl:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">LIVE</span>
+          {/* Live Operational Status & Interactive Clock */}
+          <div
+            onClick={cycleTimeMode}
+            className="hidden lg:flex items-center space-x-1.5 text-slate-300 font-mono text-xs pl-2 border-l border-slate-700/80 cursor-pointer select-none group hover:text-cyan-300 transition-colors"
+            title={`Operational Telemetry Clock (${formattedTime.title})\n• Click to switch: Local 12H → Local 24H → Dual → UTC\n• Current: ${formattedTime.main} ${formattedTime.tag}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-slate-400 group-hover:text-cyan-400 text-[10px] uppercase font-bold tracking-wider shrink-0">
+              LIVE
+            </span>
             <span className="text-slate-500">|</span>
-            <Clock className="w-3 h-3 text-cyan-400" />
-            <span>{time}</span>
+            <Clock className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-45 transition-transform shrink-0" />
+            <span className="font-bold tracking-wide text-slate-100 group-hover:text-cyan-300 whitespace-nowrap">
+              {formattedTime.main}
+            </span>
+            {formattedTime.secondary && (
+              <>
+                <span className="text-slate-500 text-[10px]">/</span>
+                <span className="text-[11px] text-slate-400 whitespace-nowrap">{formattedTime.secondary}</span>
+              </>
+            )}
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-800 text-cyan-400 border border-slate-700 group-hover:border-cyan-500/60 group-hover:bg-cyan-950/60 transition-colors shrink-0">
+              {formattedTime.tag}
+            </span>
           </div>
         </div>
       </div>
