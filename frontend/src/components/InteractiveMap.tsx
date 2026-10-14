@@ -43,7 +43,6 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-react';
-import { BasemapController } from './BasemapController';
 import { getBasemapDefinition } from '../services/basemapConfig';
 
 interface InteractiveMapProps {
@@ -618,28 +617,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       ? 'topo'
       : 'satellite';
 
+  const currentBasemapDef = getBasemapDefinition(activeBasemap);
   const [isBasemapLoading, setIsBasemapLoading] = useState(false);
-  const [targetBasemap, setTargetBasemap] = useState<BasemapType | null>(null);
   const [basemapError, setBasemapError] = useState<string | null>(null);
 
-  const handleBasemapLoadingChange = (loading: boolean, target: BasemapType | null) => {
-    setIsBasemapLoading(loading);
-    setTargetBasemap(target);
-    if (loading) {
-      setBasemapError(null);
-    }
-  };
-
-  const handleBasemapStyleApplied = (_appliedStyle: BasemapType) => {
-    setIsBasemapLoading(false);
-    setTargetBasemap(null);
+  const handleTileLoading = () => {
+    setIsBasemapLoading(true);
     setBasemapError(null);
   };
 
-  const handleBasemapError = (_failedStyle: BasemapType, errorMsg: string) => {
+  const handleTileLoaded = () => {
     setIsBasemapLoading(false);
-    setTargetBasemap(null);
-    setBasemapError(errorMsg);
+    setBasemapError(null);
+  };
+
+  const handleTileError = (e: any) => {
+    console.warn(`[RESQ-X Basemap] Tile failed to load for ${currentBasemapDef.label}:`, e);
+    setBasemapError(`Tile server issue for ${currentBasemapDef.label} (${currentBasemapDef.provider}). Check connection.`);
+    setIsBasemapLoading(false);
   };
 
   // Sync center when active incident or inspected point changes
@@ -671,7 +666,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-cyan-300 font-bold uppercase tracking-wider">
-            Loading {getBasemapDefinition(targetBasemap || activeBasemap).label}...
+            Loading {currentBasemapDef.label}...
           </span>
         </div>
       )}
@@ -754,14 +749,26 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         />
 
         {/* ============================================================== */}
-        {/* NATIVE LEAFLET BASEMAP CONTROLLER (SATELLITE, DARK, TERRAIN)   */}
+        {/* BASEMAP TILE LAYERS (SATELLITE, DARK, TERRAIN)                 */}
         {/* ============================================================== */}
-        <BasemapController
-          activeBasemap={activeBasemap}
-          onLoadingChange={handleBasemapLoadingChange}
-          onStyleApplied={handleBasemapStyleApplied}
-          onError={handleBasemapError}
-        />
+        {currentBasemapDef.layers.map((layerDef, idx) => (
+          <TileLayer
+            key={`basemap-${activeBasemap}-${idx}-${layerDef.url}`}
+            url={layerDef.url}
+            {...layerDef.options}
+            eventHandlers={{
+              loading: () => {
+                if (idx === 0) handleTileLoading();
+              },
+              load: () => {
+                if (idx === 0) handleTileLoaded();
+              },
+              tileerror: (e) => {
+                if (idx === 0) handleTileError(e);
+              },
+            }}
+          />
+        ))}
 
         {/* TERRAIN SUMMITS, STRATEGIC HIGH-GROUND RIDGES & DRAINAGE GORGES */}
         {(activeBasemap === 'topo' || layers.elevationContours) &&
