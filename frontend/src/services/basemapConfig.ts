@@ -21,27 +21,10 @@ export interface BasemapDefinition {
 
 const env = ((import.meta as any).env || {}) as Record<string, string | undefined>;
 
-// Verified Google Maps raster tile endpoints with subdomains 0, 1, 2, 3
-// lyrs=y: Google Satellite Hybrid (Satellite + Roads + Labels)
+// 1. SATELLITE BASEMAP (100% PROTECTED - Google Satellite Hybrid)
 const GOOGLE_SATELLITE_URL =
   env.VITE_MAP_SATELLITE_URL ||
   'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
-
-// lyrs=p: Google Terrain (Shaded relief + Contours + Roads + Labels)
-const GOOGLE_TERRAIN_URL =
-  env.VITE_MAP_TERRAIN_URL ||
-  env.VITE_MAP_TOPO_URL ||
-  'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}';
-
-// lyrs=m: Google Standard Roadmap (Default Google Maps)
-const GOOGLE_ROADMAP_URL =
-  env.VITE_MAP_ROADMAP_URL ||
-  'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-
-// Google Maps Dark Mode Theme (Official Google Roadmap with Google Maps Night Theme filter)
-const GOOGLE_DARK_URL =
-  env.VITE_MAP_DARK_URL ||
-  GOOGLE_ROADMAP_URL;
 
 const SATELLITE_DEF: BasemapDefinition = {
   id: 'satellite',
@@ -65,45 +48,70 @@ const SATELLITE_DEF: BasemapDefinition = {
   ],
 };
 
+// 2. TERRAIN BASEMAP (STABILIZED - High-reliability ESRI World Topo Map)
+const TOPO_BASE_URL =
+  env.VITE_MAP_TERRAIN_URL ||
+  env.VITE_MAP_TOPO_URL ||
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
+
 const TERRAIN_DEF: BasemapDefinition = {
   id: 'terrain',
   label: 'Terrain',
-  badge: 'GOOGLE TERRAIN',
+  badge: 'TOPOGRAPHIC 3D',
   badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-700',
-  provider: 'Google Maps Terrain',
-  description: 'Official Google Maps topographic terrain with soft shaded relief, elevation contours, highway shields, and national parks.',
-  previewBg: 'bg-gradient-to-br from-emerald-950/40 via-stone-900 to-slate-900 border-emerald-500/40',
+  provider: 'ESRI World Topo Map',
+  description: 'Topographic contour lines, 3D shaded relief, mountain ridgelines, summits, and physical features.',
+  previewBg: 'bg-gradient-to-br from-stone-900 via-amber-950/40 to-slate-900 border-emerald-500/40',
   isAvailable: true,
   layers: [
     {
-      url: GOOGLE_TERRAIN_URL,
+      url: TOPO_BASE_URL,
       options: {
-        subdomains: ['0', '1', '2', '3'],
-        attribution: '&copy; Google Maps',
-        maxZoom: 20,
-        className: 'google-terrain-tiles',
+        attribution: '&copy; ESRI World Topo Map, USGS, FAO',
+        maxZoom: 19,
+        maxNativeZoom: 19,
+        className: 'topo-tiles',
       },
     },
   ],
 };
 
+// 3. DARK MODE BASEMAP (SAFELY IMPROVED - Genuine ESRI Dark Gray Canvas Base + Reference)
+const DARK_BASE_URL =
+  env.VITE_MAP_DARK_URL ||
+  'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+
+const DARK_REF_URL =
+  env.VITE_MAP_DARK_REF_URL ||
+  'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+
 const DARK_DEF: BasemapDefinition = {
   id: 'dark',
   label: 'Dark Mode',
-  badge: 'GOOGLE DARK',
+  badge: 'DARK CANVAS',
   badgeColor: 'bg-amber-950 text-amber-300 border-amber-700',
-  provider: 'Google Maps Night Theme',
-  description: 'Google Maps dark theme styling with deep navy water, illuminated road networks, place names, and tactical contrast.',
+  provider: 'ESRI World Dark Gray Canvas',
+  description: 'Genuine dark geographic basemap with dark navy terrain, illuminated road networks, place labels, and borders.',
   previewBg: 'bg-gradient-to-br from-[#070b14] via-[#090e1a] to-slate-900 border-amber-500/40',
   isAvailable: true,
   layers: [
     {
-      url: GOOGLE_DARK_URL,
+      url: DARK_BASE_URL,
       options: {
-        subdomains: ['0', '1', '2', '3'],
-        attribution: '&copy; Google Maps',
-        maxZoom: 21,
-        className: 'google-dark-tiles',
+        attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 19,
+        maxNativeZoom: 19,
+        className: 'dark-base-tiles',
+      },
+    },
+    {
+      url: DARK_REF_URL,
+      options: {
+        attribution: '&copy; Esri Reference Labels',
+        maxZoom: 19,
+        maxNativeZoom: 19,
+        className: 'dark-ref-tiles',
+        zIndex: 250,
       },
     },
   ],
@@ -112,20 +120,18 @@ const DARK_DEF: BasemapDefinition = {
 const STREET_DEF: BasemapDefinition = {
   id: 'street',
   label: 'Standard',
-  badge: 'GOOGLE ROADMAP',
+  badge: 'ROADMAP',
   badgeColor: 'bg-blue-950 text-blue-300 border-blue-700',
-  provider: 'Google Maps Standard',
-  description: 'Classic Google Maps roadmap with peach highway shields, light-gray street grid, and clean blue water.',
+  provider: 'OpenStreetMap Contributors',
+  description: 'Standard cartographic street map with comprehensive road geometry and labels.',
   previewBg: 'bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 border-blue-500/40',
   isAvailable: true,
   layers: [
     {
-      url: GOOGLE_ROADMAP_URL,
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       options: {
-        subdomains: ['0', '1', '2', '3'],
-        attribution: '&copy; Google Maps',
-        maxZoom: 21,
-        className: 'google-roadmap-tiles',
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
       },
     },
   ],
@@ -141,10 +147,10 @@ export const BASEMAP_DEFINITIONS: Record<BasemapType, BasemapDefinition> = {
 };
 
 /**
- * Three primary basemap options in strict Google Maps order:
- * 1. Satellite
- * 2. Terrain
- * 3. Dark Mode
+ * Three primary basemap options in strict order:
+ * 1. Satellite (Protected Google Satellite Hybrid)
+ * 2. Terrain (Stabilized ESRI Topo Map)
+ * 3. Dark Mode (Genuine Dark Gray Canvas)
  */
 export const PRIMARY_BASEMAP_KEYS: BasemapType[] = ['satellite', 'terrain', 'dark'];
 
