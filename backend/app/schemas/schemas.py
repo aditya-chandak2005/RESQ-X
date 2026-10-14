@@ -236,20 +236,38 @@ class CopilotQueryRequest(BaseModel):
 class CopilotQueryResponse(BaseModel):
     query: str
     response: str
+    answer: str
+    incident_id: Optional[int] = None
+    incident_name: Optional[str] = None
+    answer_status: str = "success"
     grounded_data: Dict[str, Any]
+    data_used: Dict[str, Any] = Field(default_factory=dict)
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+    limitations: List[str] = Field(default_factory=list)
+    suggested_queries: Optional[List[str]] = None
+    suggested_follow_up: Optional[List[str]] = None
     featured_locations: Optional[List[Dict[str, Any]]] = None
     quick_review: Optional[Dict[str, Any]] = None
-    suggested_queries: Optional[List[str]] = None
-    timestamp: datetime
+    model_info: Optional[Dict[str, Any]] = None
+    timestamp: str
+    generated_at: str
+
+class KnowledgeSearchRequest(BaseModel):
+    query: str
+    category: Optional[str] = None
+    top_k: Optional[int] = 4
 
 class QuickReviewResponse(BaseModel):
     review_type: str
     disaster_id: int
+    disaster_name: Optional[str] = None
+    has_analysis: Optional[bool] = True
     title: str
     status_badge: str
     status_color: str
     generated_at: str
     summary: str
+    evidence_breakdown: Optional[Dict[str, Any]] = None
     metrics: Optional[Dict[str, Any]] = None
     key_findings: Optional[List[str]] = None
     critical_red_flags: Optional[List[str]] = None

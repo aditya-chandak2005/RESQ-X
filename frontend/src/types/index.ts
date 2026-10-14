@@ -305,11 +305,21 @@ export interface GeocodeResult {
 export interface QuickReviewData {
   review_type: string;
   disaster_id: number;
+  disaster_name?: string;
+  has_analysis?: boolean;
   title: string;
   status_badge: string;
   status_color: string;
   generated_at: string;
   summary: string;
+  evidence_breakdown?: {
+    officially_reported_facts?: string[];
+    satellite_observations?: string[];
+    gis_derived_results?: string[];
+    model_estimates?: string[];
+    unverified_reports?: string[];
+    missing_or_unavailable?: string[];
+  };
   metrics?: any;
   key_findings?: any[];
   critical_red_flags?: any[];

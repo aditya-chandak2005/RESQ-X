@@ -380,6 +380,8 @@ export const App: React.FC = () => {
           {(currentTab === 'copilot' || currentTab === 'chatbot') && (
             <div className="flex-1 overflow-hidden flex flex-col">
               <DisasterChatbotView
+                selectedIncidentId={selectedIncidentId}
+                activeIncident={activeIncident}
                 onNavigateToLocation={handleNavigateToLocation}
                 onAssessLocation={handleAssessFromChat}
               />
@@ -454,7 +456,12 @@ export const App: React.FC = () => {
       </div>
 
       {/* 3. Global AI Copilot Modal */}
-      <AICopilotModal isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
+      <AICopilotModal
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        selectedIncidentId={selectedIncidentId}
+        activeIncident={activeIncident}
+      />
 
       {/* 4. Global Situation Report Modal */}
       <SituationReportModal

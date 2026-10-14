@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from backend.app.db.session import get_db
-from backend.app.schemas.schemas import SimulationRequest, CopilotQueryRequest, CopilotQueryResponse, LocationAssessmentRequest
+from backend.app.schemas.schemas import SimulationRequest, CopilotQueryRequest, CopilotQueryResponse, LocationAssessmentRequest, KnowledgeSearchRequest
 from backend.app.services.simulation.what_if import WhatIfSimulator
-from backend.app.services.copilot.copilot import ResqCopilot
+from backend.app.services.copilot_service import CopilotService
+from backend.app.services.knowledge_service import KnowledgeService
 from backend.app.services.reports.situation_report import SituationReportService
 from backend.app.services.gis.location_assessment import LocationAssessmentService
 
@@ -21,27 +22,37 @@ def run_scenario_simulation(payload: SimulationRequest, db: Session = Depends(ge
         params["expansion_pct"] = payload.expansion_percentage
     return WhatIfSimulator.simulate_scenario(db, payload.disaster_id, payload.scenario_type, params)
 
-@router.post("/copilot/query")
+@router.post("/copilot/query", response_model=CopilotQueryResponse)
 def query_resq_copilot(payload: CopilotQueryRequest, db: Session = Depends(get_db)):
     """Query the RESQ Copilot grounded in database and GIS outputs."""
     disaster_id = payload.disaster_id or 1
-    result = ResqCopilot.answer_query(db, disaster_id, payload.query)
+    result = CopilotService.ask(db, disaster_id, payload.query, payload.conversation_history)
     return result
+
+@router.get("/copilot/quick-queries/{disaster_id}")
+def get_copilot_quick_queries(disaster_id: int, db: Session = Depends(get_db)):
+    """Retrieve dynamic, context-aware query suggestions for active incident."""
+    return CopilotService.get_quick_queries(db, disaster_id)
 
 @router.get("/copilot/quick-review/{disaster_id}")
 def get_copilot_quick_review(disaster_id: int, review_type: str = "executive", db: Session = Depends(get_db)):
     """Generate high-speed tactical quick review for leadership triage."""
-    return ResqCopilot.get_quick_review(db, disaster_id, review_type)
+    return CopilotService.get_quick_review(db, disaster_id, review_type)
 
 @router.get("/copilot/disaster-knowledge")
 def get_copilot_disaster_knowledge():
     """Retrieve disaster knowledge and life-safety guidelines catalog."""
-    return ResqCopilot.get_knowledge_catalog()
+    return KnowledgeService.get_protocols_catalog()
 
 @router.get("/copilot/disaster-knowledge/{topic}")
 def get_copilot_disaster_knowledge_topic(topic: str):
     """Retrieve detailed knowledge and protocol for a specific disaster topic."""
-    return ResqCopilot.get_knowledge_detail(topic)
+    return KnowledgeService.get_protocol_detail(topic)
+
+@router.post("/copilot/knowledge/search")
+def search_disaster_knowledge(payload: KnowledgeSearchRequest, db: Session = Depends(get_db)):
+    """Perform hybrid natural language search across official NDMA/NDRF disaster guidelines."""
+    return KnowledgeService.search_knowledge_base(db, payload.query, payload.category, payload.top_k)
 
 @router.get("/reports/{disaster_id}")
 def get_situation_report(disaster_id: int, db: Session = Depends(get_db)):

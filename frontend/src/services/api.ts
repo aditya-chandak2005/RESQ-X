@@ -108,13 +108,19 @@ export const api = {
     return res.json();
   },
 
-  async queryCopilot(query: string, disasterId: number = 1): Promise<any> {
+  async queryCopilot(query: string, disasterId: number = 1, conversationHistory?: any[]): Promise<any> {
     const res = await fetch(`${API_BASE}/copilot/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, disaster_id: disasterId }),
+      body: JSON.stringify({ query, disaster_id: disasterId, conversation_history: conversationHistory }),
     });
     if (!res.ok) throw new Error('Copilot query failed');
+    return res.json();
+  },
+
+  async getContextQuickQueries(disasterId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/quick-queries/${disasterId}`);
+    if (!res.ok) throw new Error('Failed to fetch context quick queries');
     return res.json();
   },
 
@@ -133,6 +139,16 @@ export const api = {
   async getDisasterKnowledgeDetail(topic: string): Promise<any> {
     const res = await fetch(`${API_BASE}/copilot/disaster-knowledge/${topic}`);
     if (!res.ok) throw new Error(`Failed to fetch disaster knowledge for ${topic}`);
+    return res.json();
+  },
+
+  async searchDisasterKnowledge(query: string, category?: string, topK: number = 4): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/knowledge/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, category, top_k: topK }),
+    });
+    if (!res.ok) throw new Error('Failed to search disaster knowledge base');
     return res.json();
   },
 
