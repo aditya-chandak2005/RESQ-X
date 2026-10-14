@@ -78,6 +78,38 @@ CURATED_PLACES: List[Dict[str, Any]] = [
         "keywords": ["silchar", "bethukandi", "rangirkhari", "sadarghat"]
     },
     {
+        "place_id": "in-as-guwahati-city",
+        "name": "Guwahati",
+        "display_name": "Guwahati City, Kamrup Metropolitan, Assam, India",
+        "feature_type": "city",
+        "district": "Kamrup Metropolitan",
+        "state": "Assam",
+        "country": "India",
+        "latitude": 26.1445,
+        "longitude": 91.7362,
+        "bbox": [91.60, 26.08, 91.85, 26.22],
+        "boundary_geojson": None,
+        "provider": "Guwahati Municipal Corporation / ASDMA",
+        "confidence": 1.0,
+        "keywords": ["guwahati", "gauhati", "dispur", "panbazar", "paltan bazar", "silsako", "kamrup city"]
+    },
+    {
+        "place_id": "in-as-dispur",
+        "name": "Dispur",
+        "display_name": "Dispur Capital Complex, Kamrup Metropolitan, Assam, India",
+        "feature_type": "city",
+        "district": "Kamrup Metropolitan",
+        "state": "Assam",
+        "country": "India",
+        "latitude": 26.1408,
+        "longitude": 91.7907,
+        "bbox": [91.77, 26.12, 91.82, 26.16],
+        "boundary_geojson": None,
+        "provider": "ASDMA / Survey of India",
+        "confidence": 0.99,
+        "keywords": ["dispur", "assam secretariat", "capital"]
+    },
+    {
         "place_id": "in-as-kamrup-metro",
         "name": "Kamrup Metropolitan",
         "display_name": "Kamrup Metropolitan District (Guwahati), Assam, India",
