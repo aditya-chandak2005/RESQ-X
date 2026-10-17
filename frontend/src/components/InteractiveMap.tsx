@@ -288,14 +288,21 @@ const MapController: React.FC<{
   activeIncidentId?: number;
 }> = ({ center, zoom, activeIncidentId }) => {
   const map = useMap();
+  const prevCenterRef = useRef<[number, number]>(center);
   const prevIncidentRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (activeIncidentId !== undefined && prevIncidentRef.current !== activeIncidentId) {
+    const latDiff = Math.abs(center[0] - prevCenterRef.current[0]);
+    const lonDiff = Math.abs(center[1] - prevCenterRef.current[1]);
+    const incidentChanged = activeIncidentId !== undefined && prevIncidentRef.current !== activeIncidentId;
+
+    if (incidentChanged || latDiff > 0.05 || lonDiff > 0.05) {
       prevIncidentRef.current = activeIncidentId;
-      map.flyTo(center, zoom || 11, { duration: 1.2 });
+      prevCenterRef.current = center;
+      map.flyTo(center, zoom || 12, { duration: 1.4 });
     } else {
       map.panTo(center);
+      prevCenterRef.current = center;
     }
   }, [center, zoom, activeIncidentId, map]);
 
@@ -550,7 +557,7 @@ const CustomZoomControls: React.FC<{
   const map = useMap();
 
   return (
-    <div className="absolute bottom-12 right-4 z-[1000] flex flex-col space-y-2 select-none">
+    <div className="absolute bottom-12 right-4 z-[400] flex flex-col space-y-2 select-none">
       {/* Google Maps Re-center & Overview Cards */}
       <div className="flex flex-col space-y-1.5">
         <button
@@ -734,7 +741,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       
       {/* Basemap Loading Status Indicator (Subtle, non-blocking) */}
       {isBasemapLoading && pendingBasemap && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-cyan-300 font-bold uppercase tracking-wider">
             Loading {getBasemapDefinition(pendingBasemap).label}...
@@ -744,7 +751,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       {/* Basemap Error Toast with Non-Blocking Dismiss & Retry */}
       {basemapError && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1000] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
           <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
           <span className="text-red-200 text-[11px]">{basemapError}</span>
           <button
@@ -764,7 +771,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       )}
 
       {/* 1. Tactical HUD Banner (Top Center) */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
         <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
         <span className="text-slate-400 font-bold uppercase">THEATER:</span>
         <span className="text-cyan-300 font-bold uppercase">
@@ -797,6 +804,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             title="Jump to Chamoli & Dhauliganga Gorge, Uttarakhand"
           >
             Chamoli
+          </button>
+          <button
+            onClick={() => handleJumpToTheater([19.0760, 72.8777], 12)}
+            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
+            title="Jump to Mumbai & Mithi River Basin, Maharashtra"
+          >
+            Mumbai
           </button>
         </div>
       </div>

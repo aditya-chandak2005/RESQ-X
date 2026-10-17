@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, X, Sparkles, Database, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Info } from 'lucide-react';
 import { api } from '../services/api';
 import { PortalModal } from '../components/PortalModal';
@@ -9,6 +9,7 @@ interface AICopilotModalProps {
   onClose: () => void;
   selectedIncidentId?: number;
   activeIncident?: DisasterEvent | null;
+  initialQuery?: string;
 }
 
 export const AICopilotModal: React.FC<AICopilotModalProps> = ({
@@ -16,12 +17,14 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   onClose,
   selectedIncidentId = 1,
   activeIncident,
+  initialQuery,
 }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [dynamicQueries, setDynamicQueries] = useState<any[]>([]);
+  const sentInitialRef = useRef<string | null>(null);
 
-  const incidentTitle = activeIncident?.name || (selectedIncidentId === 2 ? 'Assam Floods (Silchar)' : 'Chamoli Flash Flood');
+  const incidentTitle = activeIncident?.name || (selectedIncidentId === 2 ? 'Assam Floods (Silchar)' : selectedIncidentId === 8 ? 'Maharashtra Floods 2005 (Mumbai)' : 'Chamoli Flash Flood');
 
   const [messages, setMessages] = useState<Array<{
     sender: 'user' | 'copilot';
@@ -51,8 +54,6 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
     };
     loadQueries();
   }, [isOpen, selectedIncidentId]);
-
-  if (!isOpen) return null;
 
   const handleSend = async (textToSend: string) => {
     if (!textToSend.trim() || loading) return;
@@ -89,6 +90,19 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
       setLoading(false);
     }
   };
+
+  // Auto-send initial query if provided when opening modal
+  useEffect(() => {
+    if (isOpen && initialQuery && initialQuery.trim() && sentInitialRef.current !== initialQuery) {
+      sentInitialRef.current = initialQuery;
+      handleSend(initialQuery);
+    }
+    if (!isOpen) {
+      sentInitialRef.current = null;
+    }
+  }, [isOpen, initialQuery]);
+
+  if (!isOpen) return null;
 
   return (
     <PortalModal

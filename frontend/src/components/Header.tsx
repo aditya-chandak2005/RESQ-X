@@ -54,6 +54,7 @@ interface HeaderProps {
   onSelectBasemap?: (basemap: BasemapType) => void;
   // Location inspection & geocoding props
   onLocationSelected?: (lat: number, lng: number, label: string) => void;
+  onOpenCopilotWithQuery?: (query: string, incidentId?: number) => void;
   isInspectMode?: boolean;
   setIsInspectMode?: (active: boolean) => void;
   currentAssessment?: LocationAssessment | null;
@@ -75,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectKpiFilter,
   onRunAnalysis,
   onOpenCopilot,
+  onOpenCopilotWithQuery,
   onOpenSitrep,
   onOpenGuide,
   onOpenExplore,
@@ -328,7 +330,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [layers]);
 
   return (
-    <header className="bg-[#0b1222] border-b border-slate-800/90 z-40 relative shrink-0 font-sans select-none">
+    <header className="bg-[#0b1222] border-b border-slate-800/90 z-[1500] relative shrink-0 font-sans select-none">
 
       {/* =================================================================== */}
       {/* 1. PRIMARY ROW: Navigation, Incident Context, Search & Core Actions */}
@@ -406,10 +408,11 @@ export const Header: React.FC<HeaderProps> = ({
             onLocationSelected={onLocationSelected}
             onSelectIncident={onSelectIncident}
             onSearchQuery={onSearchQuery}
+            onOpenCopilotWithQuery={onOpenCopilotWithQuery}
             isInspectMode={isInspectMode}
             setIsInspectMode={setIsInspectMode}
             className="w-full max-w-[480px] min-w-0"
-            placeholder="Search…"
+            placeholder="Search places or disasters…"
           />
         </div>
 
@@ -484,10 +487,11 @@ export const Header: React.FC<HeaderProps> = ({
           onLocationSelected={onLocationSelected}
           onSelectIncident={onSelectIncident}
           onSearchQuery={onSearchQuery}
+          onOpenCopilotWithQuery={onOpenCopilotWithQuery}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           className="w-full"
-          placeholder="Search…"
+          placeholder="Search places or disasters…"
         />
       </div>
 

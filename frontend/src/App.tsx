@@ -49,9 +49,19 @@ export const App: React.FC = () => {
 
   const [selectedItem, setSelectedItem] = useState<{ type: any; data: any } | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [copilotInitialQuery, setCopilotInitialQuery] = useState<string>('');
   const [isSitrepOpen, setIsSitrepOpen] = useState(false);
   const [isCitizenGuideOpen, setIsCitizenGuideOpen] = useState(false);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+
+  const handleOpenCopilotWithQuery = (query: string, incidentId?: number) => {
+    if (incidentId && incidentId !== selectedIncidentId) {
+      setSelectedIncidentId(incidentId);
+      loadAllTelemetry(incidentId);
+    }
+    setCopilotInitialQuery(query);
+    setIsCopilotOpen(true);
+  };
 
   // Sidebar navigation visibility & responsive collapse state
   const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(false);
@@ -112,29 +122,29 @@ export const App: React.FC = () => {
     try {
       const [incidentList, kpiRes, floodRes, setRes, dmgRes, prioRes, teamRes, msnRes, rscRes] = await Promise.all([
         api.getDisasters().catch(() => []),
-        api.getKpis(disasterId),
-        api.getFloodResult(disasterId),
-        api.getSettlements(disasterId),
-        api.getDamage(disasterId),
-        api.getPriorities(disasterId),
-        api.getTeams(disasterId),
-        api.getMissions(disasterId),
-        api.getResources(disasterId),
+        api.getKpis(disasterId).catch(() => null),
+        api.getFloodResult(disasterId).catch(() => null),
+        api.getSettlements(disasterId).catch(() => []),
+        api.getDamage(disasterId).catch(() => ({ assets: [], bridges: [], roads: [] })),
+        api.getPriorities(disasterId).catch(() => []),
+        api.getTeams(disasterId).catch(() => []),
+        api.getMissions(disasterId).catch(() => []),
+        api.getResources(disasterId).catch(() => []),
       ]);
 
       if (incidentList && incidentList.length > 0) {
         setIncidents(incidentList);
       }
-      setKpis(kpiRes);
+      if (kpiRes) setKpis(kpiRes);
       setFloodResult(floodRes);
-      setSettlements(setRes);
-      setAssets(dmgRes.assets || []);
-      setBridges(dmgRes.bridges || []);
-      setRoads(dmgRes.roads || []);
-      setPriorities(prioRes);
-      setTeams(teamRes);
-      setMissions(msnRes);
-      setResources(rscRes);
+      setSettlements(setRes || []);
+      setAssets(dmgRes?.assets || []);
+      setBridges(dmgRes?.bridges || []);
+      setRoads(dmgRes?.roads || []);
+      setPriorities(prioRes || []);
+      setTeams(teamRes || []);
+      setMissions(msnRes || []);
+      setResources(rscRes || []);
     } catch (e) {
       console.error('Telemetry fetch error:', e);
     }
@@ -187,10 +197,20 @@ export const App: React.FC = () => {
   // Omni-search from Header
   const handleSearchFromHeader = async (query: string) => {
     const q = query.toLowerCase();
-    if (q.includes('raini')) {
+    if (q.includes('mumbai') || q.includes('mithi') || q.includes('2005')) {
+      setSelectedIncidentId(8);
+      loadAllTelemetry(8);
+      handleNavigateToLocation(19.0760, 72.8777, 'Mumbai Metropolitan & Mithi River Basin');
+      handleOpenCopilotWithQuery(
+        'Explain the Mumbai 2005 flood: how the flood happened, what the causes were, how many people got affected, and the recovery response.',
+        8
+      );
+    } else if (q.includes('raini')) {
       handleNavigateToLocation(30.4912, 79.6841, 'Raini Village North Bank');
+      handleOpenCopilotWithQuery('Provide emergency assessment for Raini Village North Bank in the Chamoli flash flood theater.', 1);
     } else if (q.includes('tapovan')) {
       handleNavigateToLocation(30.4945, 79.6278, 'Tapovan Vishnugad Barrage');
+      handleOpenCopilotWithQuery('Provide situation report for Tapovan Vishnugad Barrage and tunnel rescue operations.', 1);
     } else if (q.includes('joshimath')) {
       handleNavigateToLocation(30.5580, 79.5645, 'Joshimath Base Hub');
     } else if (q.includes('suraithota')) {
@@ -198,25 +218,29 @@ export const App: React.FC = () => {
     } else if (q.includes('helang')) {
       handleNavigateToLocation(30.5180, 79.5100, 'Helang Confluence Terrace');
     } else if (
-      q.includes('assam') ||
       q.includes('silchar') ||
-      q.includes('cachar') ||
+      q.includes('barak') ||
+      q.includes('cachar')
+    ) {
+      setSelectedIncidentId(2);
+      loadAllTelemetry(2);
+      handleNavigateToLocation(24.8333, 92.7789, 'Silchar Urban Plain & Barak Valley');
+      handleOpenCopilotWithQuery('Explain the Silchar Barak Valley floods: how the inundation occurred, breach points, affected population, and response.', 2);
+    } else if (
       q.includes('nagaon') ||
       q.includes('barpeta') ||
       q.includes('golaghat') ||
       q.includes('kaziranga') ||
       q.includes('brahmaputra') ||
-      q.includes('barak') ||
       q.includes('kopili') ||
       q.includes('archive') ||
       q.includes('history') ||
-      q.includes('historical') ||
-      q.includes('chamoli')
+      q.includes('historical')
     ) {
       setCurrentTab('explore');
     } else {
-      // General question or search -> switch to Copilot
-      setCurrentTab('copilot');
+      // General question or search -> open Copilot with query
+      handleOpenCopilotWithQuery(query, selectedIncidentId);
     }
   };
 
@@ -269,6 +293,7 @@ export const App: React.FC = () => {
           }}
           onRefresh={() => loadAllTelemetry(selectedIncidentId)}
           onSearchQuery={handleSearchFromHeader}
+          onOpenCopilotWithQuery={handleOpenCopilotWithQuery}
           onSelectKpiFilter={handleKpiFilter}
           onRunAnalysis={() => setCurrentTab('mapping')}
           onOpenCopilot={() => setIsCopilotOpen(true)}
@@ -458,9 +483,13 @@ export const App: React.FC = () => {
       {/* 3. Global AI Copilot Modal */}
       <AICopilotModal
         isOpen={isCopilotOpen}
-        onClose={() => setIsCopilotOpen(false)}
+        onClose={() => {
+          setIsCopilotOpen(false);
+          setCopilotInitialQuery('');
+        }}
         selectedIncidentId={selectedIncidentId}
         activeIncident={activeIncident}
+        initialQuery={copilotInitialQuery}
       />
 
       {/* 4. Global Situation Report Modal */}
