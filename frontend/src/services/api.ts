@@ -15,6 +15,8 @@ import {
   DataAvailability,
   IncidentSource,
   GeocodingPlace,
+  SearchInterpretResponse,
+  HistoricalFloodSummaryResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -329,6 +331,50 @@ export const api = {
       body: JSON.stringify({ latitude: lat, longitude: lon }),
     });
     if (!res.ok) throw new Error('Place resolution failed');
+    return res.json();
+  },
+
+  async interpretSearch(
+    query: string,
+    currentPlaceId?: string,
+    currentIncidentId?: number
+  ): Promise<SearchInterpretResponse> {
+    const res = await fetch(`${API_BASE}/search/interpret`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        current_place_id: currentPlaceId,
+        current_incident_id: currentIncidentId,
+      }),
+    });
+    if (!res.ok) throw new Error('Search interpretation failed');
+    return res.json();
+  },
+
+  async getHistoricalFloodsByPlace(
+    placeId: string,
+    yearFrom?: number,
+    yearTo?: number,
+    windowYears: number = 10
+  ): Promise<HistoricalFloodSummaryResponse> {
+    const params = new URLSearchParams();
+    if (yearFrom) params.append('year_from', yearFrom.toString());
+    if (yearTo) params.append('year_to', yearTo.toString());
+    if (windowYears) params.append('window_years', windowYears.toString());
+
+    const res = await fetch(`${API_BASE}/places/${encodeURIComponent(placeId)}/historical-floods?${params.toString()}`);
+    if (!res.ok) throw new Error(`Failed to fetch historical floods for place: ${placeId}`);
+    return res.json();
+  },
+
+  async getPlaceDisasters(placeId: string): Promise<{
+    place: GeocodingPlace;
+    total_incidents: number;
+    incidents: IncidentDetail[];
+  }> {
+    const res = await fetch(`${API_BASE}/places/${encodeURIComponent(placeId)}/disasters`);
+    if (!res.ok) throw new Error(`Failed to fetch disasters for place: ${placeId}`);
     return res.json();
   }
 };

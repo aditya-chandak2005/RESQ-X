@@ -462,3 +462,69 @@ export interface GeocodingPlace {
   alternate_matches?: any[];
 }
 
+export interface HistoricalIncidentSummary {
+  id: number;
+  name: string;
+  year: number;
+  incident_date: string;
+  start_date?: string;
+  end_date?: string;
+  disaster_type: string;
+  severity?: string;
+  district?: string;
+  place_name?: string;
+  flooded_area_sqkm?: number;
+  deaths_reported?: number;
+  displaced_reported?: number;
+  exposed_population?: number;
+  crop_area_hectares?: number;
+  source_org?: string;
+  source_url?: string;
+  source_record_id?: string;
+  verification_status: string;
+  has_flood_analysis: boolean;
+  polygons_count: number;
+  flood_polygons: FloodPolygon[];
+  scenes_count: number;
+  aoi_geojson?: any;
+}
+
+export interface HistoricalFloodSummaryResponse {
+  place: GeocodingPlace;
+  period: {
+    start_date: string;
+    end_date: string;
+    label: string;
+    years_count: number;
+  };
+  summary: {
+    total_incidents: number;
+    total_flooded_extent_sqkm: number;
+    deaths_reported: number;
+    displaced_reported: number;
+    exposed_population: number;
+    crop_area_hectares: number;
+    affected_districts: string[];
+    major_rivers: string[];
+    sources: string[];
+    limitations: string;
+  };
+  incidents: HistoricalIncidentSummary[];
+  aggregated_flood_geojson?: any;
+}
+
+export interface SearchInterpretResponse {
+  query: string;
+  place_name?: string;
+  administrative_level?: string;
+  hazard_type?: string;
+  date_range: Record<string, any>;
+  incident_name?: string;
+  operation: 'locate' | 'summarize' | 'compare' | 'visualize' | 'report' | string;
+  resolved_place?: GeocodingPlace;
+  matched_incidents: IncidentDetail[];
+  intent_summary: string;
+  suggested_actions: string[];
+  historical_summary?: HistoricalFloodSummaryResponse;
+}
+

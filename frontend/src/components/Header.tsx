@@ -22,7 +22,7 @@ import {
   Layers,
   Activity,
 } from 'lucide-react';
-import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType } from '../types';
+import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType, GeocodingPlace, HistoricalFloodSummaryResponse } from '../types';
 import { api } from '../services/api';
 import { GlobalSearch } from './GlobalSearch';
 import { LocationIntelModal } from './LocationIntelModal';
@@ -55,6 +55,11 @@ interface HeaderProps {
   // Location inspection & geocoding props
   onLocationSelected?: (lat: number, lng: number, label: string) => void;
   onOpenCopilotWithQuery?: (query: string, incidentId?: number) => void;
+  onHistoricalPlaceSelected?: (
+    place: GeocodingPlace,
+    historicalData?: HistoricalFloodSummaryResponse,
+    targetBounds?: [[number, number], [number, number]] | null
+  ) => void;
   isInspectMode?: boolean;
   setIsInspectMode?: (active: boolean) => void;
   currentAssessment?: LocationAssessment | null;
@@ -86,6 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeBasemap = 'satellite',
   onSelectBasemap,
   onLocationSelected,
+  onHistoricalPlaceSelected,
   isInspectMode = false,
   setIsInspectMode,
   currentAssessment,
@@ -409,6 +415,7 @@ export const Header: React.FC<HeaderProps> = ({
             onSelectIncident={onSelectIncident}
             onSearchQuery={onSearchQuery}
             onOpenCopilotWithQuery={onOpenCopilotWithQuery}
+            onHistoricalPlaceSelected={onHistoricalPlaceSelected}
             isInspectMode={isInspectMode}
             setIsInspectMode={setIsInspectMode}
             className="w-full max-w-[480px] min-w-0"
@@ -488,6 +495,7 @@ export const Header: React.FC<HeaderProps> = ({
           onSelectIncident={onSelectIncident}
           onSearchQuery={onSearchQuery}
           onOpenCopilotWithQuery={onOpenCopilotWithQuery}
+          onHistoricalPlaceSelected={onHistoricalPlaceSelected}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           className="w-full"

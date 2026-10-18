@@ -66,6 +66,11 @@ interface InteractiveMapProps {
   onMapClick?: (lat: number, lng: number) => void;
   onMapDoubleClick?: (lat: number, lng: number) => void;
   isInspectMode?: boolean;
+  highlightedStateName?: string;
+  targetBounds?: [[number, number], [number, number]] | null;
+  historicalFootprintGeoJSON?: any;
+  historicalPolygons?: FloodPolygon[];
+  onClearHistoricalOverlay?: () => void;
 }
 
 // Custom DivIcon generator
@@ -286,12 +291,25 @@ const MapController: React.FC<{
   center: [number, number];
   zoom?: number;
   activeIncidentId?: number;
-}> = ({ center, zoom, activeIncidentId }) => {
+  targetBounds?: [[number, number], [number, number]] | null;
+}> = ({ center, zoom, activeIncidentId, targetBounds }) => {
   const map = useMap();
   const prevCenterRef = useRef<[number, number]>(center);
   const prevIncidentRef = useRef<number | undefined>(undefined);
+  const prevBoundsRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (targetBounds && targetBounds.length === 2) {
+      const boundsKey = JSON.stringify(targetBounds);
+      if (boundsKey !== prevBoundsRef.current) {
+        prevBoundsRef.current = boundsKey;
+        map.fitBounds(targetBounds, { padding: [45, 45], maxZoom: 14, duration: 1.4 });
+        return;
+      }
+    } else {
+      prevBoundsRef.current = null;
+    }
+
     const latDiff = Math.abs(center[0] - prevCenterRef.current[0]);
     const lonDiff = Math.abs(center[1] - prevCenterRef.current[1]);
     const incidentChanged = activeIncidentId !== undefined && prevIncidentRef.current !== activeIncidentId;
@@ -304,7 +322,7 @@ const MapController: React.FC<{
       map.panTo(center);
       prevCenterRef.current = center;
     }
-  }, [center, zoom, activeIncidentId, map]);
+  }, [center, zoom, activeIncidentId, targetBounds, map]);
 
   return null;
 };
@@ -624,6 +642,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onMapClick,
   onMapDoubleClick,
   isInspectMode,
+  highlightedStateName,
+  targetBounds,
+  historicalFootprintGeoJSON,
+  historicalPolygons,
+  onClearHistoricalOverlay,
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
@@ -739,6 +762,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   return (
     <div className={`w-full h-full relative ${isInspectMode ? 'cursor-crosshair' : ''}`}>
       
+      {/* Historical Overlay Banner Indicator */}
+      {(historicalFootprintGeoJSON || (historicalPolygons && historicalPolygons.length > 0)) && (
+        <div className="absolute top-14 left-4 z-[400] flex items-center space-x-2.5 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-amber-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-amber-200 font-bold text-[11px]">
+            {historicalFootprintGeoJSON ? '10-Year Aggregated Flood Footprint' : 'Historical Flood Extent Active'}
+          </span>
+          {onClearHistoricalOverlay && (
+            <button
+              onClick={onClearHistoricalOverlay}
+              className="ml-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] cursor-pointer"
+              title="Clear historical flood overlay"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
       {/* Basemap Loading Status Indicator (Subtle, non-blocking) */}
       {isBasemapLoading && pendingBasemap && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
@@ -823,7 +864,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoomControl={false}
         doubleClickZoom={false}
       >
-        <MapController center={mapCenter} zoom={mapZoom} activeIncidentId={activeIncident?.id} />
+        <MapController center={mapCenter} zoom={mapZoom} activeIncidentId={activeIncident?.id} targetBounds={targetBounds} />
         <MapEventsHandler
           onMapDoubleClick={onMapDoubleClick}
           onMapClick={onMapClick}
@@ -904,12 +945,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <>
             {/* GeoJSON Polygon Boundaries for Indian States (Pure Cartographic Non-Interactive Lines) */}
             <GeoJSON
-              key={`india-states-${activeIncident?.id || 'all'}`}
+              key={`india-states-${highlightedStateName || activeIncident?.id || 'all'}`}
               data={INDIA_STATE_BOUNDARIES_GEOJSON as any}
               interactive={false}
               style={(feature) => {
                 const name = (feature?.properties?.name || '').toLowerCase();
-                const isSelectedState = name === activeStateName;
+                const isSelectedState = highlightedStateName
+                  ? name === highlightedStateName.toLowerCase()
+                  : name === activeStateName;
                 const isDisasterHub = feature?.properties?.is_disaster_hub;
 
                 if (isSelectedState) {
@@ -1048,6 +1091,101 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </Tooltip>
           </Polyline>
         )}
+
+        {/* ============================================================== */}
+        {/* VERIFIED HISTORICAL FLOOD FOOTPRINT & EVENT POLYGONS (STAGE B) */}
+        {/* ============================================================== */}
+        {/* 1. Aggregated Multi-Year Flood Footprint GeoJSON */}
+        {historicalFootprintGeoJSON && (
+          <GeoJSON
+            key={`historical-footprint-${JSON.stringify(historicalFootprintGeoJSON).length}`}
+            data={historicalFootprintGeoJSON}
+            style={(feature) => {
+              const sev = feature?.properties?.severity || 'high';
+              let col = '#06b6d4';
+              let fill = '#0891b2';
+              if (sev === 'critical') {
+                col = '#ef4444';
+                fill = '#dc2626';
+              } else if (sev === 'high') {
+                col = '#f97316';
+                fill = '#ea580c';
+              } else if (sev === 'medium') {
+                col = '#eab308';
+                fill = '#ca8a04';
+              }
+              return {
+                color: col,
+                fillColor: fill,
+                fillOpacity: 0.45,
+                weight: 2,
+                dashArray: '4, 4',
+              };
+            }}
+            onEachFeature={(feature, layer) => {
+              const p = feature.properties || {};
+              layer.bindTooltip(
+                `<div style="font-family: monospace; font-size: 11px; padding: 2px;">
+                  <strong style="color: #38bdf8;">${p.incident_name || 'Historical Inundation'}</strong><br/>
+                  <span>Year: <strong>${p.year || 'Historical'}</strong></span> | 
+                  <span>Severity: <strong style="text-transform: uppercase;">${p.severity || 'high'}</strong></span><br/>
+                  <span>Depth Est: ~${p.depth_estimate_m || '2.0'}m</span><br/>
+                  <span style="color: #94a3b8; font-size: 10px;">Source: ${p.source_org || 'Sentinel-1 SAR / ASDMA'}</span>
+                </div>`,
+                { sticky: true, direction: 'top' }
+              );
+            }}
+          />
+        )}
+
+        {/* 2. Specific Selected Historical Incident Flood Polygons */}
+        {historicalPolygons &&
+          historicalPolygons.length > 0 &&
+          historicalPolygons.map((poly) => {
+            if (!poly.geometry_geojson || !poly.geometry_geojson.coordinates) return null;
+            const coords = poly.geometry_geojson.coordinates[0].map(
+              ([lon, lat]) => [lat, lon] as [number, number]
+            );
+            let fillColor = '#06b6d4';
+            let strokeColor = '#0891b2';
+            if (poly.severity === 'critical') {
+              fillColor = '#ef4444';
+              strokeColor = '#dc2626';
+            } else if (poly.severity === 'high') {
+              fillColor = '#f97316';
+              strokeColor = '#ea580c';
+            } else if (poly.severity === 'medium') {
+              fillColor = '#eab308';
+              strokeColor = '#ca8a04';
+            }
+
+            return (
+              <Polygon
+                key={`hist-poly-${poly.id}`}
+                positions={coords}
+                pathOptions={{
+                  color: strokeColor,
+                  fillColor: fillColor,
+                  fillOpacity: 0.45,
+                  weight: 2.5,
+                  dashArray: '3, 3',
+                }}
+                eventHandlers={{
+                  click: () => onSelectItem({ type: 'polygon', data: poly }),
+                }}
+              >
+                <Tooltip direction="top" opacity={0.95} sticky>
+                  <div className="text-xs font-mono">
+                    <span className="font-bold uppercase text-cyan-300">Historical Flood Extent</span>
+                    <br />
+                    Severity: {poly.severity.toUpperCase()}
+                    <br />
+                    Depth Est: {poly.depth_estimate_m}m • Area: {(poly.area_sqm / 1000000).toFixed(1)} km²
+                  </div>
+                </Tooltip>
+              </Polygon>
+            );
+          })}
 
         {/* Road Segments */}
         {layers.roads &&

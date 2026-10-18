@@ -481,3 +481,66 @@ class GeometrySearchRequest(BaseModel):
     year_to: Optional[int] = None
 
 
+class HistoricalIncidentSummary(BaseModel):
+    id: int
+    name: str
+    year: int
+    incident_date: datetime
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    disaster_type: str
+    severity: Optional[str] = None
+    district: Optional[str] = None
+    place_name: Optional[str] = None
+    flooded_area_sqkm: Optional[float] = None
+    deaths_reported: Optional[int] = None
+    displaced_reported: Optional[int] = None
+    exposed_population: Optional[int] = None
+    crop_area_hectares: Optional[float] = None
+    source_org: Optional[str] = None
+    source_url: Optional[str] = None
+    source_record_id: Optional[str] = None
+    verification_status: str = "verified"
+    has_flood_analysis: bool = False
+    polygons_count: int = 0
+    flood_polygons: List[Dict[str, Any]] = Field(default_factory=list)
+    scenes_count: int = 0
+    aoi_geojson: Optional[Dict[str, Any]] = None
+
+
+class HistoricalFloodSummaryResponse(BaseModel):
+    place: GeocodingPlace
+    period: Dict[str, Any] # start_date, end_date, label, years_count
+    summary: Dict[str, Any] # total_incidents, total_flooded_extent_sqkm, deaths, displaced, exposed, districts, rivers, sources, limitations
+    incidents: List[HistoricalIncidentSummary]
+    aggregated_flood_geojson: Optional[Dict[str, Any]] = None
+
+
+# Search Interpretation & Historical Location Intelligence Schemas
+class SearchInterpretRequest(BaseModel):
+    query: str
+    current_place_id: Optional[str] = None
+    current_incident_id: Optional[int] = None
+
+
+class SearchInterpretResponse(BaseModel):
+    query: str
+    place_name: Optional[str] = None
+    administrative_level: Optional[str] = None # state, district, city, town, river, landmark
+    hazard_type: Optional[str] = "flood" # riverine_flood, flash_flood, urban_flood, landslide, all
+    date_range: Dict[str, Any] = Field(default_factory=dict)
+    incident_name: Optional[str] = None
+    operation: str = "locate" # locate, summarize, compare, visualize, report
+    resolved_place: Optional[GeocodingPlace] = None
+    matched_incidents: List[IncidentDetailResponse] = Field(default_factory=list)
+    intent_summary: str
+    suggested_actions: List[str] = Field(default_factory=list)
+    historical_summary: Optional[HistoricalFloodSummaryResponse] = None
+
+
+class PlaceDisastersResponse(BaseModel):
+    place: GeocodingPlace
+    total_incidents: int
+    incidents: List[IncidentDetailResponse]
+
+

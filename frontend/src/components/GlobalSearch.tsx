@@ -19,13 +19,18 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { GeocodingPlace, IncidentDetail } from '../types';
+import { GeocodingPlace, IncidentDetail, HistoricalFloodSummaryResponse } from '../types';
 
 interface GlobalSearchProps {
   onLocationSelected?: (lat: number, lon: number, label: string) => void;
   onSelectIncident?: (incidentId: number) => void;
   onSearchQuery?: (query: string) => void;
   onOpenCopilotWithQuery?: (query: string, incidentId?: number) => void;
+  onHistoricalPlaceSelected?: (
+    place: GeocodingPlace,
+    historicalData?: HistoricalFloodSummaryResponse,
+    targetBounds?: [[number, number], [number, number]] | null
+  ) => void;
   isInspectMode?: boolean;
   setIsInspectMode?: (active: boolean) => void;
   className?: string;
@@ -50,6 +55,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   onSelectIncident,
   onSearchQuery,
   onOpenCopilotWithQuery,
+  onHistoricalPlaceSelected,
   isInspectMode = false,
   setIsInspectMode,
   className = '',
@@ -221,10 +227,25 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Place selection: centers map, assesses location, checks for matching incident, and activates Copilot
-  const handleSelectPlace = (place: GeocodingPlace) => {
+  // Place selection: centers map, assesses location, loads historical data, and activates Copilot
+  const handleSelectPlace = async (place: GeocodingPlace) => {
     setIsOpen(false);
     setQuery(place.name);
+
+    // Calculate targetBounds from bbox or coordinates
+    let bounds: [[number, number], [number, number]] | null = null;
+    if (place.bbox && place.bbox.length === 4) {
+      bounds = [
+        [place.bbox[1], place.bbox[0]],
+        [place.bbox[3], place.bbox[2]],
+      ];
+    } else if (place.latitude && place.longitude) {
+      const delta = place.feature_type === 'state' ? 1.8 : place.feature_type === 'district' ? 0.45 : 0.08;
+      bounds = [
+        [place.latitude - delta, place.longitude - delta],
+        [place.latitude + delta, place.longitude + delta],
+      ];
+    }
 
     // Check if place matches an active disaster incident (e.g. Mumbai -> incident 8)
     const isMumbai = place.name.toLowerCase().includes('mumbai');
@@ -248,12 +269,100 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       onLocationSelected(place.latitude, place.longitude, label);
     }
 
+    // Retrieve historical disaster intelligence for place
+    let histData: HistoricalFloodSummaryResponse | undefined = undefined;
+    try {
+      histData = await api.getHistoricalFloodsByPlace(place.place_id);
+    } catch (e) {
+      console.warn('Historical flood query note:', e);
+    }
+
+    if (onHistoricalPlaceSelected) {
+      onHistoricalPlaceSelected(place, histData, bounds);
+    }
+
     // Simultaneously trigger AI Copilot with comprehensive disaster assessment
     if (onOpenCopilotWithQuery) {
       const copilotPrompt = (matchingInc || isMumbai)
         ? `Explain the ${matchingInc?.name || 'Maharashtra Floods 2005 (Mumbai)'}: how the flood happened, what the causes were, how many people got affected, and the recovery response.`
         : `Provide flood risk and disaster assessment for ${place.name}, ${place.state}: what is the geographic vulnerability, flood history, and emergency response posture?`;
       onOpenCopilotWithQuery(copilotPrompt, resolvedIncidentId);
+    }
+  };
+
+  // Comprehensive query execution: interprets natural language, resolves boundary, and loads historical floods
+  const handleExecuteSearch = async (searchQuery: string) => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+
+    if (parsedCoord) {
+      handleSelectParsedCoord(parsedCoord.lat, parsedCoord.lon);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const interpretRes = await api.interpretSearch(trimmed);
+      if (interpretRes && interpretRes.resolved_place) {
+        const place = interpretRes.resolved_place;
+        setIsOpen(false);
+        setQuery(place.name);
+
+        let bounds: [[number, number], [number, number]] | null = null;
+        if (place.bbox && place.bbox.length === 4) {
+          bounds = [
+            [place.bbox[1], place.bbox[0]],
+            [place.bbox[3], place.bbox[2]],
+          ];
+        } else if (place.latitude && place.longitude) {
+          const delta = place.feature_type === 'state' ? 1.8 : place.feature_type === 'district' ? 0.45 : 0.08;
+          bounds = [
+            [place.latitude - delta, place.longitude - delta],
+            [place.latitude + delta, place.longitude + delta],
+          ];
+        }
+
+        const firstIncId = interpretRes.matched_incidents?.[0]?.id;
+        if (firstIncId && onSelectIncident) {
+          onSelectIncident(firstIncId);
+        }
+
+        if (onLocationSelected) {
+          const label = place.district
+            ? `${place.name}, ${place.district} (${place.state})`
+            : `${place.name}, ${place.state || 'India'}`;
+          onLocationSelected(place.latitude, place.longitude, label);
+        }
+
+        if (onHistoricalPlaceSelected) {
+          onHistoricalPlaceSelected(place, interpretRes.historical_summary, bounds);
+        }
+
+        const isQuestionOrCompare =
+          interpretRes.operation === 'compare' ||
+          interpretRes.operation === 'summarize' ||
+          trimmed.toLowerCase().includes('why') ||
+          trimmed.toLowerCase().includes('how') ||
+          trimmed.toLowerCase().includes('tell') ||
+          trimmed.toLowerCase().includes('explain');
+
+        if (isQuestionOrCompare && onOpenCopilotWithQuery) {
+          onOpenCopilotWithQuery(trimmed, firstIncId);
+        }
+        return;
+      }
+    } catch (e) {
+      console.warn('Search interpretation note:', e);
+    } finally {
+      setIsLoading(false);
+    }
+
+    if (incidentMatches.length > 0) {
+      handleSelectIncidentItem(incidentMatches[0]);
+    } else if (places.length > 0) {
+      handleSelectPlace(places[0]);
+    } else {
+      handleAskCopilot();
     }
   };
 
@@ -388,13 +497,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
       // Fallback submit
       if (query.trim()) {
-        if (incidentMatches.length > 0) {
-          handleSelectIncidentItem(incidentMatches[0]);
-        } else if (places.length > 0) {
-          handleSelectPlace(places[0]);
-        } else {
-          handleAskCopilot();
-        }
+        handleExecuteSearch(query);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
@@ -463,15 +566,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (parsedCoord) {
-            handleSelectParsedCoord(parsedCoord.lat, parsedCoord.lon);
-          } else if (incidentMatches.length > 0) {
-            handleSelectIncidentItem(incidentMatches[0]);
-          } else if (places.length > 0) {
-            handleSelectPlace(places[0]);
-          } else if (query.trim()) {
-            handleAskCopilot();
-          }
+          handleExecuteSearch(query);
         }}
         className="relative flex items-center w-full"
       >

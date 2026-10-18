@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { ContextPanel } from '../components/ContextPanel';
+import { HistoricalIntelligencePanel } from '../components/HistoricalIntelligencePanel';
 import {
   FloodResult,
   Settlement,
@@ -12,6 +13,9 @@ import {
   LayerVisibility,
   LocationAssessment,
   DisasterEvent,
+  HistoricalFloodSummaryResponse,
+  HistoricalIncidentSummary,
+  FloodPolygon,
 } from '../types';
 import {
   Activity,
@@ -50,6 +54,19 @@ interface CommandCenterViewProps {
   activeIncident?: DisasterEvent | null;
   onNavigateTab: (tab: string) => void;
   onOpenCopilot: () => void;
+  highlightedStateName?: string;
+  targetBounds?: [[number, number], [number, number]] | null;
+  historicalFootprintGeoJSON?: any;
+  historicalPolygons?: FloodPolygon[];
+  onClearHistoricalOverlay?: () => void;
+  historicalData?: HistoricalFloodSummaryResponse | null;
+  onCloseHistoricalPanel?: () => void;
+  onVisualizeHistoricalIncident?: (incident: HistoricalIncidentSummary) => void;
+  onVisualizeAggregatedFootprint?: () => void;
+  onOpenCopilotWithQuery?: (prompt: string, incidentId?: number) => void;
+  onGenerateSitrep?: (incidentId: number) => void;
+  activeVisualizedIncidentId?: number | null;
+  isAggregatedActive?: boolean;
 }
 
 export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
@@ -74,6 +91,19 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   activeIncident,
   onNavigateTab,
   onOpenCopilot,
+  highlightedStateName,
+  targetBounds,
+  historicalFootprintGeoJSON,
+  historicalPolygons,
+  onClearHistoricalOverlay,
+  historicalData,
+  onCloseHistoricalPanel,
+  onVisualizeHistoricalIncident,
+  onVisualizeAggregatedFootprint,
+  onOpenCopilotWithQuery,
+  onGenerateSitrep,
+  activeVisualizedIncidentId,
+  isAggregatedActive,
 }) => {
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
 
@@ -111,7 +141,26 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             onMapClick={handleMapClick}
             onMapDoubleClick={handleMapClick}
             isInspectMode={isInspectMode}
+            highlightedStateName={highlightedStateName}
+            targetBounds={targetBounds}
+            historicalFootprintGeoJSON={historicalFootprintGeoJSON}
+            historicalPolygons={historicalPolygons}
+            onClearHistoricalOverlay={onClearHistoricalOverlay}
           />
+
+          {/* Historical Disaster Intelligence Panel (Stage B) */}
+          {historicalData && (
+            <HistoricalIntelligencePanel
+              data={historicalData}
+              onClose={onCloseHistoricalPanel || (() => {})}
+              onVisualizeIncident={onVisualizeHistoricalIncident || (() => {})}
+              onVisualizeAggregatedFootprint={onVisualizeAggregatedFootprint || (() => {})}
+              onAskCopilot={(prompt, incId) => onOpenCopilotWithQuery && onOpenCopilotWithQuery(prompt, incId)}
+              onGenerateReport={(incId) => onGenerateSitrep && onGenerateSitrep(incId)}
+              activeVisualizedIncidentId={activeVisualizedIncidentId}
+              isAggregatedActive={isAggregatedActive}
+            />
+          )}
 
           {/* Collapsible Right Context Panel */}
           {selectedItem && (

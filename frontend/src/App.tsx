@@ -29,6 +29,10 @@ import {
   Resource,
   LayerVisibility,
   LocationAssessment,
+  GeocodingPlace,
+  HistoricalFloodSummaryResponse,
+  HistoricalIncidentSummary,
+  FloodPolygon,
 } from './types';
 import { Bot } from 'lucide-react';
 
@@ -46,6 +50,15 @@ export const App: React.FC = () => {
   const [teams, setTeams] = useState<RescueTeam[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+
+  // Historical Disaster Intelligence State (Stage A & Stage B)
+  const [historicalData, setHistoricalData] = useState<HistoricalFloodSummaryResponse | null>(null);
+  const [highlightedStateName, setHighlightedStateName] = useState<string | undefined>(undefined);
+  const [targetBounds, setTargetBounds] = useState<[[number, number], [number, number]] | null>(null);
+  const [historicalPolygons, setHistoricalPolygons] = useState<FloodPolygon[]>([]);
+  const [historicalFootprintGeoJSON, setHistoricalFootprintGeoJSON] = useState<any | null>(null);
+  const [activeVisualizedIncidentId, setActiveVisualizedIncidentId] = useState<number | null>(null);
+  const [isAggregatedActive, setIsAggregatedActive] = useState<boolean>(false);
 
   const [selectedItem, setSelectedItem] = useState<{ type: any; data: any } | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
@@ -194,9 +207,127 @@ export const App: React.FC = () => {
     setCurrentTab('location-check');
   };
 
+  // Stage A: Handle place selection with administrative boundary establishment
+  const handleHistoricalPlaceSelected = (
+    place: GeocodingPlace,
+    histSummary?: HistoricalFloodSummaryResponse,
+    bounds?: [[number, number], [number, number]] | null
+  ) => {
+    setCurrentTab('command');
+    setHighlightedStateName(place.state || place.name);
+    if (bounds) {
+      setTargetBounds(bounds);
+    }
+    // Clean Stage A state: do NOT show historical flood polygons until user requests Stage B
+    setHistoricalPolygons([]);
+    setHistoricalFootprintGeoJSON(null);
+    setActiveVisualizedIncidentId(null);
+    setIsAggregatedActive(false);
+
+    if (histSummary) {
+      setHistoricalData(histSummary);
+    }
+  };
+
+  // Stage B: Visualize a specific historical flood event
+  const handleVisualizeHistoricalIncident = async (inc: HistoricalIncidentSummary) => {
+    try {
+      const floodRes = await api.getFloodResult(inc.id);
+      if (floodRes && floodRes.polygons && floodRes.polygons.length > 0) {
+        setHistoricalPolygons(floodRes.polygons);
+      } else if (inc.flood_polygons && inc.flood_polygons.length > 0) {
+        setHistoricalPolygons(inc.flood_polygons as FloodPolygon[]);
+      }
+      setHistoricalFootprintGeoJSON(null);
+      setActiveVisualizedIncidentId(inc.id);
+      setIsAggregatedActive(false);
+
+      if (inc.district) {
+        setHighlightedStateName(inc.district);
+      }
+
+      // Smoothly fly map to incident center
+      const incDetails = incidents.find((i) => i.id === inc.id);
+      if (incDetails?.center_lat && incDetails?.center_lon) {
+        setInspectedPoint(null);
+        handleNavigateToLocation(incDetails.center_lat, incDetails.center_lon, `${inc.name} [${incDetails.state}]`);
+      }
+    } catch (e) {
+      console.error('Failed to visualize historical flood event:', e);
+      if (inc.flood_polygons) {
+        setHistoricalPolygons(inc.flood_polygons as FloodPolygon[]);
+        setActiveVisualizedIncidentId(inc.id);
+      }
+    }
+  };
+
+  // Stage B: Visualize 10-year aggregated footprint
+  const handleVisualizeAggregatedFootprint = () => {
+    if (historicalData?.aggregated_flood_geojson) {
+      setHistoricalFootprintGeoJSON(historicalData.aggregated_flood_geojson);
+      setHistoricalPolygons([]);
+      setActiveVisualizedIncidentId(null);
+      setIsAggregatedActive(true);
+    }
+  };
+
+  // Clear historical overlays
+  const handleClearHistoricalOverlay = () => {
+    setHistoricalFootprintGeoJSON(null);
+    setHistoricalPolygons([]);
+    setActiveVisualizedIncidentId(null);
+    setIsAggregatedActive(false);
+  };
+
   // Omni-search from Header
   const handleSearchFromHeader = async (query: string) => {
     const q = query.toLowerCase();
+    
+    // Check search interpretation service first for full spatial intelligence
+    try {
+      const interpretRes = await api.interpretSearch(query);
+      if (interpretRes && interpretRes.resolved_place) {
+        const place = interpretRes.resolved_place;
+        let bounds: [[number, number], [number, number]] | null = null;
+        if (place.bbox && place.bbox.length === 4) {
+          bounds = [
+            [place.bbox[1], place.bbox[0]],
+            [place.bbox[3], place.bbox[2]],
+          ];
+        } else if (place.latitude && place.longitude) {
+          const delta = place.feature_type === 'state' ? 1.8 : place.feature_type === 'district' ? 0.45 : 0.08;
+          bounds = [
+            [place.latitude - delta, place.longitude - delta],
+            [place.latitude + delta, place.longitude + delta],
+          ];
+        }
+
+        handleHistoricalPlaceSelected(place, interpretRes.historical_summary, bounds);
+
+        const firstIncId = interpretRes.matched_incidents?.[0]?.id;
+        if (firstIncId) {
+          setSelectedIncidentId(firstIncId);
+          loadAllTelemetry(firstIncId);
+        }
+
+        const isQuestionOrCompare =
+          interpretRes.operation === 'compare' ||
+          interpretRes.operation === 'summarize' ||
+          q.includes('why') ||
+          q.includes('how') ||
+          q.includes('tell') ||
+          q.includes('explain') ||
+          q.includes('history');
+
+        if (isQuestionOrCompare) {
+          handleOpenCopilotWithQuery(query, firstIncId);
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn('Header omni-search interpret note:', err);
+    }
+
     if (q.includes('mumbai') || q.includes('mithi') || q.includes('2005')) {
       setSelectedIncidentId(8);
       loadAllTelemetry(8);
@@ -310,6 +441,7 @@ export const App: React.FC = () => {
             }
           }}
           onLocationSelected={handleNavigateToLocation}
+          onHistoricalPlaceSelected={handleHistoricalPlaceSelected}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           currentAssessment={currentAssessment}
@@ -351,6 +483,22 @@ export const App: React.FC = () => {
               activeIncident={activeIncident}
               onNavigateTab={(tab) => setCurrentTab(tab)}
               onOpenCopilot={() => setIsCopilotOpen(true)}
+              highlightedStateName={highlightedStateName}
+              targetBounds={targetBounds}
+              historicalFootprintGeoJSON={historicalFootprintGeoJSON}
+              historicalPolygons={historicalPolygons}
+              onClearHistoricalOverlay={handleClearHistoricalOverlay}
+              historicalData={historicalData}
+              onCloseHistoricalPanel={() => setHistoricalData(null)}
+              onVisualizeHistoricalIncident={handleVisualizeHistoricalIncident}
+              onVisualizeAggregatedFootprint={handleVisualizeAggregatedFootprint}
+              onOpenCopilotWithQuery={handleOpenCopilotWithQuery}
+              onGenerateSitrep={(incId) => {
+                setSelectedIncidentId(incId);
+                setIsSitrepOpen(true);
+              }}
+              activeVisualizedIncidentId={activeVisualizedIncidentId}
+              isAggregatedActive={isAggregatedActive}
             />
           )}
 
