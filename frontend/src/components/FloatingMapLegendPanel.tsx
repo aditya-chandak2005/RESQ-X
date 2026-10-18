@@ -135,8 +135,9 @@ export const FloatingMapLegendPanel: React.FC<FloatingMapLegendPanelProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [panelState]);
 
-  // Dragging logic
+  // Dragging logic (desktop only)
   const handleDragStart = (e: React.MouseEvent) => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return;
     if ((e.target as HTMLElement).closest('button, input, select, a, [role="button"]')) {
       return;
     }
@@ -355,11 +356,13 @@ export const FloatingMapLegendPanel: React.FC<FloatingMapLegendPanelProps> = ({
         isDragging ? 'shadow-cyan-950/80 cursor-grabbing' : 'cursor-default'
       }`}
       style={{
-        top: `${position.y}px`,
-        right: `${position.x}px`,
-        width: `${panelWidth}px`,
-        maxWidth: 'calc(100vw - 2rem)',
-        maxHeight: 'calc(100% - 2rem)',
+        top: `${typeof window !== 'undefined' && window.innerWidth < 768 ? 8 : position.y}px`,
+        right: `${typeof window !== 'undefined' && window.innerWidth < 768 ? 8 : position.x}px`,
+        width: typeof window !== 'undefined' && window.innerWidth < 768
+          ? `${Math.min(panelWidth, Math.max(280, window.innerWidth - 16))}px`
+          : `${panelWidth}px`,
+        maxWidth: 'calc(100vw - 1rem)',
+        maxHeight: 'calc(100% - 1rem)',
       }}
     >
       {/* 1. Header Bar with Drag Handle and Action Controls */}

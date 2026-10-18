@@ -35,21 +35,21 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
     <PortalModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 bg-gradient-to-r from-cyan-950/60 via-slate-900 to-indigo-950/60 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-md">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+        <div className="px-4 sm:px-6 py-3.5 sm:py-5 border-b border-slate-800 bg-gradient-to-r from-cyan-950/60 via-slate-900 to-indigo-950/60 flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-md shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-extrabold text-white font-mono tracking-wide">
+            <div className="min-w-0">
+              <div className="flex items-center space-x-2 flex-wrap">
+                <h2 className="text-sm sm:text-lg font-extrabold text-white font-mono tracking-wide">
                   WELCOME TO RESQ<span className="text-cyan-400">-X</span>
                 </h2>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700">
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700 hidden xs:inline-block">
                   Citizen & Responder Guide
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-none">
                 How everyday citizens can easily track floods, find danger zones, and verify safety with zero GIS knowledge
               </p>
             </div>
@@ -57,7 +57,7 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all"
+            className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all shrink-0"
             aria-label="Close Guide"
           >
             <X className="w-5 h-5" />
@@ -65,7 +65,7 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-6 space-y-4 sm:space-y-6">
           
           {/* Intro Card */}
           <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 via-blue-950/30 to-indigo-950/40 border border-cyan-500/30 text-xs text-slate-300 leading-relaxed">
@@ -221,13 +221,13 @@ export const CitizenGuideModal: React.FC<CitizenGuideModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-[#090e1a] flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-slate-400 font-mono">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-800 bg-[#090e1a] flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div className="text-[10px] sm:text-[11px] text-slate-400 font-mono">
             India Disaster Intelligence • Multimodal Hackathon 2026
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-all shadow-md"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-all shadow-md text-center"
           >
             Got it, Let's Explore!
           </button>

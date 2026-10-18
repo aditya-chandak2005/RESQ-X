@@ -76,15 +76,15 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-y-auto custom-scrollbar p-6 space-y-6 font-sans select-none text-slate-100">
+    <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 font-sans select-none text-slate-100">
       
       {/* 1. Header & Export Button */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div>
           <div className="flex items-center space-x-2">
-            <Building className="w-5 h-5 text-amber-400" />
-            <h1 className="text-xl font-bold font-mono text-white">IMPACT ASSESSMENT & INFRASTRUCTURE EXPOSURE</h1>
-            <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
+            <Building className="w-5 h-5 text-amber-400 shrink-0" />
+            <h1 className="text-base sm:text-xl font-bold font-mono text-white">IMPACT ASSESSMENT & INFRASTRUCTURE EXPOSURE</h1>
+            <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 shrink-0">
               AREA 3
             </span>
           </div>
@@ -95,7 +95,7 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
 
         <button
           onClick={handleExportSummary}
-          className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-medium transition-all"
+          className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-medium transition-all cursor-pointer"
         >
           <Download className="w-3.5 h-3.5 text-cyan-400" />
           <span>Export Impact Summary (JSON)</span>
@@ -103,57 +103,57 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
       </div>
 
       {/* 2. Mandatory Methodological Disclaimers */}
-      <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+      <div className="p-3 sm:p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 space-y-1.5">
         <div className="flex items-center space-x-2 text-amber-300 font-bold font-mono">
-          <Info className="w-4 h-4 text-amber-400" />
+          <Info className="w-4 h-4 text-amber-400 shrink-0" />
           <span>Analytical Exposure vs Ground Field Verification:</span>
         </div>
-        <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+        <p className="text-[11px] text-slate-400 leading-relaxed sm:pl-6">
           Satellite-derived exposure identifies physical intersection with floodwaters. <strong>Satellite imagery alone does not certify the internal structural integrity of bridges or buildings</strong> until confirmed by SDRF/Army ground engineering teams. Population metrics are derived from LandScan ambient data rather than arbitrary household multipliers.
         </p>
       </div>
 
       {/* 3. High-Level Exposure Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 rounded-xl bg-[#0c1322] border border-amber-500/30">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c1322] border border-amber-500/30">
           <div className="flex justify-between items-center text-slate-400 text-xs font-mono">
             <span>AFFECTED STRUCTURES</span>
             <Building className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="mt-2 text-2xl font-extrabold font-mono text-amber-400">
+          <div className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-extrabold font-mono text-amber-400">
             {affectedAssets.length} <span className="text-xs font-normal text-slate-400">/ {assets.length} assets</span>
           </div>
           <span className="text-[10px] text-slate-400 font-mono">Hydro Barrage & Substation</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#0c1322] border border-red-500/40">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c1322] border border-red-500/40">
           <div className="flex justify-between items-center text-slate-400 text-xs font-mono">
             <span>CRITICAL BRIDGES</span>
             <Flame className="w-4 h-4 text-red-500" />
           </div>
-          <div className="mt-2 text-2xl font-extrabold font-mono text-red-400">
+          <div className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-extrabold font-mono text-red-400">
             {criticalBridges.length} <span className="text-xs font-normal text-slate-400">/ {bridges.length} bridges</span>
           </div>
           <span className="text-[10px] text-red-300 font-mono">Span B-17 & Bailey Bridge out</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#0c1322] border border-rose-500/30">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c1322] border border-rose-500/30">
           <div className="flex justify-between items-center text-slate-400 text-xs font-mono">
             <span>SEVERED ROAD LENGTH</span>
             <ShieldAlert className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="mt-2 text-2xl font-extrabold font-mono text-rose-400">
+          <div className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-extrabold font-mono text-rose-400">
             {totalBlockedRoadLengthKm} <span className="text-xs font-normal text-slate-400">km blocked</span>
           </div>
           <span className="text-[10px] text-slate-400 font-mono">NH-58 & Ridge Sector Trail</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#0c1322] border border-indigo-500/30">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#0c1322] border border-indigo-500/30">
           <div className="flex justify-between items-center text-slate-400 text-xs font-mono">
             <span>EXPOSED POPULATION</span>
             <Compass className="w-4 h-4 text-indigo-400" />
           </div>
-          <div className="mt-2 text-2xl font-extrabold font-mono text-indigo-400">
+          <div className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-extrabold font-mono text-indigo-400">
             {exposedPopulationTotal.toLocaleString()} <span className="text-xs font-normal text-slate-400">residents</span>
           </div>
           <span className="text-[10px] text-slate-400 font-mono">Across 5 monitored settlements</span>
@@ -161,15 +161,17 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
       </div>
 
       {/* 4. Filters Bar */}
-      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center space-x-2">
-          <Filter className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="font-mono text-slate-400 uppercase text-[10px] font-bold">Category Filter:</span>
+      <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center space-x-1.5 mr-1">
+            <Filter className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono text-slate-400 uppercase text-[10px] font-bold">Category:</span>
+          </div>
           {(['all', 'bridges', 'roads', 'buildings', 'settlements'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setFilterType(t)}
-              className={`px-2.5 py-1 rounded text-xs font-mono capitalize transition-all ${
+              className={`px-2.5 py-1 rounded text-xs font-mono capitalize transition-all cursor-pointer ${
                 filterType === t
                   ? 'bg-cyan-600 text-white font-bold'
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -180,13 +182,13 @@ export const ImpactAssessmentView: React.FC<ImpactAssessmentViewProps> = ({
           ))}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="font-mono text-slate-400 uppercase text-[10px] font-bold">Severity Filter:</span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-slate-400 uppercase text-[10px] font-bold mr-1">Severity:</span>
           {(['all', 'critical', 'affected'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setSeverityFilter(s)}
-              className={`px-2.5 py-1 rounded text-xs font-mono uppercase transition-all ${
+              className={`px-2.5 py-1 rounded text-xs font-mono uppercase transition-all cursor-pointer ${
                 severityFilter === s
                   ? 'bg-slate-700 text-cyan-300 font-bold border border-cyan-500/40'
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'

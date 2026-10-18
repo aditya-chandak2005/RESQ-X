@@ -327,6 +327,39 @@ const MapController: React.FC<{
     }
   }, [center, zoom, activeIncidentId, targetBounds, resetTrigger, map]);
 
+  // Responsive Map Viewport: automatically recalculate size when window, orientation, or container size changes
+  useEffect(() => {
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    // Observe map DOM container for layout transitions (drawer, sidebar, bottom sheet)
+    const container = map.getContainer();
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && container) {
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(container);
+    }
+
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      clearTimeout(timer);
+    };
+  }, [map]);
+
   return null;
 };
 

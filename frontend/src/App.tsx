@@ -106,13 +106,20 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Responsive initialization: auto-collapse on tablet, auto-hide on mobile
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      setIsSidebarHidden(true);
-    } else if (window.innerWidth < 1024) {
-      setIsSidebarCollapsed(true);
-    }
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarHidden(true);
+      } else {
+        setIsSidebarHidden(false);
+      }
+      if (window.innerWidth >= 768 && window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Individual location inspection state

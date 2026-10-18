@@ -213,45 +213,46 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
       </div>
 
       {/* 2. Bottom Operational Telemetry & Processing Status Bar */}
-      <div className="h-10 bg-[#090e1a] border-t border-slate-800/80 px-4 flex items-center justify-between text-xs text-slate-300 font-mono shrink-0 select-none">
+      <div className="h-9 sm:h-10 bg-[#090e1a] border-t border-slate-800/80 px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 font-mono shrink-0 select-none overflow-hidden">
         
         {/* Left: Sensor Pipeline & Model Telemetry */}
-        <div className="flex items-center space-x-3 text-[11px]">
-          <div className="flex items-center space-x-1.5 text-cyan-400">
+        <div className="flex items-center space-x-2 sm:space-x-3 text-[11px] truncate mr-2">
+          <div className="flex items-center space-x-1.5 text-cyan-400 shrink-0">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             <span className="font-bold">SAR PIPELINE ACTIVE</span>
           </div>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">
-            Sensor: <strong className="text-slate-200">Sentinel-1 C-SAR IW</strong> (VV+VH)
+          <span className="text-slate-600 hidden sm:inline">|</span>
+          <span className="text-slate-400 hidden sm:inline truncate">
+            Sensor: <strong className="text-slate-200">Sentinel-1 C-SAR</strong>
           </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">
-            Model: <strong className="text-cyan-300">RESQ-Net-SARv2</strong> (IoU: 0.854 • F1: 0.918)
+          <span className="text-slate-600 hidden md:inline">|</span>
+          <span className="text-slate-400 hidden md:inline truncate">
+            Model: <strong className="text-cyan-300">RESQ-Net-SARv2</strong>
           </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">
-            DEM: <strong className="text-slate-200">Copernicus 30m GLO-30</strong>
+          <span className="text-slate-600 hidden xl:inline">|</span>
+          <span className="text-slate-400 hidden xl:inline truncate">
+            DEM: <strong className="text-slate-200">Copernicus 30m</strong>
           </span>
         </div>
 
         {/* Center: Live Hotspot Alerts Ticker */}
-        <div className="hidden lg:flex items-center space-x-2 text-[11px]">
-          <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 text-[10px] font-bold">
+        <div className="hidden lg:flex items-center space-x-2 text-[11px] truncate mx-2">
+          <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 text-[10px] font-bold shrink-0">
             SECTOR STATUS
           </span>
-          <span className="text-slate-300">
+          <span className="text-slate-300 truncate">
             {activeIncident
-              ? `${isolatedSettlements.length} Cut-off Hamlets (~${isolatedSettlements.reduce((acc, s) => acc + s.estimated_population, 0)} trapped) • ${criticalBridges.length} River Spans Impassable`
-              : 'National Monitoring Extent • No Operational Theater Selected'}
+              ? `${isolatedSettlements.length} Cut-off Hamlets (~${isolatedSettlements.reduce((acc, s) => acc + s.estimated_population, 0)} trapped) • ${criticalBridges.length} Spans Out`
+              : 'National Monitoring Extent • Standby'}
           </span>
         </div>
 
         {/* Right: Quick Triggers */}
-        <div className="flex items-center space-x-3 text-[11px]">
+        <div className="flex items-center space-x-2 sm:space-x-3 text-[11px] shrink-0">
           <button
             onClick={() => onNavigateTab('rescue')}
-            className="text-cyan-400 hover:text-cyan-300 flex items-center space-x-1"
+            className="text-cyan-400 hover:text-cyan-300 flex items-center space-x-1 p-1 cursor-pointer"
+            title="Open Rescue Operations"
           >
             <span>Rescue Ops</span>
             <ChevronRight className="w-3 h-3" />
@@ -259,10 +260,11 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
           <span className="text-slate-600">|</span>
           <button
             onClick={onOpenCopilot}
-            className="text-indigo-400 hover:text-indigo-300 flex items-center space-x-1"
+            className="text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 p-1 cursor-pointer"
+            title="Open RESQ Copilot"
           >
             <Bot className="w-3.5 h-3.5" />
-            <span>AI Copilot</span>
+            <span className="hidden sm:inline">AI Copilot</span>
           </button>
         </div>
 

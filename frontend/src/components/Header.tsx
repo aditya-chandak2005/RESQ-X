@@ -522,10 +522,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* =================================================================== */}
       {/* 3. SECONDARY ROW: Contextual Toolbar (Map Styles, Active Pins)      */}
       {/* =================================================================== */}
-      <div className="px-3 sm:px-4 py-1.5 bg-[#080d18] border-b border-slate-800/70 flex items-center justify-between text-xs font-mono">
+      <div className="px-3 sm:px-4 py-1.5 bg-[#080d18] border-b border-slate-800/70 flex flex-wrap items-center justify-between gap-1 text-xs font-mono">
 
         {/* Left Context: Active Pinned Location Intel OR Incident Sub-context */}
-        <div className="flex items-center space-x-2 min-w-0">
+        <div className="flex items-center space-x-2 min-w-0 max-w-full">
           {currentAssessment ? (
             /* Active Location Inspection Intel Pill */
             <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-[#071324] border border-cyan-500/60 shadow-sm text-xs shrink min-w-0">
@@ -566,20 +566,20 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             /* Incident Regional Context Banner */
             <div className="flex items-center space-x-2 text-[11px] text-slate-400 truncate">
-              <span className="text-cyan-400/90 font-bold">OPERATIONAL REGION:</span>
+              <span className="text-cyan-400/90 font-bold shrink-0">REGION:</span>
               <span className="text-slate-300 truncate">
                 {activeIncident
                   ? `${activeIncident.state} • ${activeIncident.district} (${activeIncident.name})`
                   : selectedLocation
                     ? `${selectedLocation.name}${selectedLocation.state ? ` • ${selectedLocation.state}` : ''} (Resolved Focus)`
-                    : 'National Geographic Grid (India) • Search a place or select a theater'}
+                    : 'National Geographic Grid • Search or select theater'}
               </span>
             </div>
           )}
         </div>
 
         {/* Right Tools: Map Style Selector & Telemetry Toggle */}
-        <div className="flex items-center space-x-1.5 shrink-0">
+        <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0 ml-auto">
 
           {/* Map Display Mode Selector (Satellite / Dark Mode / Terrain) */}
           <div ref={basemapMenuRef} className="relative shrink-0">
@@ -603,7 +603,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {currentId === 'satellite' && <Globe className="w-3 h-3 text-cyan-400 shrink-0" />}
                   {currentId === 'terrain' && <Mountain className="w-3 h-3 text-emerald-400 shrink-0" />}
                   {currentId === 'dark' && <Moon className="w-3 h-3 text-amber-300 shrink-0" />}
-                  <span className="font-semibold">
+                  <span className="font-semibold hidden sm:inline">
                     {currentId === 'satellite' ? 'Satellite' : currentId === 'terrain' ? 'Terrain' : 'Dark Mode'}
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showBasemapMenu ? 'rotate-180 text-cyan-400' : ''}`} />

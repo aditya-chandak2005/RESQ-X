@@ -66,40 +66,40 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
   return (
     <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-hidden select-none font-sans text-slate-100">
       {/* Workspace Top Toolbar */}
-      <div className="h-14 px-6 border-b border-slate-800/80 bg-[#0a0f1d] flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400">
+      <div className="min-h-[56px] px-3 sm:px-6 py-2 border-b border-slate-800/80 bg-[#0a0f1d] flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shrink-0">
             <FileText className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-sm font-bold font-mono tracking-wider text-white">
+            <div className="flex items-center space-x-2 flex-wrap">
+              <h1 className="text-xs sm:text-sm font-bold font-mono tracking-wider text-white">
                 GOVERNMENT SITUATION INTELLIGENCE (SITREP)
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+              <span className="text-[9px] sm:text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 hidden xs:inline-block">
                 NDMA / SDMA FORMAT
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block">
               Authoritative disaster situation report, Copernicus EMS benchmark & publication-grade PDF
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Version Selector */}
           <select
             value={activeVersion}
             onChange={(e) => setActiveVersion(e.target.value)}
-            className="bg-[#0e1629] border border-slate-700/80 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+            className="bg-[#0e1629] border border-slate-700/80 rounded px-2 py-1 text-[11px] sm:text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
           >
-            <option value="SITREP-01 (Current Operational)">SITREP #01 — Operational (Current)</option>
-            <option value="SITREP-00 (Preliminary Flash)">SITREP #00 — Preliminary Flash (T+2h)</option>
+            <option value="SITREP-01 (Current Operational)">SITREP #01 — Operational</option>
+            <option value="SITREP-00 (Preliminary Flash)">SITREP #00 — Preliminary Flash</option>
           </select>
 
           <button
             onClick={fetchReport}
-            className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs flex items-center space-x-1 transition-all"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs flex items-center justify-center transition-all"
             title="Refresh Report Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -107,27 +107,27 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
 
           <button
             onClick={() => window.print()}
-            className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs flex items-center space-x-1.5 transition-all"
+            className="px-2.5 sm:px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs flex items-center space-x-1.5 transition-all"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print View</span>
+            <span className="hidden sm:inline">Print View</span>
           </button>
 
           <button
             onClick={handleDownloadPdf}
             disabled={pdfGenerating}
-            className="px-3.5 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold flex items-center space-x-1.5 shadow-md transition-all border border-cyan-400/40"
+            className="px-2.5 sm:px-3.5 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold flex items-center space-x-1.5 shadow-md transition-all border border-cyan-400/40"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{pdfGenerating ? 'Generating PDF...' : 'Export Official PDF'}</span>
+            <span>{pdfGenerating ? 'Generating...' : 'Export PDF'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Content: Left Metadata Drawer + Right Printable SITREP Document Preview */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Control & Summary Panel */}
-        <div className="w-80 border-r border-slate-800/80 bg-[#0a0f1d] flex flex-col p-4 space-y-4 overflow-y-auto custom-scrollbar shrink-0 text-xs">
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0a0f1d] flex flex-col p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[30vh] lg:max-h-none overflow-y-auto custom-scrollbar shrink-0 text-xs">
           <div className="space-y-1">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
               Report Provenance
@@ -219,8 +219,8 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
         </div>
 
         {/* Right SITREP Document Preview (Clean White / Official Paper Stylized on Dark Canvas) */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex justify-center bg-[#070b14]">
-          <div className="w-full max-w-4xl bg-[#0a0f1d] border border-slate-800 rounded-xl shadow-2xl p-8 space-y-6 text-slate-200 text-xs font-sans">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 flex justify-center bg-[#070b14]">
+          <div className="w-full max-w-4xl bg-[#0a0f1d] border border-slate-800 rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 text-slate-200 text-xs font-sans">
             {loading ? (
               <div className="py-24 text-center space-y-3 font-mono text-cyan-400">
                 <RefreshCw className="w-8 h-8 animate-spin mx-auto text-cyan-500" />
@@ -229,26 +229,26 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
             ) : report ? (
               <>
                 {/* Document Official Header */}
-                <div className="border-b-2 border-slate-700 pb-5 flex justify-between items-start">
+                <div className="border-b-2 border-slate-700 pb-5 flex flex-col sm:flex-row justify-between items-start gap-4">
                   <div>
                     <div className="flex items-center space-x-2 text-cyan-400 font-mono font-bold text-xs tracking-wider uppercase">
                       <span>NATIONAL DISASTER RESPONSE FORCE & DISTRICT MAGISTRATE</span>
                     </div>
-                    <h1 className="text-xl font-extrabold font-mono text-white mt-1">
+                    <h1 className="text-lg sm:text-xl font-extrabold font-mono text-white mt-1">
                       DISASTER SITUATION INTELLIGENCE REPORT (SITREP)
                     </h1>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
                       Incident: <span className="text-slate-200 font-bold">{report.incident?.name}</span> | Type:{' '}
                       <span className="text-slate-200">{report.incident?.type?.toUpperCase()}</span> | Sector:{' '}
                       <span className="text-slate-200">Chamoli Basin, Uttarakhand</span>
                     </p>
                   </div>
-                  <div className="text-right font-mono text-[11px] space-y-1">
+                  <div className="sm:text-right font-mono text-[11px] space-y-1 shrink-0">
                     <div className="px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-700 font-bold inline-block">
                       OPERATIONAL LEVEL 3
                     </div>
                     <div className="text-slate-300 font-bold mt-1">{report.report_id}</div>
-                    <div className="text-slate-400">
+                    <div className="text-slate-400 text-[10px] sm:text-[11px]">
                       Generated: {new Date(report.generated_at).toLocaleString()}
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
                 </div>
 
                 {/* Section 2: Key Operational Metrics Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 font-mono">
                   <div className="p-3 rounded-lg bg-[#0e1629] border border-slate-800">
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Flooded Extent</span>
                     <span className="text-lg font-extrabold text-cyan-400 mt-0.5 block">
@@ -368,8 +368,8 @@ export const ReportsIntelligenceView: React.FC<ReportsIntelligenceViewProps> = (
                   <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-cyan-400 border-b border-slate-800 pb-1">
                     4. Cut-Off Settlements & Multi-Criteria Rescue Priority Ranking
                   </h3>
-                  <div className="border border-slate-800 rounded-lg overflow-hidden">
-                    <table className="w-full text-left font-mono text-[11px]">
+                  <div className="border border-slate-800 rounded-lg overflow-x-auto">
+                    <table className="w-full text-left font-mono text-[11px] min-w-[500px]">
                       <thead className="bg-[#0e1629] text-slate-400 border-b border-slate-800">
                         <tr>
                           <th className="p-2.5">Rank</th>

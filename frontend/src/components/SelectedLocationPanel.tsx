@@ -74,14 +74,28 @@ export const SelectedLocationPanel: React.FC<SelectedLocationPanelProps> = ({
   const [showEventSelector, setShowEventSelector] = useState(false);
   const [showNoGeometryNotice, setShowNoGeometryNotice] = useState(false);
 
+  // Responsive mobile bottom-sheet vs desktop floating window state
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Floating window draggable position state (relative to map canvas container)
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 20, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Handle drag initiation from header
+  // Handle drag initiation from header (desktop only)
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
     // Prevent dragging when clicking buttons, links, or inputs
     if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [role="button"]')) {
       return;
@@ -191,29 +205,53 @@ export const SelectedLocationPanel: React.FC<SelectedLocationPanelProps> = ({
   return (
     <div
       ref={panelRef}
-      className={`absolute z-[400] w-[400px] max-w-[calc(100vw-2rem)] rounded-2xl bg-[#090e1a]/95 backdrop-blur-xl border border-cyan-500/40 shadow-2xl transition-shadow font-sans flex flex-col text-slate-100 ${
-        isMinimized ? 'h-auto overflow-hidden' : 'max-h-[calc(100%-2rem)]'
+      className={`fixed md:absolute z-[1200] md:z-[400] w-full md:w-[400px] max-w-full md:max-w-[calc(100vw-2rem)] inset-x-0 md:inset-x-auto bottom-0 md:bottom-auto rounded-t-2xl md:rounded-2xl bg-[#090e1a]/95 backdrop-blur-xl border-t md:border border-cyan-500/40 shadow-2xl transition-all duration-300 font-sans flex flex-col text-slate-100 ${
+        isMinimized
+          ? 'h-auto max-h-[72px] overflow-hidden'
+          : 'max-h-[75vh] md:max-h-[calc(100%-2rem)] h-auto overflow-hidden'
       }`}
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        boxShadow: isDragging
-          ? '0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 30px 2px rgba(6, 182, 212, 0.3)'
-          : '0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(6, 182, 212, 0.15)',
-        cursor: isDragging ? 'grabbing' : 'default',
-      }}
+      style={
+        isMobile
+          ? {
+              bottom: 0,
+              left: 0,
+              right: 0,
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(6, 182, 212, 0.2)',
+            }
+          : {
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              boxShadow: isDragging
+                ? '0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 30px 2px rgba(6, 182, 212, 0.3)'
+                : '0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(6, 182, 212, 0.15)',
+              cursor: isDragging ? 'grabbing' : 'default',
+            }
+      }
     >
+      {/* Mobile Drawer Touch Handle Pill */}
+      {isMobile && (
+        <div
+          onClick={() => setIsMinimized(!isMinimized)}
+          className="w-full flex items-center justify-center pt-2 pb-1 cursor-pointer touch-none bg-slate-900/90 rounded-t-2xl border-b border-slate-800/60"
+          title={isMinimized ? 'Tap to expand location intelligence panel' : 'Tap to collapse panel'}
+        >
+          <div className="w-10 h-1 bg-slate-500 rounded-full hover:bg-cyan-400 transition-colors" />
+        </div>
+      )}
+
       {/* 1. Floating Window Header with Drag Handle */}
       <div
         onMouseDown={handleMouseDown}
-        className="p-3 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-900/90 via-slate-900/80 to-cyan-950/40 rounded-t-2xl shrink-0 cursor-grab active:cursor-grabbing select-none"
-        title="Click and drag anywhere on this header to move the window"
+        className="p-3 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-slate-900/90 via-slate-900/80 to-cyan-950/40 md:rounded-t-2xl shrink-0 cursor-grab active:cursor-grabbing select-none"
+        title={isMobile ? undefined : "Click and drag anywhere on this header to move the window"}
       >
         <div className="flex items-center space-x-2 min-w-0 pr-1">
-          {/* Visual Grip Handle */}
-          <div className="text-slate-500 hover:text-cyan-400 shrink-0 cursor-grab active:cursor-grabbing mr-0.5">
-            <GripHorizontal className="w-4 h-4" />
-          </div>
+          {/* Visual Grip Handle (Desktop only) */}
+          {!isMobile && (
+            <div className="text-slate-500 hover:text-cyan-400 shrink-0 cursor-grab active:cursor-grabbing mr-0.5">
+              <GripHorizontal className="w-4 h-4" />
+            </div>
+          )}
 
           <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
             <MapPin className="w-3.5 h-3.5 text-cyan-400" />

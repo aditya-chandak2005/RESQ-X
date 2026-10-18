@@ -136,7 +136,7 @@ export const OperationalSettingsModal: React.FC<OperationalSettingsModalProps> =
             <Globe className="w-3.5 h-3.5" />
             <span>Map Preferences & Cartography</span>
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => onSelectBasemap('satellite')}
@@ -305,7 +305,7 @@ export const OperationalSettingsModal: React.FC<OperationalSettingsModalProps> =
             <span>Telemetry Ingestion & Sync Frequency</span>
           </label>
 
-          <div className="grid grid-cols-4 gap-1.5 font-mono">
+          <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 font-mono">
             {(['15s', '30s', '60s', 'manual'] as const).map((mode) => (
               <button
                 key={mode}

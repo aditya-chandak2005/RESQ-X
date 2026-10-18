@@ -138,15 +138,15 @@ export const RescueOperationsView: React.FC<RescueOperationsViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-y-auto custom-scrollbar p-6 space-y-6 font-sans select-none text-slate-100">
+    <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 font-sans select-none text-slate-100">
       
       {/* 1. Header & Operational Sub-Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div>
           <div className="flex items-center space-x-2">
-            <Compass className="w-5 h-5 text-emerald-400" />
-            <h1 className="text-xl font-bold font-mono text-white">RESCUE OPERATIONS & DYNAMIC ROUTING</h1>
-            <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+            <Compass className="w-5 h-5 text-emerald-400 shrink-0" />
+            <h1 className="text-base sm:text-xl font-bold font-mono text-white">RESCUE OPERATIONS & DYNAMIC ROUTING</h1>
+            <span className="text-[10px] uppercase font-bold font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0">
               AREA 4
             </span>
           </div>
@@ -156,10 +156,10 @@ export const RescueOperationsView: React.FC<RescueOperationsViewProps> = ({
         </div>
 
         {/* Workspace Tab Switcher */}
-        <div className="flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
+        <div className="flex flex-wrap items-center p-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono gap-1 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('priorities')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               activeTab === 'priorities' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -167,7 +167,7 @@ export const RescueOperationsView: React.FC<RescueOperationsViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('rerouting')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               activeTab === 'rerouting' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -175,7 +175,7 @@ export const RescueOperationsView: React.FC<RescueOperationsViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('resources')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               activeTab === 'resources' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -183,7 +183,7 @@ export const RescueOperationsView: React.FC<RescueOperationsViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('field')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               activeTab === 'field' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >

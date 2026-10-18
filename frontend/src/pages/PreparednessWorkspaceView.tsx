@@ -124,32 +124,32 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
   return (
     <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-hidden select-none font-sans text-slate-100">
       {/* 1. Header Toolbar */}
-      <div className="h-14 px-6 border-b border-slate-800/80 bg-[#0a0f1d] flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-950/80 border border-purple-500/50 flex items-center justify-center text-purple-400">
+      <div className="min-h-[56px] px-3 sm:px-6 py-2 border-b border-slate-800/80 bg-[#0a0f1d] flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-purple-950/80 border border-purple-500/50 flex items-center justify-center text-purple-400 shrink-0">
             <SlidersHorizontal className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-sm font-bold font-mono tracking-wider text-white">
+            <div className="flex items-center space-x-2 flex-wrap">
+              <h1 className="text-xs sm:text-sm font-bold font-mono tracking-wider text-white">
                 PRE-DISASTER SUSCEPTIBILITY & HAZARD ATLAS
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+              <span className="text-[9px] sm:text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 hidden xs:inline-block">
                 BEFORE DISASTER PLANNING
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block">
               Copernicus 30m DEM gradient analysis, drainage accumulation & hydrodynamic flow simulation
             </p>
           </div>
         </div>
 
         {/* Workspace Mode Tabs */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <div className="bg-[#0e1629] border border-slate-800 rounded-lg p-0.5 flex space-x-1">
             <button
               onClick={() => setActiveSubTab('atlas')}
-              className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+              className={`px-2.5 sm:px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
                 activeSubTab === 'atlas'
                   ? 'bg-purple-900/60 text-purple-200 border border-purple-600/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -159,7 +159,7 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
             </button>
             <button
               onClick={() => setActiveSubTab('simulation')}
-              className={`px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
+              className={`px-2.5 sm:px-3 py-1 rounded text-xs font-mono font-semibold transition-all ${
                 activeSubTab === 'simulation'
                   ? 'bg-purple-900/60 text-purple-200 border border-purple-600/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -171,18 +171,19 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
 
           <button
             onClick={() => onNavigateTab && onNavigateTab('command')}
-            className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs flex items-center space-x-1.5"
+            className="px-2.5 sm:px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs flex items-center space-x-1.5"
           >
-            <span>Command Center</span>
+            <span className="hidden sm:inline">Command Center</span>
+            <span className="sm:hidden">Exit</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {/* 2. Top Banner: Epistemic & Scientific Scope Warning */}
-      <div className="px-6 py-2.5 bg-[#0a0f1d]/90 border-b border-slate-800/80 flex items-start space-x-3 text-xs shrink-0">
+      <div className="px-3 sm:px-6 py-2 bg-[#0a0f1d]/90 border-b border-slate-800/80 flex items-start space-x-2.5 sm:space-x-3 text-xs shrink-0">
         <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-        <p className="text-slate-300 text-[11px] leading-relaxed">
+        <p className="text-slate-300 text-[10px] sm:text-[11px] leading-relaxed">
           <strong className="text-cyan-300 font-mono">SCIENTIFIC SCOPE: </strong>
           This workspace evaluates physical terrain susceptibility, drainage concentration corridors, and steep slope stability based on the Copernicus DEM 30m. It classifies
           vulnerability based on stationary topological metrics. It does <strong>NOT</strong> forecast the exact date, time, or temporal occurrence of disasters without verified real-time stream gauge and rainfall inputs.
@@ -190,11 +191,11 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
       </div>
 
       {/* 3. Main Workspace Container */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-4 sm:space-y-6">
         {activeSubTab === 'atlas' && (
-          <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto">
             {/* Filter & Summary Bar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#0a0f1d] border border-slate-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-[#0a0f1d] border border-slate-800">
               <div className="space-y-1">
                 <h3 className="font-mono font-bold text-sm text-white flex items-center space-x-2">
                   <Mountain className="w-4 h-4 text-purple-400" />
@@ -206,7 +207,7 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
               </div>
 
               {/* Tier Filter Pills */}
-              <div className="flex items-center space-x-1.5 bg-[#0e1629] p-1 rounded-lg border border-slate-800 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-1 bg-[#0e1629] p-1 rounded-lg border border-slate-800 text-xs font-mono">
                 <button
                   onClick={() => setSelectedTierFilter('all')}
                   className={`px-2.5 py-1 rounded transition-all ${
@@ -393,15 +394,15 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
               </div>
 
               {/* Coordinates Input and Action Button */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
-                <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-slate-800/80">
+                <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
                   <div className="flex items-center space-x-2">
                     <span className="text-slate-400">Origin Lat:</span>
                     <input
                       type="text"
                       value={upstreamLat}
                       onChange={(e) => setUpstreamLat(e.target.value)}
-                      className="w-28 bg-[#0e1629] border border-slate-700 rounded px-2.5 py-1 text-white font-mono outline-none focus:border-cyan-500"
+                      className="w-24 sm:w-28 bg-[#0e1629] border border-slate-700 rounded px-2.5 py-1 text-white font-mono outline-none focus:border-cyan-500"
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -410,7 +411,7 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
                       type="text"
                       value={upstreamLon}
                       onChange={(e) => setUpstreamLon(e.target.value)}
-                      className="w-28 bg-[#0e1629] border border-slate-700 rounded px-2.5 py-1 text-white font-mono outline-none focus:border-cyan-500"
+                      className="w-24 sm:w-28 bg-[#0e1629] border border-slate-700 rounded px-2.5 py-1 text-white font-mono outline-none focus:border-cyan-500"
                     />
                   </div>
                 </div>
@@ -418,7 +419,7 @@ export const PreparednessWorkspaceView: React.FC<PreparednessWorkspaceViewProps>
                 <button
                   onClick={handleRunSimulation}
                   disabled={simulating}
-                  className="px-5 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-mono text-xs font-extrabold uppercase tracking-wide flex items-center space-x-2 shadow-md transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-4 sm:px-5 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-mono text-xs font-extrabold uppercase tracking-wide flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-slate-950" />
                   <span>{simulating ? 'Tracing D8 Flow Paths...' : 'Trace Downstream Corridor'}</span>

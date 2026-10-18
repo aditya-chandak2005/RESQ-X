@@ -411,32 +411,32 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-[#070b14] overflow-hidden select-none font-sans text-slate-100">
       {/* 1. Header & Navigation Context */}
-      <div className="h-14 px-6 border-b border-slate-800/80 bg-[#0a0f1d] flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400">
+      <div className="min-h-[56px] px-3 sm:px-6 py-2 border-b border-slate-800/80 bg-[#0a0f1d] flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shrink-0">
             <Search className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-sm font-bold font-mono tracking-wider text-white">
+            <div className="flex items-center space-x-2 flex-wrap">
+              <h1 className="text-xs sm:text-sm font-bold font-mono tracking-wider text-white">
                 EXPLORE DISASTERS & HISTORICAL ARCHIVE
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+              <span className="text-[9px] sm:text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hidden xs:inline-block">
                 ASSAM HISTORICAL SEARCH
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block">
               Discover verified historical flood records, river spates & Sentinel satellite imagery by place name
             </p>
           </div>
         </div>
 
         {/* View Switchers & Clear */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <div className="bg-[#0e1629] p-0.5 rounded-lg border border-slate-800 flex items-center space-x-1 text-xs font-mono">
             <button
               onClick={() => setViewMode('split')}
-              className={`px-3 py-1 rounded transition-all ${
+              className={`px-2.5 sm:px-3 py-1 rounded transition-all ${
                 viewMode === 'split' ? 'bg-cyan-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -444,7 +444,7 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
             </button>
             <button
               onClick={() => setViewMode('list_only')}
-              className={`px-3 py-1 rounded transition-all ${
+              className={`px-2.5 sm:px-3 py-1 rounded transition-all ${
                 viewMode === 'list_only' ? 'bg-cyan-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -454,17 +454,17 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
 
           <button
             onClick={handleClearFilters}
-            className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs transition-all"
+            className="px-2.5 sm:px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono text-xs transition-all"
           >
-            Clear Filters
+            Clear
           </button>
         </div>
       </div>
 
       {/* 2. Top Filter Ribbon: Place Search & Hazard Selectors */}
-      <div className="px-6 py-3.5 bg-[#0a0f1d] border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 bg-[#0a0f1d] border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 text-xs shrink-0">
         {/* Prominent Search Input with Auto-Resolution */}
-        <div className="relative flex-1 min-w-[280px] max-w-md">
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] max-w-full sm:max-w-md">
           <div className="relative flex items-center">
             <Search className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
             <input
@@ -477,8 +477,8 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
                   executeSearch(1);
                 }
               }}
-              placeholder="Search Assam place, district, river (e.g. Silchar, Barak, Kopili)..."
-              className="w-full pl-9 pr-8 py-2 rounded-lg bg-[#0e1629] border border-slate-700/80 text-white placeholder-slate-400 font-mono text-xs focus:border-cyan-400 focus:outline-none transition-all"
+              placeholder="Search Assam place, district, river..."
+              className="w-full pl-9 pr-8 py-1.5 sm:py-2 rounded-lg bg-[#0e1629] border border-slate-700/80 text-white placeholder-slate-400 font-mono text-xs focus:border-cyan-400 focus:outline-none transition-all"
             />
             {query && (
               <button
@@ -520,15 +520,15 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
         </div>
 
         {/* State / Administrative Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 font-mono text-[11px]">Region:</span>
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <span className="text-slate-400 font-mono text-[11px] hidden xs:inline">Region:</span>
           <select
             value={selectedState}
             onChange={(e) => {
               setSelectedState(e.target.value);
               setSelectedDistrict('all');
             }}
-            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[240px]"
+            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[180px] sm:max-w-[240px]"
           >
             <option value="All India">All Indian States (Pan-India)</option>
             <optgroup label="── States of India (28) ──">
@@ -550,12 +550,12 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
 
         {/* District Selector (State Specific if curated districts available) */}
         {STATE_DISTRICTS[selectedState] && (
-          <div className="flex items-center space-x-2">
-            <span className="text-slate-400 font-mono text-[11px]">District:</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <span className="text-slate-400 font-mono text-[11px] hidden xs:inline">District:</span>
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[200px]"
+              className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500 max-w-[150px] sm:max-w-[200px]"
             >
               {STATE_DISTRICTS[selectedState].map((d) => (
                 <option key={d} value={d.startsWith('All ') ? 'all' : d}>
@@ -567,12 +567,12 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
         )}
 
         {/* Hazard Type Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 font-mono text-[11px]">Hazard:</span>
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <span className="text-slate-400 font-mono text-[11px] hidden xs:inline">Hazard:</span>
           <select
             value={hazardType}
             onChange={(e) => setHazardType(e.target.value)}
-            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
+            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
           >
             {HAZARD_TYPES.map((h) => (
               <option key={h.id} value={h.id}>
@@ -583,12 +583,12 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
         </div>
 
         {/* Status Filter: Active / Historical / All */}
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 font-mono text-[11px]">Status:</span>
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <span className="text-slate-400 font-mono text-[11px] hidden xs:inline">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
+            className="bg-[#0e1629] border border-slate-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-slate-200 font-mono text-xs outline-none focus:border-cyan-500"
           >
             <option value="all">All Incidents</option>
             <option value="active">Active Operational</option>
@@ -600,32 +600,32 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
         {/* Search Action Trigger */}
         <button
           onClick={() => executeSearch(1)}
-          className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
+          className="px-3 sm:px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
         >
-          {loading ? 'Searching...' : 'Search Archive'}
+          {loading ? 'Searching...' : 'Search'}
         </button>
       </div>
 
       {/* 3. Year Timeline Bar & Honest Data Coverage Notice */}
-      <div className="px-6 py-2 bg-[#0a0f1d]/70 border-b border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 font-mono shrink-0">
-        <div className="flex items-center space-x-3">
-          <span className="text-slate-300 font-bold">TEMPORAL COVERAGE:</span>
-          <span>All Connected Years ({searchResults ? Object.keys(searchResults.year_distribution).sort().join(', ') : '2020 – 2026'})</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400 italic">
-            Coverage reflects verified records in connected sources, not exhaustive meteorological history.
+      <div className="px-3 sm:px-6 py-1.5 sm:py-2 bg-[#0a0f1d]/70 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-1.5 text-[10px] sm:text-[11px] text-slate-400 font-mono shrink-0">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+          <span className="text-slate-300 font-bold">COVERAGE:</span>
+          <span>({searchResults ? Object.keys(searchResults.year_distribution).sort().join(', ') : '2020 – 2026'})</span>
+          <span className="text-slate-600 hidden sm:inline">|</span>
+          <span className="text-slate-400 italic hidden sm:inline">
+            Verified records in connected sources, not exhaustive meteorological history.
           </span>
         </div>
 
         <div className="flex items-center space-x-2">
-          <span>Results: <strong className="text-cyan-300">{searchResults?.total_count || 0}</strong> records found</span>
+          <span>Results: <strong className="text-cyan-300">{searchResults?.total_count || 0}</strong></span>
         </div>
       </div>
 
       {/* 4. Main Body: Split View (Left Results List + Right Detail & GIS Preview) */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Column: Disaster Records List */}
-        <div className="w-[420px] border-r border-slate-800/80 bg-[#0a0f1d] flex flex-col justify-between shrink-0 overflow-hidden">
+        <div className={`${viewMode === 'list_only' ? 'w-full' : 'w-full lg:w-[360px] xl:w-[420px] shrink-0'} border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0a0f1d] flex flex-col justify-between overflow-hidden ${selectedIncident && viewMode === 'split' ? 'max-h-[35vh] lg:max-h-none' : 'flex-1'}`}>
           <div className="p-3 border-b border-slate-800/60 bg-[#0e1629] flex items-center justify-between text-xs font-mono">
             <span className="text-slate-400 uppercase font-bold text-[10px]">
               INCIDENT ARCHIVE ({searchResults?.total_count || 0})
@@ -732,7 +732,7 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
         </div>
 
         {/* Right Column: Detailed Incident Inspection, Evidence & Launch Pad */}
-        <div className="flex-1 flex flex-col bg-[#070b14] overflow-y-auto custom-scrollbar p-6 space-y-6">
+        <div className={`${viewMode === 'list_only' ? 'hidden' : 'flex-1 flex flex-col'} bg-[#070b14] overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-4 sm:space-y-6`}>
           {selectedIncident ? (
             <div className="space-y-6 max-w-4xl">
               {/* Incident Header & Launch Actions */}

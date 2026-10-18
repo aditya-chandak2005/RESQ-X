@@ -230,24 +230,24 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="max-w-2xl"
-      className="bg-[#0b1222] border border-cyan-500/50 h-[85vh] max-h-[680px] flex flex-col justify-between"
+      className="bg-[#0b1222] border border-cyan-500/50 h-[92vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[680px] flex flex-col justify-between"
     >
       {/* Header */}
-      <div className="px-5 py-3 border-b border-command-border flex items-center justify-between bg-command-panel shrink-0">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-hud">
-            <Bot className="w-5 h-5" />
+      <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-command-border flex items-center justify-between bg-command-panel shrink-0 gap-2">
+        <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-hud shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="flex items-center space-x-1.5">
-              <span className="font-mono font-extrabold text-sm text-slate-100">RESQ COPILOT</span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5 flex-wrap">
+              <span className="font-mono font-extrabold text-xs sm:text-sm text-slate-100">RESQ COPILOT</span>
+              <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 hidden xs:inline-block">
                 GROUNDED AI
               </span>
               {/* Search Mode Pill */}
               <button
                 onClick={handleToggleMode}
-                className={`text-[9px] uppercase font-mono px-2 py-0.5 rounded border transition-colors flex items-center space-x-1 cursor-pointer ${
+                className={`text-[9px] uppercase font-mono px-1.5 sm:px-2 py-0.5 rounded border transition-colors flex items-center space-x-1 cursor-pointer ${
                   searchMode === 'selected_location'
                     ? 'bg-cyan-950/80 text-cyan-300 border-cyan-600/70 hover:bg-cyan-900'
                     : 'bg-purple-950/80 text-purple-300 border-purple-600/70 hover:bg-purple-900'
@@ -257,37 +257,37 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
                 {searchMode === 'selected_location' ? (
                   <>
                     <MapPin className="w-2.5 h-2.5" />
-                    <span>LOCATION MODE</span>
+                    <span>LOCATION</span>
                   </>
                 ) : (
                   <>
                     <Globe className="w-2.5 h-2.5" />
-                    <span>GLOBAL MODE</span>
+                    <span>GLOBAL</span>
                   </>
                 )}
               </button>
             </div>
 
             {/* Active Location / Scope Indicator */}
-            <div className="flex items-center space-x-1.5 mt-0.5">
+            <div className="flex items-center space-x-1.5 mt-0.5 min-w-0">
               {locationName ? (
-                <div className="flex items-center space-x-1 text-[10px] font-mono bg-cyan-950/40 border border-cyan-800/60 px-1.5 py-0.5 rounded text-cyan-200">
+                <div className="flex items-center space-x-1 text-[10px] font-mono bg-cyan-950/40 border border-cyan-800/60 px-1.5 py-0.5 rounded text-cyan-200 min-w-0 max-w-full">
                   <MapPin className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
-                  <span className="truncate max-w-[200px]">{locationName}</span>
+                  <span className="truncate max-w-[120px] sm:max-w-[200px]">{locationName}</span>
                   <button
                     onClick={handleClearLocationContext}
-                    className="hover:text-red-300 text-slate-400 ml-1 p-0.5 cursor-pointer"
+                    className="hover:text-red-300 text-slate-400 ml-1 p-0.5 cursor-pointer shrink-0"
                     title="Remove location scope (Switch to Global Search)"
                   >
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </div>
               ) : activeIncident ? (
-                <p className="text-[10px] text-slate-400 font-mono">
+                <p className="text-[10px] text-slate-400 font-mono truncate max-w-[160px] sm:max-w-none">
                   Incident: <span className="text-cyan-300 font-bold">{incidentTitle}</span>
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-400 font-mono">
+                <p className="text-[10px] text-slate-400 font-mono hidden xs:block">
                   Scope: <span className="text-purple-300 font-bold">Pan-India Disaster Intelligence</span>
                 </p>
               )}
@@ -295,21 +295,22 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           {/* Situation Report Export Button */}
           <button
             onClick={() => window.open(api.getSituationReportPdfUrl(selectedIncidentId || 1), '_blank')}
-            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white text-[10px] font-mono flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
+            className="px-1.5 sm:px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white text-[10px] font-mono flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
             title="Download Official Situation Report (SITREP)"
           >
             <FileText className="w-3 h-3 text-cyan-400" />
             <span className="hidden sm:inline">SITREP PDF</span>
+            <span className="sm:hidden text-[9px]">PDF</span>
           </button>
 
           {onReturnToMap && (
             <button
               onClick={onReturnToMap}
-              className="px-2 py-1 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 hover:text-white text-[10px] font-mono flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
+              className="px-1.5 sm:px-2 py-1 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 hover:text-white text-[10px] font-mono flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
               title="Return to Map with selected location"
             >
               <ArrowLeft className="w-3 h-3" />
