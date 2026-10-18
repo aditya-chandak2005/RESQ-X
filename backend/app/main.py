@@ -5,12 +5,19 @@ import uvicorn
 
 from backend.app.core.config import settings
 from backend.app.db.init_db import init_database
-from backend.app.api.endpoints import disasters, missions, intelligence, operations, incidents, geocoding
+from backend.app.db.session import SessionLocal
+from backend.app.api.endpoints import disasters, missions, intelligence, operations, incidents, geocoding, ingestion
+from backend.app.services.ingestion.source_registry import SourceStatusRegistry
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize DB tables and baseline testbed data on startup
     init_database()
+    db = SessionLocal()
+    try:
+        SourceStatusRegistry.initialize_registry(db)
+    finally:
+        db.close()
     yield
 
 app = FastAPI(
@@ -50,6 +57,7 @@ app.include_router(intelligence.router, prefix=f"{settings.API_V1_STR}/intellige
 app.include_router(operations.router, prefix=f"{settings.API_V1_STR}", tags=["Operations & Reports"])
 app.include_router(incidents.router, prefix=f"{settings.API_V1_STR}", tags=["Historical Incidents & Archive"])
 app.include_router(geocoding.router, prefix=f"{settings.API_V1_STR}", tags=["Geocoding & Places"])
+app.include_router(ingestion.router, prefix=f"{settings.API_V1_STR}/ingestion", tags=["Data Ingestion & Real-Time Alerts"])
 
 if __name__ == "__main__":
     uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000, reload=True)

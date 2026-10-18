@@ -262,12 +262,60 @@ class CopilotRetrievalPipeline:
                 "Road network topological cutoffs require on-ground field assessment telemetry."
             )
 
-        # 7. Official Real-Time Emergency Alerts vs Historical Records
+        # 7. Official Real-Time Emergency Alerts (with District/State Spatial Filtering)
         official_alerts: List[OfficialAlert] = []
-        if event_ids:
+        place_terms = list(parsed.place_names)
+        if selected_location:
+            for k in ["district", "state", "name", "label"]:
+                v = selected_location.get(k)
+                if v and v not in place_terms:
+                    place_terms.append(v)
+
+        if place_terms:
+            alert_conditions = []
+            for term in place_terms:
+                t = f"%{term}%"
+                alert_conditions.append(OfficialAlert.district.ilike(t))
+                alert_conditions.append(OfficialAlert.state.ilike(t))
+                alert_conditions.append(OfficialAlert.headline.ilike(t))
+                alert_conditions.append(OfficialAlert.area_description.ilike(t))
+            official_alerts = db.query(OfficialAlert).filter(or_(*alert_conditions)).order_by(desc(OfficialAlert.published_at)).all()
+
+        if not official_alerts and event_ids:
             official_alerts = db.query(OfficialAlert).filter(OfficialAlert.disaster_id.in_(event_ids)).order_by(desc(OfficialAlert.published_at)).all()
         if not official_alerts:
             official_alerts = db.query(OfficialAlert).order_by(desc(OfficialAlert.published_at)).all()
+
+        # 8. Geometry Coverage & Completeness Audit
+        all_cataloged_events = db.query(DisasterEvent).all()
+        events_with_geometry = []
+        events_pending_mapping = []
+        for ev in all_cataloged_events:
+            fr_ids = [fr.id for fr in ev.flood_results] if ev.flood_results else []
+            conds = [FloodPolygon.disaster_id == ev.id]
+            if fr_ids:
+                conds.append(FloodPolygon.flood_result_id.in_(fr_ids))
+            poly_count = db.query(FloodPolygon).filter(or_(*conds)).count()
+            ev_summary = {
+                "id": ev.id,
+                "name": ev.name,
+                "state": ev.state,
+                "district": ev.district,
+                "polygon_count": poly_count,
+                "has_geometry": poly_count > 0,
+                "source_org": ev.source_org
+            }
+            if poly_count > 0:
+                events_with_geometry.append(ev_summary)
+            else:
+                events_pending_mapping.append(ev_summary)
+
+        geometry_audit = {
+            "total_events": len(all_cataloged_events),
+            "events_with_confirmed_geometry": events_with_geometry,
+            "events_pending_mapping": events_pending_mapping,
+            "coverage_pct": round((len(events_with_geometry) / max(1, len(all_cataloged_events))) * 100, 1)
+        }
 
         return {
             "primary_event": primary_event,
@@ -281,6 +329,7 @@ class CopilotRetrievalPipeline:
             "floods": floods,
             "priorities": priorities,
             "official_alerts": official_alerts,
+            "geometry_audit": geometry_audit,
             "evidence_breakdown": {
                 "officially_reported_facts": officially_reported_facts,
                 "satellite_observations": satellite_observations,

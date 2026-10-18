@@ -1356,27 +1356,27 @@ class ResqCopilot:
                     "status_color": "text-cyan-400",
                     "generated_at": generated_at,
                     "summary": (
-                        f"Disaster event in {ctx['district']}, {ctx['state']}. "
-                        f"{flood_data['total_flooded_area_sqkm']} km² flooded extent detected via Sentinel-1 SAR. "
-                        f"{conn_data['isolated_count']} settlements cut off (~{conn_data['isolated_population']:,} civilians). "
-                        f"{infra_data['critical_or_destroyed_bridges_count']} bridges impassable."
+                        f"Disaster event in {ctx.get('district', 'District')}, {ctx.get('state', 'State')}. "
+                        f"{flood_data.get('total_flooded_area_sqkm', 0.0)} km² flooded extent detected via Sentinel-1 SAR. "
+                        f"{conn_data.get('isolated_count', 0)} settlements cut off (~{conn_data.get('isolated_population', 0):,} civilians). "
+                        f"{infra_data.get('critical_or_destroyed_bridges_count', 0)} bridges impassable."
                     ),
                     "evidence_breakdown": {
                         "officially_reported_facts": [
-                            f"Incident: {ctx['name']} ({ctx['district']}, {ctx['state']})",
-                            f"Reported Date: {ctx['incident_date']}",
+                            f"Incident: {ctx['name']} ({ctx.get('district', 'District')}, {ctx.get('state', 'State')})",
+                            f"Reported Date: {ctx.get('incident_date', 'Recent')}",
                             f"Authority Verification: {ctx.get('verification_status', 'verified')}"
                         ],
                         "satellite_observations": [
-                            f"Sentinel-1 SAR confirms {flood_data['total_flooded_area_sqkm']} km² inundated extent",
-                            f"Model IoU: {flood_data['validation_iou']} | F1: {flood_data['validation_f1']}"
+                            f"Sentinel-1 SAR confirms {flood_data.get('total_flooded_area_sqkm', 0.0)} km² inundated extent",
+                            f"Model IoU: {flood_data.get('validation_iou', 'N/A')} | F1: {flood_data.get('validation_f1', 'N/A')}"
                         ],
                         "gis_derived_results": [
-                            f"{conn_data['isolated_count']} settlements completely cut off from road network",
-                            f"{infra_data['critical_or_destroyed_bridges_count']} critical bridges damaged or destroyed"
+                            f"{conn_data.get('isolated_count', 0)} settlements completely cut off from road network",
+                            f"{infra_data.get('critical_or_destroyed_bridges_count', 0)} critical bridges damaged or destroyed"
                         ],
                         "model_estimates": [
-                            f"Top priority score: {prio_data['highest_priority']['score'] if prio_data['available'] else 94.5:.1f}/100"
+                            f"Top priority score: {prio_data['highest_priority']['score'] if prio_data.get('available') else 94.5:.1f}/100"
                         ],
                         "unverified_reports": [
                             "Civilians stranded on isolated high terraces require optical drone verification"
@@ -1386,20 +1386,20 @@ class ResqCopilot:
                         ]
                     },
                     "metrics": {
-                        "flooded_area_sqkm": flood_data["total_flooded_area_sqkm"],
-                        "isolated_settlements": conn_data["isolated_count"],
-                        "exposed_population": conn_data["isolated_population"],
-                        "critical_bridges": infra_data["critical_or_destroyed_bridges_count"],
-                        "top_priority_score": prio_data["highest_priority"]["score"] if prio_data["available"] else 94.5
+                        "flooded_area_sqkm": flood_data.get("total_flooded_area_sqkm", 0.0),
+                        "isolated_settlements": conn_data.get("isolated_count", 0),
+                        "exposed_population": conn_data.get("isolated_population", 0),
+                        "critical_bridges": infra_data.get("critical_or_destroyed_bridges_count", 0),
+                        "top_priority_score": prio_data["highest_priority"]["score"] if prio_data.get("available") else 94.5
                     },
                     "key_findings": [
-                        f"Sentinel-1 SAR confirms {flood_data['total_flooded_area_sqkm']} km² active inundation zone.",
-                        f"Top priority target: {prio_data['highest_priority']['settlement_name'] if prio_data['available'] else 'Isolated Sector'} due to road cutoff.",
-                        f"{infra_data['critical_or_destroyed_bridges_count']} critical bridges rendered impassable by flood currents.",
+                        f"Sentinel-1 SAR confirms {flood_data.get('total_flooded_area_sqkm', 0.0)} km² active inundation zone.",
+                        f"Top priority target: {prio_data['highest_priority']['settlement_name'] if prio_data.get('available') else 'Isolated Sector'} due to road cutoff.",
+                        f"{infra_data.get('critical_or_destroyed_bridges_count', 0)} critical bridges rendered impassable by flood currents.",
                         "Alternate emergency vector established via upper ridgeline bypass trail."
                     ],
                     "critical_red_flags": [
-                        f"Zero vehicular road access to {conn_data['isolated_count']} cut-off settlements.",
+                        f"Zero vehicular road access to {conn_data.get('isolated_count', 0)} cut-off settlements.",
                         "Base hospital is unreachable by ground ambulance from the upper gorge.",
                         "Secondary slope failure risk if monsoonal rainfall continues."
                     ],

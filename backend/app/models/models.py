@@ -104,6 +104,9 @@ class FloodPolygon(Base):
     confidence = Column(Float, default=0.85)
     area_sqm = Column(Float, default=0.0)
     geometry_geojson = Column(JSON, nullable=False) # Polygon / MultiPolygon Coordinates
+    provenance_source = Column(String(200), default="Copernicus EMS / Sentinel-1 SAR")
+    processing_status = Column(String(50), default="verified_official") # verified_official, derived_sar_analysis, pending_analysis
+    observed_at = Column(DateTime, nullable=True)
 
     flood_result = relationship("FloodResult", back_populates="polygons")
 
@@ -422,7 +425,7 @@ class OfficialAlert(Base):
     id = Column(Integer, primary_key=True, index=True)
     disaster_id = Column(Integer, ForeignKey("disaster_events.id"), nullable=True, index=True)
     authority = Column(String(100), nullable=False) # NDMA SACHET, IMD, CWC, SDMA
-    alert_level = Column(String(50), default="RED", index=True) # RED, ORANGE, YELLOW
+    alert_level = Column(String(50), default="RED", index=True) # RED, ORANGE, YELLOW, GREEN
     headline = Column(String(300), nullable=False)
     instruction = Column(Text, nullable=False)
     effective_until = Column(DateTime, nullable=True)
@@ -430,6 +433,42 @@ class OfficialAlert(Base):
     verification_status = Column(String(50), default="official_verified")
     published_at = Column(DateTime, default=datetime.datetime.utcnow)
     retrieved_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # CAP standard & administrative metadata
+    cap_identifier = Column(String(150), unique=False, index=True, nullable=True)
+    event_type = Column(String(100), default="Flood", index=True) # Flood, Cyclone, Heavy Rain, Landslide, River Spate
+    category = Column(String(50), default="Met") # Met, Geo, Safety, Rescue
+    urgency = Column(String(50), default="Expected") # Immediate, Expected, Future
+    certainty = Column(String(50), default="Observed") # Observed, Likely, Possible
+    state = Column(String(100), nullable=True, index=True)
+    district = Column(String(100), nullable=True, index=True)
+    area_description = Column(String(300), nullable=True)
+    polygon_geojson = Column(JSON, nullable=True) # Optional CAP polygon / circle bounds
+    center_lat = Column(Float, nullable=True)
+    center_lon = Column(Float, nullable=True)
+    is_active = Column(Boolean, default=True, index=True)
+    raw_cap_payload = Column(JSON, nullable=True)
+
+
+class SourceHealthRecord(Base):
+    __tablename__ = "source_health_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(String(100), unique=True, index=True) # ndma_sachet, imd_warnings, cwc_flood, bhuvan_nrsc, copernicus_ems, sentinel_sar
+    provider_name = Column(String(200), nullable=False)
+    endpoint = Column(String(500), nullable=False)
+    source_type = Column(String(50), default="official_feed") # official_feed, satellite_catalog, river_gauge, geospatial_portal
+    last_successful_retrieval = Column(DateTime, nullable=True)
+    latest_source_timestamp = Column(DateTime, nullable=True)
+    next_scheduled_check = Column(DateTime, nullable=True)
+    availability_status = Column(String(50), default="healthy", index=True) # healthy, degraded, offline, rate_limited
+    last_error = Column(Text, nullable=True)
+    latency_ms = Column(Float, default=0.0)
+    records_ingested_total = Column(Integer, default=0)
+    records_rejected_total = Column(Integer, default=0)
+    coverage_scope = Column(String(255), default="All-India")
+    limitations = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 
 class KnowledgeDocument(Base):
@@ -475,10 +514,14 @@ class IncidentSource(Base):
     disaster = relationship("DisasterEvent", back_populates="sources")
 
 
-# Aliases satisfying Section E model names
+# Aliases satisfying Phase 2 domain concept separation and Section E model names
 DisasterIncident = DisasterEvent
 PriorityAssessment = RescuePriority
 ResourceInventory = Resource
 RescueMission = Mission
 RescueRoute = Route
+HistoricalDisasterEvent = DisasterEvent
+ActiveIncidentAlert = OfficialAlert
+DisasterObservedExtent = FloodPolygon
+BackgroundAnalysisJob = ProcessingJob
 

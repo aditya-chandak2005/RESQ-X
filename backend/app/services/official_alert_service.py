@@ -36,24 +36,7 @@ class OfficialAlertService:
         return alert
 
     def sync_live_alerts(self, db: Session, disaster_id: int) -> int:
-        feed = self.provider.fetch_live_alerts()
-        count = 0
-        for item in feed:
-            exists = db.query(OfficialAlert).filter(OfficialAlert.headline == item["headline"]).first()
-            if not exists:
-                new_alert = OfficialAlert(
-                    disaster_id=disaster_id,
-                    authority=item["authority"],
-                    alert_level=item["alert_level"],
-                    headline=item["headline"],
-                    instruction=item["instruction"],
-                    source_url=item.get("source_url"),
-                    verification_status=item.get("verification_status", "official_verified"),
-                    effective_until=datetime.datetime.utcnow() + datetime.timedelta(hours=24),
-                    published_at=datetime.datetime.utcnow()
-                )
-                db.add(new_alert)
-                count += 1
-        if count > 0:
-            db.commit()
-        return count
+        from backend.app.services.ingestion.pipeline_engine import PipelineEngine
+        engine = PipelineEngine()
+        result = engine.run_ingestion_cycle(db)
+        return result.get("total_new_stored", 0)

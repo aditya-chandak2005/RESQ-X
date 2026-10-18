@@ -31,6 +31,8 @@ import {
   ExternalLink,
   ShieldAlert,
 } from 'lucide-react';
+import { LiveAlertsRibbon } from '../components/LiveAlertsRibbon';
+import { SourceHealthModal } from '../components/SourceHealthModal';
 
 interface CommandCenterViewProps {
   floodResult: FloodResult | null;
@@ -122,12 +124,49 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   resetTrigger,
 }) => {
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
+  const [isSourceHealthModalOpen, setIsSourceHealthModalOpen] = useState(false);
+  const [alertTargetBounds, setAlertTargetBounds] = useState<[[number, number], [number, number]] | null>(null);
+
+  const handleInspectAlert = (alert: any) => {
+    // Zoom/pan map to the alert extent without clearing user's selectedLocation
+    if (alert.polygon_geojson?.coordinates) {
+      const coords = alert.polygon_geojson.coordinates[0];
+      if (Array.isArray(coords) && coords.length > 0) {
+        let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+        coords.forEach((pt: any) => {
+          if (Array.isArray(pt) && pt.length >= 2) {
+            const [lon, lat] = pt;
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lon < minLon) minLon = lon;
+            if (lon > maxLon) maxLon = lon;
+          }
+        });
+        if (minLat < maxLat && minLon < maxLon) {
+          setAlertTargetBounds([[minLat - 0.05, minLon - 0.05], [maxLat + 0.05, maxLon + 0.05]]);
+          return;
+        }
+      }
+    }
+    if (alert.center_lat && alert.center_lon) {
+      setAlertTargetBounds([
+        [alert.center_lat - 0.25, alert.center_lon - 0.25],
+        [alert.center_lat + 0.25, alert.center_lon + 0.25]
+      ]);
+    }
+  };
 
   const isolatedSettlements = settlements.filter((s) => s.is_isolated);
   const criticalBridges = bridges.filter((b) => b.status === 'critical' || b.status === 'destroyed');
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative font-sans">
+      {/* Real-Time Emergency Alerts Banner */}
+      <LiveAlertsRibbon
+        onInspectAlert={handleInspectAlert}
+        onOpenSourceHealth={() => setIsSourceHealthModalOpen(true)}
+      />
+
       {/* 1. Map Operations Canvas */}
       <div className="flex-1 relative flex overflow-hidden">
         {/* The Primary Map */}
@@ -159,7 +198,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             onMapDoubleClick={handleMapClick}
             isInspectMode={isInspectMode}
             highlightedStateName={highlightedStateName}
-            targetBounds={targetBounds}
+            targetBounds={alertTargetBounds || targetBounds}
             historicalFootprintGeoJSON={historicalFootprintGeoJSON}
             historicalPolygons={historicalPolygons}
             onClearHistoricalOverlay={onClearHistoricalOverlay}
@@ -217,10 +256,14 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
         
         {/* Left: Sensor Pipeline & Model Telemetry */}
         <div className="flex items-center space-x-2 sm:space-x-3 text-[11px] truncate mr-2">
-          <div className="flex items-center space-x-1.5 text-cyan-400 shrink-0">
+          <button
+            onClick={() => setIsSourceHealthModalOpen(true)}
+            className="flex items-center space-x-1.5 text-cyan-400 hover:text-cyan-300 transition-colors shrink-0 cursor-pointer"
+            title="Inspect Ingestion Source Health & Job Queues (NDMA, IMD, CWC, Bhuvan, Copernicus)"
+          >
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="font-bold">SAR PIPELINE ACTIVE</span>
-          </div>
+            <span className="font-bold underline decoration-dotted">SOURCES ACTIVE</span>
+          </button>
           <span className="text-slate-600 hidden sm:inline">|</span>
           <span className="text-slate-400 hidden sm:inline truncate">
             Sensor: <strong className="text-slate-200">Sentinel-1 C-SAR</strong>
@@ -269,6 +312,12 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
         </div>
 
       </div>
+
+      {/* Real-Time Source Health & Operational Registry Modal */}
+      <SourceHealthModal
+        isOpen={isSourceHealthModalOpen}
+        onClose={() => setIsSourceHealthModalOpen(false)}
+      />
     </div>
   );
 };

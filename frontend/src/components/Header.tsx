@@ -21,6 +21,7 @@ import {
   Settings,
   Layers,
   Activity,
+  Radio,
 } from 'lucide-react';
 import { DashboardKpis, DisasterEvent, LocationAssessment, BasemapType, GeocodingPlace, HistoricalFloodSummaryResponse } from '../types';
 import { api } from '../services/api';
@@ -31,6 +32,7 @@ import { TelemetryDetailsModal } from './TelemetryDetailsModal';
 import { TheaterSelectorDropdown } from './TheaterSelectorDropdown';
 import { SatelliteBasemapPopover } from './SatelliteBasemapPopover';
 import { MapLayersPanel, TACTICAL_LAYERS } from './MapLayersPanel';
+import { SourceHealthModal } from './SourceHealthModal';
 import { normalizeBasemapId } from '../services/basemapConfig';
 
 interface HeaderProps {
@@ -122,6 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isIntelModalOpen, setIsIntelModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTelemetryModalOpen, setIsTelemetryModalOpen] = useState(false);
+  const [isSourceHealthOpen, setIsSourceHealthOpen] = useState(false);
 
   const incidentDropdownRef = useRef<HTMLDivElement>(null);
   const basemapMenuRef = useRef<HTMLDivElement>(null);
@@ -666,6 +669,17 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-semibold hidden sm:inline">Telemetry</span>
           </button>
 
+          {/* Real-Time Feeds & Source Health Registry Button */}
+          <button
+            type="button"
+            onClick={() => setIsSourceHealthOpen(true)}
+            className="h-7 px-2 rounded-md border border-slate-700/80 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-500/60 text-slate-300 hover:text-white text-[11px] font-medium transition-all flex items-center space-x-1 cursor-pointer shrink-0"
+            title="Data Sources & Feed Health Registry (NDMA SACHET, IMD, CWC, Bhuvan, Copernicus)"
+          >
+            <Radio className="w-3 h-3 text-red-400 animate-pulse shrink-0" />
+            <span className="font-semibold hidden sm:inline">Sources</span>
+          </button>
+
           {/* KPI Metrics Ribbon Toggle */}
           <button
             type="button"
@@ -745,6 +759,12 @@ export const Header: React.FC<HeaderProps> = ({
         kpis={kpis}
         activeIncident={activeIncident}
         onRefreshTelemetry={onRefresh}
+      />
+
+      {/* 7. Real-Time Feeds & Source Health Registry Modal */}
+      <SourceHealthModal
+        isOpen={isSourceHealthOpen}
+        onClose={() => setIsSourceHealthOpen(false)}
       />
     </header>
   );

@@ -563,6 +563,24 @@ class IncidentService:
                     period_label = f"Historical Disaster Archive ({earliest_year}–2026)"
                     y_count = 2026 - earliest_year + 1
 
+        # 5. Spatial coordinate proximity fallback: find events within ~1.2 deg (~130km)
+        if not events and place.get("latitude") and place.get("longitude"):
+            try:
+                p_lat = float(place["latitude"])
+                p_lon = float(place["longitude"])
+                delta = 1.35
+                q_spatial = db.query(DisasterEvent).filter(
+                    DisasterEvent.center_lat >= p_lat - delta,
+                    DisasterEvent.center_lat <= p_lat + delta,
+                    DisasterEvent.center_lon >= p_lon - delta,
+                    DisasterEvent.center_lon <= p_lon + delta
+                )
+                spatial_events = q_spatial.order_by(desc(DisasterEvent.incident_date)).all()
+                if spatial_events:
+                    events = spatial_events
+            except (ValueError, TypeError):
+                pass
+
         total_deaths = 0
         total_displaced = 0
         total_exposed = 0

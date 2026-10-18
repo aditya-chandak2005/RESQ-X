@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { OfficialAlert, NewsItem } from '../types';
+import { SourceHealthModal } from '../components/SourceHealthModal';
 
 export const OfficialAlertsNewsView: React.FC = () => {
   const [alerts, setAlerts] = useState<OfficialAlert[]>([]);
@@ -23,6 +24,7 @@ export const OfficialAlertsNewsView: React.FC = () => {
   const [knowledgeDocs, setKnowledgeDocs] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'alerts' | 'news' | 'rag'>('all');
   const [filterLevel, setFilterLevel] = useState<string>('ALL');
+  const [isSourceHealthOpen, setIsSourceHealthOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   
@@ -109,9 +111,17 @@ export const OfficialAlertsNewsView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setIsSourceHealthOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-command-panel hover:bg-command-hover border border-command-border text-xs font-mono font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            title="Inspect Data Sources, Ingestion Status & Freshness"
+          >
+            <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            <span>Source Registry</span>
+          </button>
+          <button
             onClick={handleSync}
             disabled={syncing}
-            className="px-3 py-1.5 rounded-lg bg-command-panel hover:bg-command-hover border border-command-border text-xs font-mono font-medium text-cyan-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-xs font-mono font-medium text-cyan-300 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
             <span>{syncing ? 'Syncing Feeds...' : 'Sync Live Feeds'}</span>
@@ -428,6 +438,12 @@ export const OfficialAlertsNewsView: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Real-Time Source Health & Ingestion Pipeline Registry Modal */}
+      <SourceHealthModal
+        isOpen={isSourceHealthOpen}
+        onClose={() => setIsSourceHealthOpen(false)}
+      />
     </div>
   );
 };

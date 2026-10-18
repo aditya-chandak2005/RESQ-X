@@ -217,6 +217,10 @@ class CopilotQueryParser:
                 if sel_n.lower() != found_names[0].lower():
                     is_comparison = True
                     comparison_places = [found_names[0], sel_n]
+            elif has_compare_keyword:
+                is_comparison = True
+                p_label = found_names[0] if found_names else (selected_location.get("label") if selected_location else "Assam")
+                comparison_places = [f"{p_label} (Current/Recent)", f"{p_label} (Historical Baseline)"]
 
         # 5. Extract Hazard Type
         detected_hazards = []
@@ -244,18 +248,28 @@ class CopilotQueryParser:
             "active alert", "active warning", "current warning", "current alert",
             "red alert", "orange alert", "yellow alert", "sachet", "warnings vs historical",
             "current vs historical", "distinguish historical", "active emergencies",
-            "active disaster", "live alert"
+            "active disaster", "live alert", "alerts have been issued", "official alerts",
+            "disaster alerts", "recent alerts", "official disaster alerts"
+        ])
+
+        is_geometry_status_query = any(w in q_clean for w in [
+            "confirmed affected-area geometry", "confirmed geometry", "verified geometry",
+            "incomplete mapping", "missing mapping", "pending analysis", "geometry status",
+            "which events have incomplete", "confirmed affected area", "which incidents have confirmed",
+            "confirmed affected extent", "incomplete flood mapping"
         ])
 
         if is_comparison:
             intent = "comparison"
+        elif is_geometry_status_query:
+            intent = "geometry_coverage_audit"
         elif is_active_alert_query:
             intent = "active_alerts_vs_history"
         elif "hospitals_shelters" in metrics_requested or any(w in q_clean for w in ["hospitals near", "shelters near", "near this", "nearby"]):
             intent = "nearby_facilities"
-        elif "roads_bridges" in metrics_requested or "isolated_settlements" in metrics_requested or any(w in q_clean for w in ["cut off", "blocked", "isolated", "severed"]):
+        elif "roads_bridges" in metrics_requested or "isolated_settlements" in metrics_requested or any(w in q_clean for w in ["cut off", "blocked", "isolated", "severed", "infrastructure lies", "infrastructure inside", "inside the verified"]):
             intent = "infrastructure_damage"
-        elif is_10_year or any(w in q_clean for w in ["historical floods", "history", "timeline", "past events", "recurrence"]):
+        elif is_10_year or any(w in q_clean for w in ["historical floods", "history", "timeline", "past events", "recurrence", "what historical floods"]):
             intent = "timeline_history"
         elif "official_reports" in metrics_requested or any(w in q_clean for w in ["official report", "find official reports", "sitrep", "emsr"]):
             intent = "official_reports"

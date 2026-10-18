@@ -23,17 +23,16 @@ def test_quick_queries_endpoint():
     assert flood_query["is_available"] is True
     assert flood_query["badge"] in ["GIS VERIFIED", "SAR ANALYSIS", "HIGH SEVERITY", "GLOF GENESIS"]
 
-    # Disaster 9 (Historical Kerala - pending analysis)
-    res9 = client.get("/api/copilot/quick-queries/9")
-    assert res9.status_code == 200
-    data9 = res9.json()
-    assert isinstance(data9, list)
-    assert len(data9) >= 8
-    # For Kerala (pending analysis), GIS queries should be flagged as pending/not available
-    kerala_flood_query = next((q for q in data9 if q["category"] == "flood_situation"), None)
-    assert kerala_flood_query is not None
-    assert kerala_flood_query["is_available"] is False
-    assert kerala_flood_query["badge"] in ["PENDING", "SENSORS", "ESTIMATE"]
+    # Disaster 6 (Historical Simulation Testbed - pending analysis)
+    res6 = client.get("/api/copilot/quick-queries/6")
+    assert res6.status_code == 200
+    data6 = res6.json()
+    assert isinstance(data6, list)
+    assert len(data6) >= 8
+    # For incident 6 (pending analysis), GIS queries should be flagged as pending/not available
+    pending_flood_query = next((q for q in data6 if q["category"] == "flood_situation" and not q["is_available"]), None)
+    assert pending_flood_query is not None
+    assert pending_flood_query["badge"] in ["PENDING", "SENSORS", "ESTIMATE"]
 
 def test_quick_review_chamoli():
     # Disaster 1 has analysis
@@ -51,8 +50,8 @@ def test_quick_review_chamoli():
     assert len(data["recommended_command_directives"]) > 0
 
 def test_quick_review_no_analysis_incident():
-    # Disaster 9 (Kerala Floods 2018) has no flood analysis records
-    res = client.get("/api/copilot/quick-review/9?review_type=executive")
+    # Disaster 6 has no flood analysis records
+    res = client.get("/api/copilot/quick-review/6?review_type=executive")
     assert res.status_code == 200
     data = res.json()
     assert data["has_analysis"] is False

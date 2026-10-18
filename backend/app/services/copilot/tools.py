@@ -114,7 +114,13 @@ class CopilotGISTools:
                 "reason": "No infrastructure GIS dataset cataloged for this incident in the active database.",
                 "bridges": [],
                 "roads": [],
-                "assets": []
+                "assets": [],
+                "total_bridges": 0,
+                "critical_or_destroyed_bridges_count": 0,
+                "total_road_segments": 0,
+                "blocked_roads_count": 0,
+                "total_buildings_assessed": 0,
+                "damaged_buildings_count": 0
             }
 
         critical_bridges = [b for b in bridges if b.status in ("critical", "destroyed")]
@@ -165,8 +171,10 @@ class CopilotGISTools:
                 "available": False,
                 "reason": "Settlement connectivity graph has not been generated for this incident.",
                 "total_settlements": 0,
+                "isolated_count": 0,
                 "isolated_settlements": [],
-                "isolated_population": 0
+                "isolated_population": 0,
+                "total_population_exposed": 0
             }
 
         isolated_list = [s for s in settlements if s.is_isolated]

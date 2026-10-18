@@ -44,6 +44,12 @@ class FloodPolygonResponse(BaseModel):
     confidence: float
     area_sqm: float
     geometry_geojson: Dict[str, Any]
+    provenance_source: Optional[str] = "Copernicus EMS / Sentinel-1 SAR"
+    processing_status: Optional[str] = "verified_official"
+    observed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 class FloodResultResponse(BaseModel):
     id: int
@@ -332,18 +338,73 @@ class OfficialAlertCreate(BaseModel):
 
 class OfficialAlertResponse(BaseModel):
     id: int
-    disaster_id: Optional[int]
+    disaster_id: Optional[int] = None
     authority: str
     alert_level: str
     headline: str
     instruction: str
-    effective_until: Optional[datetime]
-    source_url: Optional[str]
+    effective_until: Optional[datetime] = None
+    source_url: Optional[str] = None
     verification_status: str
     published_at: datetime
+    cap_identifier: Optional[str] = None
+    event_type: Optional[str] = "Flood"
+    category: Optional[str] = "Met"
+    urgency: Optional[str] = "Expected"
+    certainty: Optional[str] = "Observed"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    area_description: Optional[str] = None
+    polygon_geojson: Optional[Dict[str, Any]] = None
+    center_lat: Optional[float] = None
+    center_lon: Optional[float] = None
+    is_active: Optional[bool] = True
 
     class Config:
         from_attributes = True
+
+
+class SourceHealthResponse(BaseModel):
+    provider_id: str
+    provider_name: str
+    endpoint: str
+    source_type: str
+    last_successful_retrieval: Optional[datetime] = None
+    latest_source_timestamp: Optional[datetime] = None
+    next_scheduled_check: Optional[datetime] = None
+    availability_status: str
+    availability: Optional[str] = None
+    last_error: Optional[str] = None
+    latency_ms: float = 0.0
+    records_ingested_total: int = 0
+    total_records_ingested: Optional[int] = None
+    records_rejected_total: int = 0
+    coverage_scope: str = "All-India"
+    limitations: Optional[str] = None
+    last_check_time: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AffectedAreaResponse(BaseModel):
+    disaster_id: Optional[int] = None
+    event_name: str
+    hazard_type: str
+    state: Optional[str] = None
+    district: Optional[str] = None
+    observation_date: Optional[str] = None
+    provenance: str
+    processing_status: str # verified_official, derived_sar_analysis, pending_analysis, unavailable
+    status: Optional[str] = None
+    has_geometry: Optional[bool] = None
+    total_area_sqkm: float
+    total_flooded_area_sqkm: Optional[float] = None
+    polygons_count: int
+    polygon_count: Optional[int] = None
+    geojson: Dict[str, Any] # GeoJSON FeatureCollection
+    limitations: Optional[str] = None
+    message: Optional[str] = None
 
 class NewsItemResponse(BaseModel):
     id: int

@@ -178,27 +178,37 @@ export const SelectedLocationPanel: React.FC<SelectedLocationPanelProps> = ({
   const handleAffectedAreaClick = () => {
     if (isHistoryLoading) return;
 
-    if (incidents.length === 0) {
-      setShowNoGeometryNotice(true);
+    // 1. If overlay is currently active, clicking turns it off cleanly
+    if (activeFloodOverlay) {
+      onClearOverlay();
       return;
     }
 
-    if (incidents.length === 1) {
-      const inc = incidents[0];
-      const hasGeometry = inc.polygons_count > 0 || (inc.flood_polygons && inc.flood_polygons.length > 0);
-      if (hasGeometry) {
-        if (activeVisualizedIncidentId === inc.id) {
-          onClearOverlay();
-        } else {
-          onSelectHistoricalEvent(inc);
-        }
+    // 2. If no individual incidents, check if aggregated multi-year footprint exists
+    if (incidents.length === 0) {
+      if (historicalData?.aggregated_flood_geojson && onToggleAggregatedFootprint) {
+        onToggleAggregatedFootprint();
       } else {
         setShowNoGeometryNotice(true);
       }
       return;
     }
 
-    // Multiple events: toggle event selector
+    // 3. Single incident scenario
+    if (incidents.length === 1) {
+      const inc = incidents[0];
+      const hasGeometry = inc.polygons_count > 0 || (inc.flood_polygons && inc.flood_polygons.length > 0);
+      if (hasGeometry) {
+        onSelectHistoricalEvent(inc);
+      } else if (historicalData?.aggregated_flood_geojson && onToggleAggregatedFootprint) {
+        onToggleAggregatedFootprint();
+      } else {
+        setShowNoGeometryNotice(true);
+      }
+      return;
+    }
+
+    // 4. Multiple events: toggle event selector
     setShowEventSelector((prev) => !prev);
   };
 

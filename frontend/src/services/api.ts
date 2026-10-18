@@ -425,6 +425,85 @@ export const api = {
     const res = await fetch(`${API_BASE}/places/${encodeURIComponent(placeId)}/disasters`);
     if (!res.ok) throw new Error(`Failed to fetch disasters for place: ${placeId}`);
     return res.json();
+  },
+
+  // --- Real-time Ingestion & Source Status Layer ---
+  async getSourceHealth(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/ingestion/sources`);
+    if (!res.ok) throw new Error('Failed to fetch source health telemetry');
+    return res.json();
+  },
+
+  async getLiveIncidents(params?: {
+    state?: string;
+    district?: string;
+    alert_level?: string;
+    event_type?: string;
+    active_only?: boolean;
+    limit?: number;
+  }): Promise<any[]> {
+    const query = new URLSearchParams();
+    if (params?.state) query.append('state', params.state);
+    if (params?.district) query.append('district', params.district);
+    if (params?.alert_level) query.append('alert_level', params.alert_level);
+    if (params?.event_type) query.append('event_type', params.event_type);
+    if (params?.active_only !== undefined) query.append('active_only', params.active_only.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+
+    const res = await fetch(`${API_BASE}/ingestion/alerts?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch live incident alerts');
+    return res.json();
+  },
+
+  async triggerIngestionPoll(providerId?: string): Promise<any> {
+    const query = providerId ? `?provider_id=${encodeURIComponent(providerId)}` : '';
+    const res = await fetch(`${API_BASE}/ingestion/poll${query}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to trigger ingestion poll');
+    return res.json();
+  },
+
+  async getAffectedArea(disasterId: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/disasters/${disasterId}/affected-area`);
+    if (!res.ok) throw new Error(`Failed to fetch affected area for incident #${disasterId}`);
+    return res.json();
+  },
+
+  async getAffectedAreaByLocation(params: {
+    latitude?: number;
+    longitude?: number;
+    state?: string;
+    district?: string;
+    radius_km?: number;
+  }): Promise<any> {
+    const query = new URLSearchParams();
+    if (params.latitude !== undefined) query.append('latitude', params.latitude.toString());
+    if (params.longitude !== undefined) query.append('longitude', params.longitude.toString());
+    if (params.state) query.append('state', params.state);
+    if (params.district) query.append('district', params.district);
+    if (params.radius_km) query.append('radius_km', params.radius_km.toString());
+
+    const res = await fetch(`${API_BASE}/disasters/affected-area/by-location?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch affected area by location');
+    return res.json();
+  },
+
+  async triggerAffectedAreaAnalysis(disasterId: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/disasters/${disasterId}/analyze-affected-area`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Failed to trigger analysis for incident #${disasterId}`);
+    return res.json();
+  },
+
+  async getBackgroundJobs(disasterId?: number): Promise<any[]> {
+    const query = disasterId ? `?disaster_id=${disasterId}` : '';
+    const res = await fetch(`${API_BASE}/ingestion/jobs${query}`);
+    if (!res.ok) throw new Error('Failed to fetch background analysis jobs');
+    return res.json();
+  },
+
+  async retryBackgroundJob(jobId: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/ingestion/jobs/${jobId}/retry`, { method: 'POST' });
+    if (!res.ok) throw new Error(`Failed to retry job #${jobId}`);
+    return res.json();
   }
 };
 
