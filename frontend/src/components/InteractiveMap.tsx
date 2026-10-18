@@ -51,6 +51,7 @@ import {
   getCartoApiKey,
   hasCartoApiKey,
 } from '../services/basemapConfig';
+import { FloatingMapLegendPanel } from './FloatingMapLegendPanel';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -1500,29 +1501,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
       )}
 
-      {/* Tactical Map Legend (Bottom-Left next to Google watermark) */}
-      <div className="absolute bottom-3 left-28 z-[1000] hidden md:flex items-center space-x-3 bg-[#0a0f1d]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] font-mono select-none text-slate-300 shadow-xl">
-        <div className="flex items-center space-x-1">
-          <span className="w-2.5 h-2.5 rounded bg-cyan-400 opacity-70" />
-          <span>Flood SAR</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-          <span>Cut-Off Hamlet</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <span className="w-2 h-2 rounded-full bg-amber-400" />
-          <span>Bridge</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <span className="w-3 h-0.5 bg-red-500 border-dashed" />
-          <span>Blocked Road</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <span className="w-3 h-0.5 bg-cyan-400" />
-          <span>State Border</span>
-        </div>
-      </div>
+      {/* Floating, Resizable Tactical Map Layers & Legend Window (Top-Right) */}
+      {layers && setLayers && (
+        <FloatingMapLegendPanel
+          layers={layers}
+          setLayers={setLayers}
+          renderedBasemap={renderedBasemap}
+          onSelectBasemap={(bm) => {
+            if (setLayers) {
+              setLayers((prev) => ({ ...prev, basemap: bm }));
+            }
+          }}
+          floodPolygons={floodPolygons}
+          settlements={settlements}
+          bridges={bridges}
+          roads={roads}
+          activeFloodOverlay={activeFloodOverlay}
+        />
+      )}
     </div>
   );
 };
