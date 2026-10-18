@@ -27,7 +27,6 @@ import {
 } from '../types';
 import {
   INDIA_STATE_BOUNDARIES_GEOJSON,
-  OPERATIONAL_DISTRICTS,
 } from '../data/indiaStateBoundaries';
 import {
   Layers,
@@ -42,8 +41,16 @@ import {
   ShieldAlert,
   AlertTriangle,
   X,
+  Key,
+  ExternalLink,
 } from 'lucide-react';
-import { getBasemapDefinition, normalizeBasemapId } from '../services/basemapConfig';
+import {
+  getBasemapDefinition,
+  normalizeBasemapId,
+  PrimaryBasemapId,
+  getCartoApiKey,
+  hasCartoApiKey,
+} from '../services/basemapConfig';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -111,34 +118,6 @@ const createCustomIcon = (
     `,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
-  });
-};
-
-// Tactical State Label DivIcon
-const createStateLabelIcon = (stateName: string, isCurrentState: boolean) => {
-  return L.divIcon({
-    className: 'state-label-marker',
-    html: `
-      <div style="
-        background: ${isCurrentState ? 'rgba(6, 182, 212, 0.85)' : 'rgba(15, 23, 42, 0.85)'};
-        border: 1px solid ${isCurrentState ? '#22d3ee' : '#64748b'};
-        border-radius: 4px;
-        padding: 2px 6px;
-        font-family: ui-monospace, monospace;
-        font-size: 10px;
-        color: ${isCurrentState ? '#ffffff' : '#94a3b8'};
-        font-weight: bold;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        box-shadow: 0 0 10px ${isCurrentState ? 'rgba(6, 182, 212, 0.5)' : 'rgba(0,0,0,0.5)'};
-        pointer-events: none;
-        text-transform: uppercase;
-      ">
-        ${stateName} ${isCurrentState ? '★' : ''}
-      </div>
-    `,
-    iconSize: [80, 20],
-    iconAnchor: [40, 10],
   });
 };
 
@@ -514,7 +493,7 @@ const InspectPinMarker: React.FC<{
                     </span>
                   </div>
                   <div className="text-slate-300 mt-0.5 truncate">
-                    Hamlet: {assessment.multi_source_comparison.infrastructure_connectivity.nearest_settlement.name}
+                    Hamlet: {assessment.multi_source_comparison.infrastructure_connectivity.nearest_settlement?.name || 'None in coverage'}
                   </div>
                 </div>
 
@@ -523,11 +502,13 @@ const InspectPinMarker: React.FC<{
                   <div className="text-slate-400 font-semibold flex items-center justify-between">
                     <span>HOSPITAL</span>
                     <span className="text-teal-300 font-bold">
-                      {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital.distance_km}km
+                      {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital?.distance_km
+                        ? `${assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital.distance_km}km`
+                        : 'N/A'}
                     </span>
                   </div>
                   <div className="text-slate-300 mt-0.5 truncate">
-                    {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital.name}
+                    {assessment.multi_source_comparison.infrastructure_connectivity.nearest_hospital?.name || 'None within 35km'}
                   </div>
                 </div>
               </div>
@@ -652,15 +633,17 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
-  const requestedBasemap: 'satellite' | 'terrain' | 'dark' = normalizeBasemapId(layers.basemap);
-  const [renderedBasemap, setRenderedBasemap] = useState<'satellite' | 'terrain' | 'dark'>(requestedBasemap);
-  const [pendingBasemap, setPendingBasemap] = useState<'satellite' | 'terrain' | 'dark' | null>(null);
-  const lastWorkingBasemapRef = useRef<'satellite' | 'terrain' | 'dark'>(requestedBasemap);
+  const requestedBasemap: PrimaryBasemapId = normalizeBasemapId(layers.basemap);
+  const [renderedBasemap, setRenderedBasemap] = useState<PrimaryBasemapId>(requestedBasemap);
+  const [pendingBasemap, setPendingBasemap] = useState<PrimaryBasemapId | null>(null);
+  const lastWorkingBasemapRef = useRef<PrimaryBasemapId>(requestedBasemap);
   const [isBasemapLoading, setIsBasemapLoading] = useState(false);
   const [basemapError, setBasemapError] = useState<string | null>(null);
+  const [isCartoWarningDismissed, setIsCartoWarningDismissed] = useState(false);
 
   const initialTilesLoadedRef = useRef<boolean>(true);
   const failedTilesCountRef = useRef<number>(0);
+  const renderedTileErrorsRef = useRef<number>(0);
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Synchronize basemap requests from shared application state
@@ -688,7 +671,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         console.warn(`[RESQ-X Basemap] Style transition to ${failedDef.label} timed out. Retaining ${fallbackDef.label}.`);
         setIsBasemapLoading(false);
         setPendingBasemap(null);
-        setBasemapError(`Could not load ${failedDef.label} tiles. Retaining ${fallbackDef.label}.`);
+        if (target === 'geographic') {
+          setBasemapError(
+            hasCartoApiKey()
+              ? `CARTO tiles timed out with configured API key. Retaining ${fallbackDef.label}.`
+              : `CARTO basemap tiles require VITE_CARTO_API_KEY. Retaining ${fallbackDef.label}.`
+          );
+        } else {
+          setBasemapError(`Could not load ${failedDef.label} tiles. Retaining ${fallbackDef.label}.`);
+        }
         if (setLayers) {
           setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
         }
@@ -705,9 +696,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     failedTilesCountRef.current = 0;
   };
 
-  const handlePendingLayerLoad = (styleId: 'satellite' | 'terrain' | 'dark') => {
+  const handlePendingLayerLoad = (styleId: PrimaryBasemapId) => {
     if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
     initialTilesLoadedRef.current = true;
+    renderedTileErrorsRef.current = 0;
     setRenderedBasemap(styleId);
     lastWorkingBasemapRef.current = styleId;
     setPendingBasemap(null);
@@ -715,7 +707,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     setBasemapError(null);
   };
 
-  const handlePendingTileError = (styleId: 'satellite' | 'terrain' | 'dark', e: any) => {
+  const handlePendingTileError = (styleId: PrimaryBasemapId, e: any) => {
     if (!initialTilesLoadedRef.current) {
       failedTilesCountRef.current += 1;
       if (failedTilesCountRef.current >= 6) {
@@ -725,7 +717,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         console.warn(`[RESQ-X Basemap] Persistent tile errors for ${failedDef.label}. Retaining ${fallbackDef.label}:`, e);
         setIsBasemapLoading(false);
         setPendingBasemap(null);
-        setBasemapError(`Persistent tile error for ${failedDef.label}. Retaining ${fallbackDef.label}.`);
+        if (styleId === 'geographic') {
+          setBasemapError(
+            hasCartoApiKey()
+              ? `CARTO rejected the API key (HTTP 401/403). Retaining ${fallbackDef.label}.`
+              : `CARTO basemap tiles require VITE_CARTO_API_KEY. Retaining ${fallbackDef.label}.`
+          );
+        } else {
+          setBasemapError(`Persistent tile error for ${failedDef.label}. Retaining ${fallbackDef.label}.`);
+        }
         if (setLayers) {
           setLayers((prev) => ({ ...prev, basemap: lastWorkingBasemapRef.current }));
         }
@@ -733,7 +733,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   };
 
-  const handleRetryPending = (styleId: 'satellite' | 'terrain' | 'dark') => {
+  const handleRenderedTileError = (styleId: PrimaryBasemapId) => {
+    if (styleId === 'geographic') {
+      renderedTileErrorsRef.current += 1;
+      if (renderedTileErrorsRef.current >= 4) {
+        setBasemapError(
+          hasCartoApiKey()
+            ? 'CARTO rejected the API key (HTTP 401/403). Please verify VITE_CARTO_API_KEY.'
+            : 'CARTO tile request failed. Please configure VITE_CARTO_API_KEY.'
+        );
+      }
+    }
+  };
+
+  const handleRenderedTileLoad = () => {
+    renderedTileErrorsRef.current = 0;
+  };
+
+  const handleRetryPending = (styleId: PrimaryBasemapId) => {
     setBasemapError(null);
     if (setLayers) {
       setLayers((prev) => ({ ...prev, basemap: styleId }));
@@ -782,36 +799,110 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           )}
         </div>
       )}
-      {/* Basemap Loading Status Indicator (Subtle, non-blocking) */}
-      {isBasemapLoading && pendingBasemap && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
-          <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-cyan-300 font-bold uppercase tracking-wider">
-            Loading {getBasemapDefinition(pendingBasemap).label}...
-          </span>
-        </div>
-      )}
+      {/* Top Notification Stack (Loading, Error Toasts, CARTO Diagnostic Banner) */}
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex flex-col items-center space-y-2 pointer-events-none max-w-xl w-[92%] sm:w-auto">
+        {/* Basemap Loading Status Indicator (Subtle, non-blocking) */}
+        {isBasemapLoading && pendingBasemap && (
+          <div className="pointer-events-auto flex items-center space-x-2 bg-[#090e1a]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-cyan-500/60 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+            <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-cyan-300 font-bold uppercase tracking-wider">
+              Loading {getBasemapDefinition(pendingBasemap).label}...
+            </span>
+          </div>
+        )}
 
-      {/* Basemap Error Toast with Non-Blocking Dismiss & Retry */}
-      {basemapError && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[400] flex items-center space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-          <span className="text-red-200 text-[11px]">{basemapError}</span>
-          <button
-            onClick={() => handleRetryPending(normalizeBasemapId(layers.basemap))}
-            className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer ml-1"
-          >
-            Retry
-          </button>
-          <button
-            onClick={() => setBasemapError(null)}
-            className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
-            title="Dismiss"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
+        {/* Basemap Error Toast with Non-Blocking Dismiss & Retry */}
+        {basemapError && (
+          <div className="pointer-events-auto flex flex-col sm:flex-row items-center space-y-1.5 sm:space-y-0 sm:space-x-2.5 bg-red-950/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-red-500/70 shadow-2xl text-xs font-mono select-none animate-fadeIn">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span className="text-red-200 text-[11px]">{basemapError}</span>
+            </div>
+            <div className="flex items-center space-x-1 shrink-0">
+              {setLayers && (
+                <button
+                  onClick={() => {
+                    setBasemapError(null);
+                    setLayers((prev) => ({ ...prev, basemap: 'satellite' }));
+                  }}
+                  className="px-2 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                  title="Switch to working Google Satellite"
+                >
+                  Use Satellite
+                </button>
+              )}
+              <button
+                onClick={() => handleRetryPending(normalizeBasemapId(layers.basemap))}
+                className="px-2 py-0.5 rounded bg-red-900 hover:bg-red-800 text-red-100 text-[10px] font-bold border border-red-700 cursor-pointer"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => setBasemapError(null)}
+                className="p-0.5 text-slate-400 hover:text-white cursor-pointer ml-1"
+                title="Dismiss"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CARTO Basemap Diagnostic Banner (When API Key is missing and Geographic mode is active) */}
+        {renderedBasemap === 'geographic' && !hasCartoApiKey() && !isCartoWarningDismissed && (
+          <div className="pointer-events-auto w-full flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-[#181204]/95 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-xs font-mono select-none animate-fadeIn">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 text-amber-400">
+                <Key className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-amber-300 font-bold tracking-wide uppercase text-[11px]">
+                    CARTO API Key Required
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold">
+                    VITE_CARTO_API_KEY
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-200/80 leading-tight mt-0.5">
+                  CARTO basemap tiles render watermarks without an API key. Add key to .env or switch basemap.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
+              {setLayers && (
+                <button
+                  onClick={() => setLayers((prev) => ({ ...prev, basemap: 'satellite' }))}
+                  className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] transition-colors shadow-sm cursor-pointer flex items-center space-x-1"
+                  title="Switch to working Google Satellite mode"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Use Satellite</span>
+                </button>
+              )}
+              <a
+                href="https://carto.com/basemaps/apikey/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-[11px] transition-colors flex items-center space-x-1"
+                title="Get a free CARTO Basemap API key"
+              >
+                <span>Get Key</span>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </a>
+              <button
+                onClick={() => setIsCartoWarningDismissed(true)}
+                className="p-1 text-slate-400 hover:text-white cursor-pointer rounded hover:bg-slate-800"
+                title="Dismiss banner"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 1. Tactical HUD Banner (Top Center) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
@@ -830,38 +921,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <span className="text-slate-300 text-[11px]">
           [{mapCenter[0].toFixed(4)}° N, {mapCenter[1].toFixed(4)}° E]
         </span>
-        
-        {/* Quick jump pills */}
-        <div className="pl-2 border-l border-slate-700/80 flex items-center space-x-1 text-[10px]">
-          <button
-            onClick={() => handleJumpToTheater([24.8333, 92.7789], 12)}
-            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
-            title="Jump to Silchar & Cachar District, Assam"
-          >
-            Silchar
-          </button>
-          <button
-            onClick={() => handleJumpToTheater([26.1445, 91.7362], 12)}
-            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
-            title="Jump to Guwahati & Kamrup Metro, Assam"
-          >
-            Guwahati
-          </button>
-          <button
-            onClick={() => handleJumpToTheater([30.4950, 79.6200], 12)}
-            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
-            title="Jump to Chamoli & Dhauliganga Gorge, Uttarakhand"
-          >
-            Chamoli
-          </button>
-          <button
-            onClick={() => handleJumpToTheater([19.0760, 72.8777], 12)}
-            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
-            title="Jump to Mumbai & Mithi River Basin, Maharashtra"
-          >
-            Mumbai
-          </button>
-        </div>
       </div>
 
       {/* 3. Main Leaflet Map Container */}
@@ -900,6 +959,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             key={`rendered-${renderedBasemap}-${idx}-${layerDef.url}`}
             url={layerDef.url}
             {...layerDef.options}
+            eventHandlers={{
+              tileerror: () => {
+                if (idx === 0) handleRenderedTileError(renderedBasemap);
+              },
+              tileload: () => {
+                if (idx === 0) handleRenderedTileLoad();
+              },
+            }}
           />
         ))}
 
@@ -949,90 +1016,40 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           ))}
 
         {/* ============================================================== */}
-        {/* VECTOR STATE BOUNDARIES & DISTRICT HIGHLIGHTS (SURVEY OF INDIA)*/}
+        {/* VECTOR STATE BOUNDARIES (CLEAN SURVEY CARTOGRAPHY)             */}
         {/* ============================================================== */}
         {layers.stateBoundaries && (
-          <>
-            {/* GeoJSON Polygon Boundaries for Indian States (Pure Cartographic Non-Interactive Lines) */}
-            <GeoJSON
-              key={`india-states-${highlightedStateName || activeIncident?.id || 'all'}`}
-              data={INDIA_STATE_BOUNDARIES_GEOJSON as any}
-              interactive={false}
-              style={(feature) => {
-                const name = (feature?.properties?.name || '').toLowerCase();
-                const isSelectedState = highlightedStateName
-                  ? name === highlightedStateName.toLowerCase()
-                  : name === activeStateName;
-                const isDisasterHub = feature?.properties?.is_disaster_hub;
+          <GeoJSON
+            key={`india-states-${highlightedStateName || activeIncident?.id || 'all'}`}
+            data={INDIA_STATE_BOUNDARIES_GEOJSON as any}
+            interactive={false}
+            style={(feature) => {
+              const name = (feature?.properties?.name || '').toLowerCase();
+              const isSelectedState = highlightedStateName
+                ? name === highlightedStateName.toLowerCase()
+                : name === activeStateName;
 
-                if (isSelectedState) {
-                  return {
-                    color: '#06b6d4', // Bright cyan border for active theater state
-                    weight: 2.5,
-                    dashArray: '5, 5',
-                    fillColor: '#0891b2',
-                    fillOpacity: 0.08,
-                    interactive: false,
-                  };
-                }
-
-                if (isDisasterHub) {
-                  return {
-                    color: '#818cf8', // Indigo for key hazard states (Uttarakhand, Meghalaya, etc.)
-                    weight: 1.5,
-                    dashArray: '4, 4',
-                    fillColor: '#4f46e5',
-                    fillOpacity: 0.03,
-                    interactive: false,
-                  };
-                }
-
+              if (isSelectedState) {
                 return {
-                  color: '#475569', // Subtle slate outline for other states
-                  weight: 1,
-                  fillColor: '#1e293b',
-                  fillOpacity: 0.01,
+                  color: '#06b6d4',
+                  weight: 1.5,
+                  opacity: 0.9,
+                  fillColor: '#0891b2',
+                  fillOpacity: 0.05,
                   interactive: false,
                 };
-              }}
-            />
+              }
 
-            {/* Tactical State Name Badges at Centroids */}
-            {INDIA_STATE_BOUNDARIES_GEOJSON.features
-              .filter((f) => f.properties.is_disaster_hub)
-              .map((f) => {
-                const isSelected = f.properties.name.toLowerCase() === activeStateName;
-                return (
-                  <Marker
-                    key={`state-label-${f.properties.name}`}
-                    position={f.properties.centroid as [number, number]}
-                    icon={createStateLabelIcon(f.properties.name, isSelected)}
-                    interactive={false}
-                  />
-                );
-              })}
-
-            {/* Operational Disaster District Polygons (Cachar, Chamoli, Nagaon, etc.) */}
-            {OPERATIONAL_DISTRICTS.map((dist) => {
-              const isCurrentDistrict =
-                (activeIncident?.district || '').toLowerCase().includes(dist.name.split(' ')[0].toLowerCase());
-
-              return (
-                <Polygon
-                  key={`dist-${dist.name}`}
-                  positions={dist.coordinates.map(([lon, lat]) => [lat, lon] as [number, number])}
-                  interactive={false}
-                  pathOptions={{
-                    color: isCurrentDistrict ? '#f59e0b' : '#38bdf8',
-                    weight: isCurrentDistrict ? 2 : 1.5,
-                    dashArray: '6, 6',
-                    fillColor: isCurrentDistrict ? '#d97706' : '#0284c7',
-                    fillOpacity: isCurrentDistrict ? 0.08 : 0.03,
-                  }}
-                />
-              );
-            })}
-          </>
+              return {
+                color: '#64748b', // Thin, neutral cartographic boundary line
+                weight: 0.8,
+                opacity: 0.5,
+                fillColor: 'transparent',
+                fillOpacity: 0,
+                interactive: false,
+              };
+            }}
+          />
         )}
 
         {/* ============================================================== */}

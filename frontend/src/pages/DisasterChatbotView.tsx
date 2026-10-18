@@ -32,18 +32,24 @@ import {
   ShieldCheck,
   BookOpen,
   Info,
+  ArrowLeft,
   ArrowRight,
   CornerDownRight,
-  Activity
+  Activity,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { QuickReviewData, DisasterKnowledgeItem, DisasterEvent } from '../types';
+import { QuickReviewData, DisasterKnowledgeItem, DisasterEvent, HistoricalFloodSummaryResponse } from '../types';
 
 interface DisasterChatbotViewProps {
   selectedIncidentId?: number | null;
   activeIncident?: DisasterEvent | null;
+  selectedLocation?: { lat?: number; lng?: number; latitude?: number; longitude?: number; label?: string; name?: string; district?: string; state?: string } | null;
+  historicalData?: HistoricalFloodSummaryResponse | null;
+  initialQuery?: string;
+  onClearInitialQuery?: () => void;
   onNavigateToLocation?: (lat: number, lng: number, label: string) => void;
   onAssessLocation?: (lat: number, lng: number, label: string) => void;
+  onReturnToMap?: () => void;
 }
 
 interface Message {
@@ -73,8 +79,13 @@ interface KnowledgeSearchResult {
 export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   selectedIncidentId = null,
   activeIncident,
+  selectedLocation,
+  historicalData,
+  initialQuery,
+  onClearInitialQuery,
   onNavigateToLocation,
   onAssessLocation,
+  onReturnToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<'chat' | 'reviews' | 'knowledge'>('chat');
   const [query, setQuery] = useState('');
@@ -110,11 +121,15 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   const incidentDistrict = activeIncident?.district || (selectedIncidentId ? 'Assigned District' : 'All Regions');
   const incidentState = activeIncident?.state || (selectedIncidentId ? 'Assigned State' : 'India');
 
+  const locationName = selectedLocation?.label || selectedLocation?.name;
+
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'copilot',
       text: activeIncident
         ? `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** for **${incidentTitle}** (${incidentDistrict}, ${incidentState}).\n\nClick any **Quick Query** above to inspect detected flood extents, cut-off hamlets, bridge statuses, or ask me any question!`
+        : locationName
+        ? `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor. Active location context: **${locationName}**.\n\nTelemetry and analytical responses are grounded in PostGIS spatial databases, road network topology, and official NDMA/NDRF guidelines.\n\nAsk questions about historical floods, damage, affected communities, infrastructure, or rescue planning!`
         : `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** across India.\n\nSearch for a place in the header, select an operational incident to focus telemetry, or ask any disaster management question!`,
       answerStatus: 'success',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -272,6 +287,17 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
     }
   };
 
+  // Auto-send initial query (e.g. from Selected Location Information button)
+  const sentInitialQueryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim() && sentInitialQueryRef.current !== initialQuery) {
+      sentInitialQueryRef.current = initialQuery;
+      handleSend(initialQuery);
+      onClearInitialQuery?.();
+    }
+  }, [initialQuery]);
+
   const handleExecuteKnowledgeSearch = async (searchTerm: string) => {
     const q = searchTerm.trim();
     if (!q) return;
@@ -357,49 +383,63 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-sans flex items-center gap-1.5">
-              <span>Active Incident:</span>
-              <span className="text-cyan-300 font-mono font-bold">{incidentTitle}</span>
+              <span>{activeIncident ? 'Active Incident:' : locationName ? 'Selected Location:' : 'Theater:'}</span>
+              <span className="text-cyan-300 font-mono font-bold">{activeIncident ? incidentTitle : locationName ? locationName : 'National Disaster Monitor (Pan-India)'}</span>
               <span className="text-slate-600">|</span>
               <span>Strictly grounded in Copernicus SAR, PostGIS topology, and NDMA RAG</span>
             </p>
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-700/60">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'chat'
-                ? 'bg-cyan-600 text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            <span>AI COPILOT</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'reviews'
-                ? 'bg-cyan-600 text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>QUICK REVIEW</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('knowledge')}
-            className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'knowledge'
-                ? 'bg-cyan-600 text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>DISASTER KNOWLEDGE</span>
-          </button>
+        {/* Return to Map & Tab Switcher */}
+        <div className="flex items-center space-x-2">
+          {onReturnToMap && (
+            <button
+              onClick={onReturnToMap}
+              className="px-3 py-1.5 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 font-mono text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-md shrink-0"
+              title={`Return to Map with ${locationName ? locationName : 'selected location'} active`}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Return to Map {locationName ? `(${locationName})` : ''}</span>
+            </button>
+          )}
+
+          {/* Tab Switcher */}
+          <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-700/60">
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
+                activeTab === 'chat'
+                  ? 'bg-cyan-600 text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
+              }`}
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>AI COPILOT</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
+                activeTab === 'reviews'
+                  ? 'bg-cyan-600 text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>QUICK REVIEW</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('knowledge')}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 ${
+                activeTab === 'knowledge'
+                  ? 'bg-cyan-600 text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>DISASTER KNOWLEDGE</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -412,6 +452,92 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Context-Aware Quick Queries Panel */}
             <div className="px-6 py-2.5 bg-command-panel/60 border-b border-command-border/40 flex flex-col gap-2 shrink-0">
+              {/* Location Research Card (When a place is selected) */}
+              {selectedLocation && (
+                <div className="p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 via-slate-900/80 to-blue-950/60 border border-cyan-500/40 shadow-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-md bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-xs text-white">Location Research: {locationName}</span>
+                        {historicalData?.summary?.total_incidents ? (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono">
+                            {historicalData.summary.total_incidents} Documented Disaster Events
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">
+                            Spatial Archive Active
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documented Historical Event Briefing Strip */}
+                  {historicalData?.incidents && historicalData.incidents.length > 0 && (
+                    <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs text-slate-200">
+                      <div className="flex items-center space-x-2 truncate pr-2">
+                        <span className="font-bold text-amber-300 font-mono text-[10px] uppercase">Documented Event:</span>
+                        <span className="truncate text-white font-medium">
+                          {historicalData.incidents[0].name} ({historicalData.incidents[0].year})
+                        </span>
+                        {historicalData.incidents[0].flooded_area_sqkm ? (
+                          <span className="text-cyan-300 font-mono text-[10px] shrink-0">
+                            • {historicalData.incidents[0].flooded_area_sqkm} km²
+                          </span>
+                        ) : null}
+                        {historicalData.incidents[0].deaths_reported ? (
+                          <span className="text-red-300 font-mono text-[10px] shrink-0">
+                            • {historicalData.incidents[0].deaths_reported} casualties
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                        {historicalData.incidents[0].source_org || 'State SDMA / NDMA'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                    {[
+                      {
+                        label: 'Historical Floods & Impacts',
+                        query: `What are the documented historical flood events, peak years, and casualty impacts in ${locationName}?`,
+                      },
+                      {
+                        label: 'Event Timelines & Displaced',
+                        query: `What is the historical disaster timeline and documented affected or displaced population for ${locationName}?`,
+                      },
+                      {
+                        label: 'Exposed Infrastructure & Access',
+                        query: `What critical infrastructure, bridges, and road access corridors in ${locationName} are historically exposed to inundation?`,
+                      },
+                      {
+                        label: 'Satellite Flood Extent',
+                        query: `What verified Sentinel-1 SAR satellite flood extents or Copernicus EMS rapid mapping activations are documented for ${locationName}?`,
+                      },
+                      {
+                        label: 'NDMA Preparedness Guidelines',
+                        query: `What are the official NDMA and State Disaster Management Authority (SDMA) evacuation and preparedness guidelines for ${selectedLocation.state || locationName}?`,
+                      },
+                    ].map((chip, idx) => (
+                      <button
+                        key={idx}
+                        disabled={loading}
+                        onClick={() => handleSend(chip.query)}
+                        className="text-[11px] font-mono px-2.5 py-1 rounded bg-slate-900/95 hover:bg-cyan-950 hover:text-cyan-300 hover:border-cyan-500/60 text-slate-300 border border-cyan-500/30 transition-all shrink-0 flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                        title={chip.query}
+                      >
+                        <span className="text-cyan-400">💬</span>
+                        <span>{chip.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Category selector row */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center space-x-1 overflow-x-auto text-[10px] font-mono">

@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import {
   Globe,
   Moon,
-
-
   Mountain,
+  Map,
   Check,
   Loader2,
   ShieldCheck,
@@ -14,6 +13,7 @@ import { BasemapType } from '../types';
 import { AnchoredPopover } from './AnchoredPopover';
 import {
   BASEMAP_DEFINITIONS,
+  getBasemapDefinition,
   normalizeBasemapId,
 } from '../services/basemapConfig';
 
@@ -38,7 +38,7 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
 
   const handleSelect = (id: BasemapType) => {
     const targetNormalized = normalizeBasemapId(id);
-    const def = BASEMAP_DEFINITIONS[targetNormalized];
+    const def = getBasemapDefinition(targetNormalized);
     if (!def || !def.isAvailable) return;
 
     setSwitchingTo(targetNormalized);
@@ -49,27 +49,35 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
     }, 180);
   };
 
-  // Three primary options in Google Maps order:
-  // 1. Satellite (Google Hybrid)
-  // 2. Terrain (Google Topographic)
-  // 3. Dark Mode (Google Night Theme)
+  // Primary options:
+  // 1. Geographic (Clean Cartographic Voyager, English)
+  // 2. Satellite (Google Hybrid with &hl=en)
+  // 3. Terrain (ESRI Topographic)
+  // 4. Dark Mode (ESRI Dark Canvas)
   const supportedOptions = [
     {
-      def: BASEMAP_DEFINITIONS.satellite,
+      def: getBasemapDefinition('satellite'),
       icon: Globe,
       themeColor: '#4285F4',
       previewGradient: 'from-[#0b291b] via-[#12283a] to-[#1c3d5a]',
       sampleRoadsColor: '#ffffff',
     },
     {
-      def: BASEMAP_DEFINITIONS.terrain,
+      def: getBasemapDefinition('geographic'),
+      icon: Map,
+      themeColor: '#3b82f6',
+      previewGradient: 'from-[#0f172a] via-[#1e293b] to-[#334155]',
+      sampleRoadsColor: '#93c5fd',
+    },
+    {
+      def: getBasemapDefinition('terrain'),
       icon: Mountain,
       themeColor: '#34A853',
       previewGradient: 'from-[#1e3a1e] via-[#2d3a22] to-[#3a3520]',
       sampleRoadsColor: '#fbbc05',
     },
     {
-      def: BASEMAP_DEFINITIONS.dark,
+      def: getBasemapDefinition('dark'),
       icon: Moon,
       themeColor: '#FBBC05',
       previewGradient: 'from-[#18191c] via-[#202124] to-[#282a2d]',
@@ -142,13 +150,18 @@ export const SatelliteBasemapPopover: React.FC<SatelliteBasemapPopoverProps> = (
                   </div>
 
                   <div className="min-w-0">
-                    <div className="font-semibold text-xs text-[#e8eaed] flex items-center space-x-1.5">
+                    <div className="font-semibold text-xs text-[#e8eaed] flex items-center space-x-1.5 flex-wrap gap-y-1">
                       <span>{def.label}</span>
                       <span
                         className={`text-[8px] font-mono px-1.5 py-0.2 rounded uppercase font-bold border ${def.badgeColor}`}
                       >
                         {def.badge}
                       </span>
+                      {def.requiresApiKey && !def.hasApiKey && (
+                        <span className="text-[8px] font-mono px-1.5 py-0.2 rounded uppercase font-bold border bg-amber-950 text-amber-300 border-amber-700">
+                          KEY REQUIRED
+                        </span>
+                      )}
                     </div>
                     <div className="text-[10px] text-[#9aa0a6] mt-0.5 truncate">
                       {def.provider}

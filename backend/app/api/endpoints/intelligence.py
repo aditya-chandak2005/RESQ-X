@@ -156,7 +156,7 @@ def assess_individual_location(payload: LocationAssessmentRequest, db: Session =
         db=db,
         latitude=payload.latitude,
         longitude=payload.longitude,
-        disaster_id=payload.disaster_id or 1,
+        disaster_id=payload.disaster_id,
         location_label=payload.location_label
     )
 

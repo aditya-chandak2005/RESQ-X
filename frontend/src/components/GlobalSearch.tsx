@@ -311,18 +311,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         if (onHistoricalPlaceSelected) {
           onHistoricalPlaceSelected(place, interpretRes.historical_summary, bounds);
         }
-
-        const isQuestionOrCompare =
-          interpretRes.operation === 'compare' ||
-          interpretRes.operation === 'summarize' ||
-          trimmed.toLowerCase().includes('why') ||
-          trimmed.toLowerCase().includes('how') ||
-          trimmed.toLowerCase().includes('tell') ||
-          trimmed.toLowerCase().includes('explain');
-
-        if (isQuestionOrCompare && onOpenCopilotWithQuery) {
-          onOpenCopilotWithQuery(trimmed);
-        }
         return;
       }
     } catch (e) {
@@ -351,11 +339,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     if (onLocationSelected && inc.center_lat && inc.center_lon) {
       onLocationSelected(inc.center_lat, inc.center_lon, `${inc.name} [${inc.state}]`);
     }
-    // Simultaneously trigger AI Copilot with comprehensive disaster assessment
-    if (onOpenCopilotWithQuery) {
-      const copilotPrompt = `Explain the ${inc.name}: how the flood happened, what the causes were, how many people got affected, and the recovery response.`;
-      onOpenCopilotWithQuery(copilotPrompt, inc.id);
-    }
   };
 
   // Operational Sector 1-click jump
@@ -367,10 +350,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     }
     if (onLocationSelected) {
       onLocationSelected(sector.lat, sector.lon, `${sector.name} [${sector.state}]`);
-    }
-    if (onOpenCopilotWithQuery && sector.incidentId) {
-      const prompt = `Provide operational disaster intelligence for ${sector.name} (${sector.state}): how the disaster happened, key causes, affected settlements, and rescue operations.`;
-      onOpenCopilotWithQuery(prompt, sector.incidentId);
     }
   };
 
@@ -500,8 +479,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       },
       (err) => {
         setIsLoading(false);
-        console.warn('Geolocation fallback to Silchar:', err);
-        handleSelectSector(OPERATIONAL_SECTORS[0]);
+        setError('Device geolocation was denied or unavailable.');
+        setIsOpen(true);
       },
       { timeout: 7000, enableHighAccuracy: true }
     );
@@ -665,8 +644,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                               <span className="truncate">{inc.name}</span>
                               <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
                                 <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 flex items-center space-x-1">
-                                  <Bot className="w-2.5 h-2.5" />
-                                  <span>AI + Map</span>
+                                  <Navigation className="w-2.5 h-2.5" />
+                                  <span>Map</span>
                                 </span>
                                 <span
                                   className={`text-[9px] font-mono px-1 rounded uppercase font-bold ${

@@ -31,7 +31,22 @@ class CopilotGISTools:
             return {
                 "exists": False,
                 "disaster_id": disaster_id,
-                "name": f"Unknown Incident #{disaster_id}",
+                "id": disaster_id,
+                "name": f"Incident #{disaster_id}",
+                "disaster_type": "flood",
+                "status": "monitoring",
+                "state": "National Monitoring Extent",
+                "district": "National Grid",
+                "place_name": "Pan-India Monitoring",
+                "description": "National geographic monitoring sector without designated incident record.",
+                "incident_date": "N/A",
+                "center_lat": 22.5937,
+                "center_lon": 78.9629,
+                "source_org": "National Emergency Management Authority",
+                "source_url": None,
+                "verification_status": "unverified",
+                "has_flood_analysis": False,
+                "has_settlement_data": False,
                 "has_analysis": False
             }
 
@@ -44,6 +59,7 @@ class CopilotGISTools:
             "name": incident.name,
             "disaster_type": incident.disaster_type,
             "status": incident.status,
+            "description": getattr(incident, 'description', '') or incident.name,
             "state": getattr(incident, 'state', 'Uttarakhand'),
             "district": getattr(incident, 'district', None) or "Operational Sector",
             "place_name": getattr(incident, 'place_name', None) or incident.name,

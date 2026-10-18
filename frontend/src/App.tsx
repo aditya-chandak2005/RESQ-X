@@ -64,6 +64,7 @@ export const App: React.FC = () => {
   const [historicalFootprintGeoJSON, setHistoricalFootprintGeoJSON] = useState<any | null>(null);
   const [activeVisualizedIncidentId, setActiveVisualizedIncidentId] = useState<number | null>(null);
   const [isAggregatedActive, setIsAggregatedActive] = useState<boolean>(false);
+  const [isLocationPanelOpen, setIsLocationPanelOpen] = useState<boolean>(true);
 
   const [selectedItem, setSelectedItem] = useState<{ type: any; data: any } | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
@@ -240,11 +241,18 @@ export const App: React.FC = () => {
     bounds?: [[number, number], [number, number]] | null
   ) => {
     setSelectedLocation(place);
+    setIsLocationPanelOpen(true);
     setCurrentTab('command');
     setHighlightedStateName(place.state || place.name);
+
+    // Anchor selected-location pin on map
+    const label = place.district ? `${place.name}, ${place.district}` : place.name;
+    setInspectedPoint({ lat: place.latitude, lng: place.longitude, label });
+
     if (bounds) {
       setTargetBounds(bounds);
     }
+
     // Clean Stage A state: do NOT show historical flood polygons until user requests Stage B
     setHistoricalPolygons([]);
     setHistoricalFootprintGeoJSON(null);
@@ -254,7 +262,24 @@ export const App: React.FC = () => {
 
     if (histSummary) {
       setHistoricalData(histSummary);
+    } else {
+      setIsLoadingHistory(true);
+      api.getHistoricalFloodsByPlace(place.place_id)
+        .then((data) => setHistoricalData(data))
+        .catch((err) => console.warn('Historical flood query note:', err))
+        .finally(() => setIsLoadingHistory(false));
     }
+
+    // Query point assessment asynchronously for DEM and local facility telemetry
+    api.assessLocation({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      location_label: label,
+    }).then((assessment) => {
+      setCurrentAssessment(assessment);
+    }).catch((err) => {
+      console.warn('Location assessment query note:', err);
+    });
   };
 
   // Stage B: Visualize a specific historical flood event
@@ -272,6 +297,35 @@ export const App: React.FC = () => {
         setHistoricalPolygons(foundPolygons);
         setActiveFloodOverlay(true);
         setLayers((prev) => ({ ...prev, floodExtent: true }));
+
+        // Fit map bounds to the flood polygons without losing selected location pin
+        let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+        let count = 0;
+        for (const p of foundPolygons) {
+          const coords = p.geometry_geojson?.coordinates;
+          if (!coords) continue;
+          const walk = (c: any) => {
+            if (typeof c[0] === 'number' && typeof c[1] === 'number') {
+              if (c[1] < minLat) minLat = c[1];
+              if (c[1] > maxLat) maxLat = c[1];
+              if (c[0] < minLon) minLon = c[0];
+              if (c[0] > maxLon) maxLon = c[0];
+              count++;
+            } else if (Array.isArray(c)) {
+              c.forEach(walk);
+            }
+          };
+          walk(coords);
+        }
+        if (count > 0) {
+          if (selectedLocation) {
+            minLat = Math.min(minLat, selectedLocation.latitude);
+            maxLat = Math.max(maxLat, selectedLocation.latitude);
+            minLon = Math.min(minLon, selectedLocation.longitude);
+            maxLon = Math.max(maxLon, selectedLocation.longitude);
+          }
+          setTargetBounds([[minLat - 0.02, minLon - 0.02], [maxLat + 0.02, maxLon + 0.02]]);
+        }
       } else {
         console.warn(`No verified flood polygons available for incident #${inc.id}`);
         setHistoricalPolygons([]);
@@ -284,13 +338,6 @@ export const App: React.FC = () => {
 
       if (inc.district) {
         setHighlightedStateName(inc.district);
-      }
-
-      // Smoothly fly map to incident center
-      const incDetails = incidents.find((i) => i.id === inc.id);
-      if (incDetails?.center_lat && incDetails?.center_lon) {
-        setInspectedPoint(null);
-        handleNavigateToLocation(incDetails.center_lat, incDetails.center_lon, `${inc.name} [${incDetails.state}]`);
       }
     } catch (e) {
       console.error('Failed to visualize historical flood event:', e);
@@ -326,6 +373,29 @@ export const App: React.FC = () => {
     setActiveFloodOverlay(false);
   };
 
+  // Completely clear selected location, pin, and overlays
+  const handleClearSelectedLocation = () => {
+    setSelectedLocation(null);
+    setIsLocationPanelOpen(false);
+    setInspectedPoint(null);
+    setCurrentAssessment(null);
+    setHistoricalData(null);
+    handleClearHistoricalOverlay();
+    setHighlightedStateName(undefined);
+  };
+
+  // Open Copilot with location context and automatically request comprehensive intelligence briefing
+  const handleOpenInformationFromPanel = (place: GeocodingPlace) => {
+    setSelectedLocation(place);
+    const matchedIncident = historicalData?.incidents?.[0];
+    if (matchedIncident?.id) {
+      setSelectedIncidentId(matchedIncident.id);
+    }
+    const query = `Provide a comprehensive disaster intelligence briefing for ${place.name}, including historical flood events, causes, casualties, affected infrastructure, and NDMA emergency preparedness guidelines.`;
+    setCopilotInitialQuery(query);
+    setCurrentTab('copilot');
+  };
+
   // Omni-search from Header
   const handleSearchFromHeader = async (query: string) => {
     if (!query || !query.trim()) return;
@@ -354,18 +424,6 @@ export const App: React.FC = () => {
 
         // Establish location context and boundary; do NOT auto-select incident and do NOT auto-show flood polygons
         handleHistoricalPlaceSelected(place, interpretRes.historical_summary, bounds);
-
-        const isQuestionOrCompare =
-          interpretRes.operation === 'compare' ||
-          interpretRes.operation === 'summarize' ||
-          q.toLowerCase().startsWith('why') ||
-          q.toLowerCase().startsWith('how') ||
-          q.toLowerCase().startsWith('what') ||
-          q.toLowerCase().startsWith('tell');
-
-        if (isQuestionOrCompare) {
-          handleOpenCopilotWithQuery(q);
-        }
         return;
       }
 
@@ -525,6 +583,12 @@ export const App: React.FC = () => {
               activeIncident={activeIncident}
               onNavigateTab={(tab) => setCurrentTab(tab)}
               onOpenCopilot={() => setIsCopilotOpen(true)}
+              selectedLocation={selectedLocation}
+              isLocationPanelOpen={isLocationPanelOpen}
+              setIsLocationPanelOpen={setIsLocationPanelOpen}
+              onClearSelectedLocation={handleClearSelectedLocation}
+              onOpenInformation={handleOpenInformationFromPanel}
+              isLoadingHistory={isLoadingHistory}
               highlightedStateName={highlightedStateName}
               targetBounds={targetBounds}
               historicalFootprintGeoJSON={historicalFootprintGeoJSON}
@@ -598,6 +662,14 @@ export const App: React.FC = () => {
               <DisasterChatbotView
                 selectedIncidentId={selectedIncidentId}
                 activeIncident={activeIncident}
+                selectedLocation={selectedLocation}
+                historicalData={historicalData}
+                initialQuery={copilotInitialQuery}
+                onClearInitialQuery={() => setCopilotInitialQuery('')}
+                onReturnToMap={() => {
+                  setCopilotInitialQuery('');
+                  setCurrentTab('command');
+                }}
                 onNavigateToLocation={handleNavigateToLocation}
                 onAssessLocation={handleAssessFromChat}
               />
@@ -681,6 +753,13 @@ export const App: React.FC = () => {
         selectedIncidentId={selectedIncidentId}
         activeIncident={activeIncident}
         initialQuery={copilotInitialQuery}
+        selectedLocation={selectedLocation}
+        historicalData={historicalData}
+        onReturnToMap={() => {
+          setIsCopilotOpen(false);
+          setCopilotInitialQuery('');
+          setCurrentTab('command');
+        }}
       />
 
       {/* 4. Global Situation Report Modal */}

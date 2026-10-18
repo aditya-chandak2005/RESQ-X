@@ -17,22 +17,154 @@ export interface BasemapDefinition {
   layers: BasemapLayerDef[];
   isAvailable: boolean;
   unavailableReason?: string;
+  requiresApiKey?: boolean;
+  hasApiKey?: boolean;
+  apiKeyEnvVar?: string;
+  apiKeyHelpUrl?: string;
 }
 
 const env = ((import.meta as any).env || {}) as Record<string, string | undefined>;
 
-// 1. SATELLITE BASEMAP (100% PROTECTED - Google Satellite Hybrid)
+/**
+ * Read the CARTO API Key from the Vite environment variable VITE_CARTO_API_KEY.
+ */
+export const getCartoApiKey = (): string => {
+  const envVal =
+    (import.meta as any).env?.VITE_CARTO_API_KEY ||
+    env.VITE_CARTO_API_KEY ||
+    '';
+  return (envVal || '').trim();
+};
+
+export const hasCartoApiKey = (): boolean => {
+  return Boolean(getCartoApiKey());
+};
+
+/**
+ * Safely appends a query parameter to a URL without creating duplicates.
+ */
+export const appendQueryParam = (url: string, paramKey: string, paramValue: string): string => {
+  if (!paramValue) return url;
+  // If the parameter is already present, do not duplicate
+  const regex = new RegExp(`[?&]${paramKey}=`, 'i');
+  if (regex.test(url)) return url;
+
+  if (url.endsWith('?') || url.endsWith('&')) {
+    return `${url}${encodeURIComponent(paramKey)}=${encodeURIComponent(paramValue)}`;
+  }
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${encodeURIComponent(paramKey)}=${encodeURIComponent(paramValue)}`;
+};
+
+/**
+ * Attaches the CARTO API key to raster tile URLs (e.g. basemaps.cartocdn.com/rastertiles/...)
+ * Ensures proper ?key= parameter without duplicating query parameters.
+ */
+export const buildCartoRasterTileUrl = (rawUrl: string, apiKey?: string): string => {
+  const key = (apiKey !== undefined ? apiKey : getCartoApiKey()).trim();
+  if (!key) return rawUrl;
+  return appendQueryParam(rawUrl, 'key', key);
+};
+
+/**
+ * Attaches the CARTO API key to vector style JSON endpoints (e.g. basemaps.cartocdn.com/gl/.../style.json)
+ * and any referenced tile/glyph/sprite endpoints.
+ */
+export const buildCartoVectorStyleUrl = (rawUrl: string, apiKey?: string): string => {
+  const key = (apiKey !== undefined ? apiKey : getCartoApiKey()).trim();
+  if (!key) return rawUrl;
+  return appendQueryParam(rawUrl, 'key', key);
+};
+
+/**
+ * Injects CARTO API key into every applicable resource in a CARTO vector style JSON object,
+ * including tile URLs, tileJSON source URLs, glyphs, and sprites.
+ */
+export const applyCartoKeyToVectorStyle = (styleJson: any, apiKey?: string): any => {
+  const key = (apiKey !== undefined ? apiKey : getCartoApiKey()).trim();
+  if (!key || !styleJson || typeof styleJson !== 'object') return styleJson;
+
+  const style = JSON.parse(JSON.stringify(styleJson));
+
+  // 1. Process sources
+  if (style.sources && typeof style.sources === 'object') {
+    for (const sourceId of Object.keys(style.sources)) {
+      const source = style.sources[sourceId];
+      if (source && typeof source === 'object') {
+        if (typeof source.url === 'string') {
+          source.url = appendQueryParam(source.url, 'key', key);
+        }
+        if (Array.isArray(source.tiles)) {
+          source.tiles = source.tiles.map((tileUrl: string) =>
+            typeof tileUrl === 'string' ? appendQueryParam(tileUrl, 'key', key) : tileUrl
+          );
+        }
+      }
+    }
+  }
+
+  // 2. Process glyphs
+  if (typeof style.glyphs === 'string') {
+    style.glyphs = appendQueryParam(style.glyphs, 'key', key);
+  }
+
+  // 3. Process sprites
+  if (typeof style.sprite === 'string') {
+    style.sprite = appendQueryParam(style.sprite, 'key', key);
+  }
+
+  return style;
+};
+
+// 0. GEOGRAPHIC BASEMAP (Clean, High-Readability Cartographic Basemap with Standard English Typography)
+export const BASE_CARTO_VOYAGER_URL =
+  env.VITE_MAP_GEOGRAPHIC_URL ||
+  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+export const getGeographicBasemapDef = (): BasemapDefinition => {
+  const key = getCartoApiKey();
+  const hasKey = Boolean(key);
+
+  return {
+    id: 'geographic',
+    label: 'Geographic',
+    badge: 'CLEAN CARTOGRAPHIC',
+    badgeColor: 'bg-blue-950 text-blue-300 border-blue-700',
+    provider: 'CARTO Voyager / OpenStreetMap (English)',
+    description:
+      'Clean cartographic geographic basemap with standardized English typography, subdued infrastructure, and clear international & state borders.',
+    previewBg: 'bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 border-blue-500/40',
+    isAvailable: true,
+    requiresApiKey: true,
+    hasApiKey: hasKey,
+    apiKeyEnvVar: 'VITE_CARTO_API_KEY',
+    apiKeyHelpUrl: 'https://carto.com/basemaps/apikey/',
+    layers: [
+      {
+        url: buildCartoRasterTileUrl(BASE_CARTO_VOYAGER_URL, key),
+        options: {
+          subdomains: ['a', 'b', 'c', 'd'],
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+          maxZoom: 20,
+          className: 'carto-voyager-tiles',
+        },
+      },
+    ],
+  };
+};
+
+// 1. SATELLITE BASEMAP (Google Satellite Hybrid with &hl=en English Labels)
 const GOOGLE_SATELLITE_URL =
   env.VITE_MAP_SATELLITE_URL ||
-  'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+  'https://mt{s}.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}';
 
 const SATELLITE_DEF: BasemapDefinition = {
   id: 'satellite',
   label: 'Satellite',
   badge: 'GOOGLE SATELLITE',
   badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-700',
-  provider: 'Google Maps Satellite Hybrid',
-  description: 'Official high-resolution Google orbital imagery with Google Maps road networks, borders, and place typography.',
+  provider: 'Google Maps Satellite Hybrid (English)',
+  description: 'Official high-resolution Google orbital imagery with Google Maps road networks, borders, and place typography in English.',
   previewBg: 'bg-gradient-to-br from-emerald-950 via-slate-900 to-cyan-950 border-cyan-500/40',
   isAvailable: true,
   layers: [
@@ -138,6 +270,9 @@ const STREET_DEF: BasemapDefinition = {
 };
 
 export const BASEMAP_DEFINITIONS: Record<BasemapType, BasemapDefinition> = {
+  get geographic() {
+    return getGeographicBasemapDef();
+  },
   satellite: SATELLITE_DEF,
   terrain: TERRAIN_DEF,
   topo: { ...TERRAIN_DEF, id: 'topo' },
@@ -146,17 +281,26 @@ export const BASEMAP_DEFINITIONS: Record<BasemapType, BasemapDefinition> = {
   street: STREET_DEF,
 };
 
-/**
- * Three primary basemap options in strict order:
- * 1. Satellite (Protected Google Satellite Hybrid)
- * 2. Terrain (Stabilized ESRI Topo Map)
- * 3. Dark Mode (Genuine Dark Gray Canvas)
- */
-export const PRIMARY_BASEMAP_KEYS: BasemapType[] = ['satellite', 'terrain', 'dark'];
+export type PrimaryBasemapId = 'geographic' | 'satellite' | 'terrain' | 'dark';
 
-export const normalizeBasemapId = (id?: string | null): 'satellite' | 'terrain' | 'dark' => {
+/**
+ * Primary basemap options:
+ * 1. Geographic (Clean CartoDB Voyager / OSM with standardized English typography)
+ * 2. Satellite (Google Satellite Hybrid with &hl=en)
+ * 3. Terrain (Stabilized ESRI Topo Map)
+ * 4. Dark Mode (Genuine Dark Gray Canvas)
+ */
+export const PRIMARY_BASEMAP_KEYS: BasemapType[] = ['satellite', 'geographic', 'terrain', 'dark'];
+
+export const normalizeBasemapId = (id?: string | null): PrimaryBasemapId => {
   if (!id) return 'satellite';
   const clean = id.toLowerCase().trim();
+  if (clean === 'satellite' || clean === 'hybrid' || clean === 'sat') {
+    return 'satellite';
+  }
+  if (clean === 'geographic' || clean === 'geo' || clean === 'carto' || clean === 'voyager' || clean === 'osm') {
+    return 'geographic';
+  }
   if (clean === 'dark' || clean === 'tactical-dark' || clean === 'dark mode') {
     return 'dark';
   }
@@ -169,6 +313,9 @@ export const normalizeBasemapId = (id?: string | null): 'satellite' | 'terrain' 
 export const getBasemapDefinition = (type?: BasemapType | string): BasemapDefinition => {
   if (!type) return BASEMAP_DEFINITIONS.satellite;
   const normalized = normalizeBasemapId(type);
+  if (normalized === 'geographic') {
+    return getGeographicBasemapDef();
+  }
   return BASEMAP_DEFINITIONS[normalized] || BASEMAP_DEFINITIONS.satellite;
 };
 

@@ -185,7 +185,7 @@ class ResqCopilot:
                     "details": "Indian Air Force forward helibase for air-dropping relief materials into Cachar.",
                 }
             ]
-        elif disaster_id == 8 or "mumbai" in ctx["name"].lower():
+        elif disaster_id == 8 or "mumbai" in ctx.get("name", "").lower():
             featured_locations = [
                 {
                     "name": "Kurla West Urban Plain",
@@ -224,16 +224,55 @@ class ResqCopilot:
                     "details": "Former mangrove floodplain inundated; thousands of commuters stranded overnight.",
                 }
             ]
+        elif disaster_id == 7 or "chiplun" in ctx.get("name", "").lower():
+            featured_locations = [
+                {
+                    "name": "Chiplun Main Bazaar & Bus Stand",
+                    "latitude": 17.5323,
+                    "longitude": 73.5186,
+                    "risk_level": "CRITICAL",
+                    "distance_to_flood_km": 0.0,
+                    "is_isolated": True,
+                    "details": "Vashishti river overtopping; commercial hub submerged under 12-14 ft of floodwater.",
+                },
+                {
+                    "name": "Vashishti River Bridge (NH-66)",
+                    "latitude": 17.5380,
+                    "longitude": 73.5240,
+                    "risk_level": "CRITICAL",
+                    "distance_to_flood_km": 0.0,
+                    "is_isolated": True,
+                    "details": "Structural scour and roadway overtopping; Mumbai-Goa highway traffic suspended.",
+                },
+                {
+                    "name": "Chiplun Konkan Railway Station",
+                    "latitude": 17.5450,
+                    "longitude": 73.5350,
+                    "risk_level": "HIGH",
+                    "distance_to_flood_km": 0.2,
+                    "is_isolated": True,
+                    "details": "Tracks flooded under 6 feet of water; passenger trains halted.",
+                },
+                {
+                    "name": "Khed Relief Staging Camp",
+                    "latitude": 17.7167,
+                    "longitude": 73.3833,
+                    "risk_level": "SAFE",
+                    "distance_to_flood_km": 18.0,
+                    "is_isolated": False,
+                    "details": "High-ground staging area for NDRF motorboats and medical triage.",
+                }
+            ]
         else:
             featured_locations = [
                 {
-                    "name": ctx["place_name"],
-                    "latitude": ctx["center_lat"],
-                    "longitude": ctx["center_lon"],
+                    "name": ctx.get("place_name") or ctx.get("name", "Active Theater"),
+                    "latitude": ctx.get("center_lat", 22.5937),
+                    "longitude": ctx.get("center_lon", 78.9629),
                     "risk_level": "HISTORICAL",
                     "distance_to_flood_km": 0.0,
                     "is_isolated": False,
-                    "details": f"Historical archive event center in {ctx['district']}, {ctx['state']}.",
+                    "details": f"Historical archive event center in {ctx.get('district', 'Sector')}, {ctx.get('state', 'India')}.",
                 }
             ]
 
@@ -420,14 +459,41 @@ class ResqCopilot:
                     "What is the status of Sadarghat Bridge on Barak River?",
                     "What are the safe relief shelter locations?"
                 ]
+            elif disaster_id == 7 or "chiplun" in q_lower or "chiplun" in ctx.get("name", "").lower():
+                answer = (
+                    "### 🌊 Comprehensive Disaster Assessment: 2021 Maharashtra Floods (Chiplun & Konkan Inundation)\n\n"
+                    "#### 1. 📅 Chronology & How the Disaster Happened\n"
+                    "- **Onset Date & Time**: **22 July 2021, commencing at approximately 14:00 IST** and peaking overnight into 23 July.\n"
+                    "- **Extreme Konkan Cloudburst**: Over **400 mm of torrential rainfall within 24 hours** lashed the steep Western Ghats catchment around Mahabaleshwar and Koyna.\n"
+                    "- **Dam Outflows & River Cresting**: Surging discharges into the **Vashishti River** and **Savitri River** rapidly overtopped riverbanks, trapping Chiplun town in a natural bowl topology with water levels rising up to **12 to 15 feet** across municipal market sectors and residential ground floors.\n"
+                    "- **Tidal Backflow Locking**: Spring high tides in the Arabian Sea at Dabhol Creek impeded gravity drainage, causing severe, prolonged backwater inundation.\n\n"
+                    "#### 2. 🔍 Root Causes & Vulnerabilities\n"
+                    "1. **Steep Escarpment Catchment**: High runoff velocity from the Western Ghats into narrow river corridors.\n"
+                    "2. **Urban Bowl Topography**: Chiplun's commercial and transit heart lies nestled in a low-lying valley basin along the Vashishti River.\n"
+                    "3. **Simultaneous Dam Discharge & Spring Tide**: Rapid inflows coincided with reduced coastal drainage clearance.\n"
+                    "4. **Bridge & Highway Severance**: The Mumbai-Goa Highway (NH-66) was closed due to submerged bridges; Konkan Railway tracks and Chiplun station were inundated under 6 feet of water.\n\n"
+                    "#### 3. 👥 Casualties & Affected Population\n"
+                    "- **Exposed / Affected Population**: Over **150,000 residents** affected across Ratnagiri and Raigad districts.\n"
+                    "- **Casualties**: Over **110 lives lost** across the Konkan division due to drowning, building collapses, and cascading landslides in Taliye village.\n"
+                    "- **Stranded Residents**: Thousands stranded on rooftops for over 36 hours awaiting motorized boat rescues.\n\n"
+                    "#### 4. 🛡️ Rescue Operations & NDMA Deployment\n"
+                    "- **NDRF & Coast Guard Deployment**: Indian Coast Guard, Indian Navy Chetak helicopters, and over 14 NDRF teams deployed Zodiac inflatable boats for rescue.\n"
+                    "- **Civilian Evacuation**: Over 25,000 people successfully evacuated to high-ground relief centers and schools.\n"
+                    "- **Flood Warning Upgrades**: Maharashtra SDMA and CWC installed automated telemetry river gauges and alert stations across the Vashishti river corridor."
+                )
+                suggested_follow_up = [
+                    "What is the satellite SAR flood extent for Chiplun?",
+                    "Which roads and bridges in Ratnagiri were severed?",
+                    "What are the NDMA flood rescue guidelines?"
+                ]
             else:
                 answer = (
-                    f"### 📋 Disaster Overview & Cause Analysis: {ctx['name']}\n\n"
-                    f"- **Incident Sector**: {ctx['place_name']}, {ctx['district']}, {ctx['state']} ({ctx['center_lat']:.4f}° N, {ctx['center_lon']:.4f}° E)\n"
-                    f"- **Event Date**: {ctx['incident_date']} (Status: `{ctx['status'].upper()}`)\n"
-                    f"- **Hazard Category**: `{ctx['disaster_type'].replace('_', ' ').title()}`\n\n"
+                    f"### 📋 Disaster Overview & Cause Analysis: {ctx.get('name', 'Incident')}\n\n"
+                    f"- **Incident Sector**: {ctx.get('place_name', 'Sector')}, {ctx.get('district', '')}, {ctx.get('state', '')} ({ctx.get('center_lat', 0.0):.4f}° N, {ctx.get('center_lon', 0.0):.4f}° E)\n"
+                    f"- **Event Date**: {ctx.get('incident_date', 'N/A')} (Status: `{str(ctx.get('status', 'active')).upper()}`)\n"
+                    f"- **Hazard Category**: `{str(ctx.get('disaster_type', 'disaster')).replace('_', ' ').title()}`\n\n"
                     f"**Event Dynamics**:\n"
-                    f"{ctx['description']}\n\n"
+                    f"{ctx.get('description', 'Operational incident record in active monitoring.')}\n\n"
                     f"**Impact Summary**:\n"
                     f"- **Flooded Area**: {flood_data.get('total_flooded_area_sqkm', 'Pending')} km²\n"
                     f"- **Exposed / Isolated Civilians**: ~{conn_data.get('isolated_population', 0):,} residents in {conn_data.get('isolated_count', 0)} cut-off settlements\n"

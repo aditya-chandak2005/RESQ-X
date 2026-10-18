@@ -188,7 +188,7 @@ export interface Resource {
   base_location_name: string;
 }
 
-export type BasemapType = 'satellite' | 'terrain' | 'topo' | 'dark' | 'tactical-dark' | 'street';
+export type BasemapType = 'geographic' | 'satellite' | 'terrain' | 'topo' | 'dark' | 'tactical-dark' | 'street';
 
 export interface LayerVisibility {
   basemap: BasemapType;
@@ -240,9 +240,11 @@ export interface LocationAssessment {
       method: string;
     };
     copernicus_dem_topography: {
-      elevation_m: number;
+      is_available?: boolean;
+      elevation_m?: number | null;
+      slope_deg?: number | null;
       in_drainage_corridor: boolean;
-      distance_to_dem_hydro_path_m: number;
+      distance_to_dem_hydro_path_m?: number | null;
       slope_hazard: string;
       terrain_profile: string;
     };
@@ -256,6 +258,7 @@ export interface LocationAssessment {
       status: string;
     };
     infrastructure_connectivity: {
+      has_local_gis_data?: boolean;
       nearest_settlement: {
         name: string;
         distance_km: number;
@@ -465,6 +468,7 @@ export interface GeocodingPlace {
 export interface HistoricalIncidentSummary {
   id: number;
   name: string;
+  description?: string;
   year: number;
   incident_date: string;
   start_date?: string;
@@ -491,6 +495,7 @@ export interface HistoricalIncidentSummary {
 
 export interface HistoricalFloodSummaryResponse {
   place: GeocodingPlace;
+  total_records?: number;
   period: {
     start_date: string;
     end_date: string;

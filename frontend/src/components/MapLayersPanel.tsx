@@ -117,6 +117,20 @@ export const TACTICAL_LAYERS: TacticalLayerDefinition[] = [
   // 1. BASE MAPS (Mutually exclusive background raster styles)
   // =========================================================================
   {
+    id: 'bm-geographic',
+    label: 'Geographic basemap',
+    description: 'Clean cartographic basemap with standardized English typography, subdued infrastructure, and clear borders.',
+    category: 'basemaps',
+    color: '#3b82f6',
+    symbolType: 'polygon',
+    source: 'CARTO Voyager / OpenStreetMap (English)',
+    updated: 'Operational Global 2026',
+    available: true,
+    status: 'live',
+    isBasemap: true,
+    basemapValue: 'geographic',
+  },
+  {
     id: 'bm-satellite',
     label: 'Satellite imagery',
     description: 'Official Google Maps Satellite Hybrid with high-resolution aerial imagery, road networks, and typography.',

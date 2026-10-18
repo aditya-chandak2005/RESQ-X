@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, Send, X, Sparkles, Database, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Info } from 'lucide-react';
+import { Bot, Send, X, Sparkles, Database, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Info, MapPin, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { PortalModal } from '../components/PortalModal';
-import { DisasterEvent } from '../types';
+import { DisasterEvent, HistoricalFloodSummaryResponse } from '../types';
 
 interface AICopilotModalProps {
   isOpen: boolean;
@@ -10,6 +10,9 @@ interface AICopilotModalProps {
   selectedIncidentId?: number | null;
   activeIncident?: DisasterEvent | null;
   initialQuery?: string;
+  selectedLocation?: { lat?: number; lng?: number; latitude?: number; longitude?: number; label?: string; name?: string } | null;
+  historicalData?: HistoricalFloodSummaryResponse | null;
+  onReturnToMap?: () => void;
 }
 
 export const AICopilotModal: React.FC<AICopilotModalProps> = ({
@@ -18,13 +21,17 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   selectedIncidentId = null,
   activeIncident,
   initialQuery,
+  selectedLocation,
+  historicalData,
+  onReturnToMap,
 }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [dynamicQueries, setDynamicQueries] = useState<any[]>([]);
   const sentInitialRef = useRef<string | null>(null);
 
-  const incidentTitle = activeIncident?.name || (selectedIncidentId ? `Incident #${selectedIncidentId}` : 'National Disaster Monitor (Pan-India)');
+  const locationName = selectedLocation?.label || selectedLocation?.name;
+  const incidentTitle = activeIncident?.name || (selectedIncidentId ? `Incident #${selectedIncidentId}` : locationName ? `Location: ${locationName}` : 'National Disaster Monitor (Pan-India)');
 
   const [messages, setMessages] = useState<Array<{
     sender: 'user' | 'copilot';
@@ -38,6 +45,8 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
       sender: 'copilot',
       text: activeIncident
         ? `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant for **${incidentTitle}**.\n\nEvery numerical answer is strictly computed from live PostGIS database queries, NetworkX road topology, Sentinel-1 SAR models, and NDMA RAG guidelines.\n\nHow can I support command triage today?`
+        : locationName
+        ? `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant.\n\nActive location context: **${locationName}**${historicalData ? ` (${historicalData.summary?.total_incidents ?? historicalData.incidents?.length ?? 0} historical disaster events documented)` : ''}.\n\nEvery numerical answer is strictly computed from live PostGIS spatial databases, NetworkX road topology, Sentinel-1 SAR satellite models, and NDMA RAG guidelines.\n\nSelect a research topic below or ask any question about historical floods, event timelines, affected population, infrastructure damage, flood extent, or disaster preparedness!`
         : `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant across India.\n\nEvery numerical answer is strictly computed from live PostGIS spatial databases, NetworkX road topology, Sentinel-1 SAR satellite models, and NDMA RAG guidelines.\n\nSearch a place or select a theater to focus telemetry, or ask any disaster management question!`,
       answerStatus: 'success',
     },
@@ -131,16 +140,34 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
               </span>
             </div>
             <p className="text-[10px] text-slate-400 font-mono">
-              Active Incident: <span className="text-cyan-300 font-bold">{incidentTitle}</span>
+              {activeIncident ? (
+                <>Active Incident: <span className="text-cyan-300 font-bold">{incidentTitle}</span></>
+              ) : locationName ? (
+                <>Selected Location: <span className="text-cyan-300 font-bold">{locationName}</span></>
+              ) : (
+                <>Theater: <span className="text-slate-300 font-bold">National Disaster Monitor (Pan-India)</span></>
+              )}
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {onReturnToMap && (
+            <button
+              onClick={onReturnToMap}
+              className="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 hover:text-white text-[11px] font-mono flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+              title="Return to Map with selected location"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>RETURN TO MAP</span>
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Chat Stream */}
@@ -222,13 +249,23 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
 
       {/* Quick query chips */}
       <div className="px-4 py-2 border-t border-command-border/40 bg-command-panel/40 flex items-center gap-1.5 overflow-x-auto custom-scrollbar shrink-0">
-        <span className="text-[9px] font-mono text-slate-500 uppercase shrink-0">Quick Queries:</span>
-        {(dynamicQueries.length > 0 ? dynamicQueries : [
-          { query: 'Which settlements are currently isolated?', label: 'Isolated Villages' },
-          { query: 'What is the highest priority settlement?', label: 'Top Priority' },
-          { query: 'Which bridges are affected?', label: 'Bridge Damage' },
-          { query: 'Summarize current flood extent & impact.', label: 'Flood Summary' }
-        ]).slice(0, 6).map((q, idx) => (
+        <span className="text-[9px] font-mono text-slate-500 uppercase shrink-0">
+          {locationName && !selectedIncidentId ? 'Research Topics:' : 'Quick Queries:'}
+        </span>
+        {(dynamicQueries.length > 0 ? dynamicQueries : (
+          locationName ? [
+            { query: `Summarize major historical flood events, peak impact dates, and casualties in ${locationName}.`, label: 'Flood History' },
+            { query: `What was the estimated displaced population and relief camp requirement in ${locationName}?`, label: 'Displaced Population' },
+            { query: `Which critical road bridges and infrastructure assets were damaged during floods in ${locationName}?`, label: 'Infrastructure Damage' },
+            { query: `What is the documented satellite flood extent and inundation duration in ${locationName}?`, label: 'Satellite Flood Extent' },
+            { query: `What are the NDMA disaster preparedness guidelines for riverine flooding in ${locationName}?`, label: 'NDMA Guidelines' },
+          ] : [
+            { query: 'Which settlements are currently isolated?', label: 'Isolated Villages' },
+            { query: 'What is the highest priority settlement?', label: 'Top Priority' },
+            { query: 'Which bridges are affected?', label: 'Bridge Damage' },
+            { query: 'Summarize current flood extent & impact.', label: 'Flood Summary' }
+          ]
+        )).slice(0, 6).map((q, idx) => (
           <button
             key={idx}
             disabled={loading}

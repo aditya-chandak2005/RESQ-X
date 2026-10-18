@@ -292,7 +292,7 @@ class DashboardKpis(BaseModel):
 class LocationAssessmentRequest(BaseModel):
     latitude: float
     longitude: float
-    disaster_id: Optional[int] = 1
+    disaster_id: Optional[int] = None
     location_label: Optional[str] = None
 
 # Official Alerts & News Schemas

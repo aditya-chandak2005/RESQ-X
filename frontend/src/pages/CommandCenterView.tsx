@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { ContextPanel } from '../components/ContextPanel';
-import { HistoricalIntelligencePanel } from '../components/HistoricalIntelligencePanel';
+import { SelectedLocationPanel } from '../components/SelectedLocationPanel';
 import {
   FloodResult,
   Settlement,
@@ -16,6 +16,7 @@ import {
   HistoricalFloodSummaryResponse,
   HistoricalIncidentSummary,
   FloodPolygon,
+  GeocodingPlace,
 } from '../types';
 import {
   Activity,
@@ -68,6 +69,12 @@ interface CommandCenterViewProps {
   activeVisualizedIncidentId?: number | null;
   isAggregatedActive?: boolean;
   activeFloodOverlay?: boolean;
+  selectedLocation?: GeocodingPlace | null;
+  isLocationPanelOpen?: boolean;
+  setIsLocationPanelOpen?: (open: boolean) => void;
+  onClearSelectedLocation?: () => void;
+  onOpenInformation?: (place: GeocodingPlace) => void;
+  isLoadingHistory?: boolean;
 }
 
 export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
@@ -106,6 +113,12 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   activeVisualizedIncidentId,
   isAggregatedActive,
   activeFloodOverlay,
+  selectedLocation,
+  isLocationPanelOpen = true,
+  setIsLocationPanelOpen,
+  onClearSelectedLocation,
+  onOpenInformation,
+  isLoadingHistory = false,
 }) => {
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
 
@@ -151,18 +164,37 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             onClearHistoricalOverlay={onClearHistoricalOverlay}
           />
 
-          {/* Historical Disaster Intelligence Panel (Stage B) */}
-          {historicalData && (
-            <HistoricalIntelligencePanel
-              data={historicalData}
-              onClose={onCloseHistoricalPanel || (() => {})}
-              onVisualizeIncident={onVisualizeHistoricalIncident || (() => {})}
-              onVisualizeAggregatedFootprint={onVisualizeAggregatedFootprint || (() => {})}
-              onAskCopilot={(prompt, incId) => onOpenCopilotWithQuery && onOpenCopilotWithQuery(prompt, incId)}
-              onGenerateReport={(incId) => onGenerateSitrep && onGenerateSitrep(incId)}
+          {/* Unified Selected-Location Intelligence Panel */}
+          {selectedLocation && isLocationPanelOpen && (
+            <SelectedLocationPanel
+              place={selectedLocation}
+              historicalData={historicalData}
+              isHistoryLoading={isLoadingHistory}
+              assessment={currentAssessment}
+              isLoadingAssessment={false}
               activeVisualizedIncidentId={activeVisualizedIncidentId}
               isAggregatedActive={isAggregatedActive}
+              onClose={() => setIsLocationPanelOpen?.(false)}
+              onClearLocation={onClearSelectedLocation || (() => {})}
+              onOpenInformation={onOpenInformation || (() => onNavigateTab('copilot'))}
+              onSelectHistoricalEvent={onVisualizeHistoricalIncident || (() => {})}
+              onToggleAggregatedFootprint={onVisualizeAggregatedFootprint}
+              onClearOverlay={onClearHistoricalOverlay || (() => {})}
+              activeFloodOverlay={activeFloodOverlay}
             />
+          )}
+
+          {/* Re-open Location Intelligence Badge if user dismissed panel but location remains selected */}
+          {selectedLocation && !isLocationPanelOpen && (
+            <button
+              onClick={() => setIsLocationPanelOpen?.(true)}
+              className="absolute top-4 left-4 sm:left-6 z-[400] flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-[#090e1a]/95 backdrop-blur-md border border-cyan-500/50 text-cyan-300 font-mono text-xs hover:bg-[#0f172a] shadow-2xl transition-all cursor-pointer animate-fadeIn"
+              title="Re-open Location Intelligence Panel"
+            >
+              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="font-bold">{selectedLocation.name}</span>
+              <span className="text-[10px] text-slate-400 font-sans">• Open Intel</span>
+            </button>
           )}
 
           {/* Collapsible Right Context Panel */}
