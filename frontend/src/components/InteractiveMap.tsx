@@ -51,7 +51,6 @@ import {
   getCartoApiKey,
   hasCartoApiKey,
 } from '../services/basemapConfig';
-import { FloatingMapLegendPanel } from './FloatingMapLegendPanel';
 
 interface InteractiveMapProps {
   floodPolygons: FloodPolygon[];
@@ -1562,25 +1561,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <span className="text-slate-400">|</span>
           <span className="text-slate-300 uppercase">{renderedBasemap === 'terrain' ? 'Topo 3D' : 'Dark Canvas'}</span>
         </div>
-      )}
-
-      {/* Floating, Resizable Tactical Map Layers & Legend Window (Top-Right) */}
-      {layers && setLayers && (
-        <FloatingMapLegendPanel
-          layers={layers}
-          setLayers={setLayers}
-          renderedBasemap={renderedBasemap}
-          onSelectBasemap={(bm) => {
-            if (setLayers) {
-              setLayers((prev) => ({ ...prev, basemap: bm }));
-            }
-          }}
-          floodPolygons={floodPolygons}
-          settlements={settlements}
-          bridges={bridges}
-          roads={roads}
-          activeFloodOverlay={activeFloodOverlay}
-        />
       )}
     </div>
   );

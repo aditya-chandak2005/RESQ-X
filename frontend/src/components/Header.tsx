@@ -627,7 +627,6 @@ export const Header: React.FC<HeaderProps> = ({
                 ref={layersButtonRef}
                 onClick={() => {
                   onToggleLayers();
-                  window.dispatchEvent(new CustomEvent('resq-open-legend'));
                 }}
                 className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 ${isLayersOpen
                   ? 'bg-cyan-950/90 border-cyan-500/80 text-cyan-200'
