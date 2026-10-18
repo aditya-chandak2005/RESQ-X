@@ -59,39 +59,35 @@ export const CitizenLocationCheckView: React.FC<CitizenLocationCheckViewProps> =
   initialPoint,
 }) => {
   const [inspectedPoint, setInspectedPoint] = useState<{ lat: number; lng: number; label: string } | null>(
-    initialPoint || {
-      lat: 30.4905,
-      lng: 79.6830,
-      label: 'Raini Village North Bank',
-    }
+    initialPoint || null
   );
   const [isInspectMode, setIsInspectMode] = useState<boolean>(false);
   const [currentAssessment, setCurrentAssessment] = useState<LocationAssessment | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(
-    initialPoint ? [initialPoint.lat, initialPoint.lng] : [30.4905, 79.6830]
+    initialPoint ? [initialPoint.lat, initialPoint.lng] : [22.5937, 78.9629]
   );
 
-  // Load assessment on mount or when target/initialPoint changes
+  // Load assessment when initialPoint changes
   useEffect(() => {
-    const point = initialPoint || {
-      lat: 30.4905,
-      lng: 79.6830,
-      label: 'Raini Village North Bank',
-    };
-    setInspectedPoint(point);
-    setMapCenter([point.lat, point.lng]);
+    if (!initialPoint) {
+      setInspectedPoint(null);
+      setCurrentAssessment(null);
+      setMapCenter([22.5937, 78.9629]);
+      return;
+    }
+    setInspectedPoint(initialPoint);
+    setMapCenter([initialPoint.lat, initialPoint.lng]);
 
     const loadAssessment = async () => {
       try {
         const assessment = await api.assessLocation({
-          latitude: point.lat,
-          longitude: point.lng,
-          disaster_id: 1,
-          location_label: point.label,
+          latitude: initialPoint.lat,
+          longitude: initialPoint.lng,
+          location_label: initialPoint.label,
         });
         setCurrentAssessment(assessment);
       } catch (err) {
-        console.error('Failed to load initial assessment:', err);
+        console.error('Failed to load initial point risk assessment:', err);
       }
     };
     loadAssessment();
@@ -161,7 +157,7 @@ export const CitizenLocationCheckView: React.FC<CitizenLocationCheckViewProps> =
         <div className="lg:col-span-8 bg-command-bg border border-command-border rounded-lg overflow-hidden shadow-2xl relative min-h-[420px] h-[55vh] lg:h-auto">
           <div className="absolute top-3 left-3 z-[1000] bg-command-bg/90 backdrop-blur-md px-3 py-1.5 rounded border border-command-border font-mono text-xs text-slate-300 flex items-center space-x-2 shadow-lg">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span>Target: {inspectedPoint?.label || 'Custom Coordinate'}</span>
+            <span>Target: {inspectedPoint?.label || 'Click Map or Search Location'}</span>
           </div>
 
           <InteractiveMap

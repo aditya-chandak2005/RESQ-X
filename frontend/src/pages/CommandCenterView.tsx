@@ -67,6 +67,7 @@ interface CommandCenterViewProps {
   onGenerateSitrep?: (incidentId: number) => void;
   activeVisualizedIncidentId?: number | null;
   isAggregatedActive?: boolean;
+  activeFloodOverlay?: boolean;
 }
 
 export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
@@ -104,6 +105,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   onGenerateSitrep,
   activeVisualizedIncidentId,
   isAggregatedActive,
+  activeFloodOverlay,
 }) => {
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
 
@@ -132,8 +134,9 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
                 ? [inspectedPoint.lat, inspectedPoint.lng]
                 : activeIncident
                 ? [activeIncident.center_lat, activeIncident.center_lon]
-                : [24.8333, 92.7789]
+                : [22.5937, 78.9629]
             }
+            activeFloodOverlay={activeFloodOverlay}
             activeIncident={activeIncident}
             inspectedPoint={inspectedPoint}
             setInspectedPoint={setInspectedPoint}
@@ -203,7 +206,9 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             SECTOR STATUS
           </span>
           <span className="text-slate-300">
-            {isolatedSettlements.length} Cut-off Hamlets (~{isolatedSettlements.reduce((acc, s) => acc + s.estimated_population, 0)} trapped) • {criticalBridges.length} River Spans Impassable
+            {activeIncident
+              ? `${isolatedSettlements.length} Cut-off Hamlets (~${isolatedSettlements.reduce((acc, s) => acc + s.estimated_population, 0)} trapped) • ${criticalBridges.length} River Spans Impassable`
+              : 'National Monitoring Extent • No Operational Theater Selected'}
           </span>
         </div>
 

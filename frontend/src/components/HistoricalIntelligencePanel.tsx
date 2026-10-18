@@ -225,8 +225,17 @@ export const HistoricalIntelligencePanel: React.FC<HistoricalIntelligencePanelPr
                 <span className="text-[10px] text-cyan-400 font-normal">Stage B: Select to Visualize</span>
               </div>
 
-              {filteredIncidents.map((inc) => {
-                const isActive = activeVisualizedIncidentId === inc.id;
+              {filteredIncidents.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 text-center space-y-1.5 py-6">
+                  <Waves className="w-6 h-6 text-slate-500 mx-auto" />
+                  <p className="text-xs font-semibold text-slate-300">No Historical Flood Records Found</p>
+                  <p className="text-[11px] text-slate-400">
+                    No verified flood records found for {place.name} in connected archives. This does not indicate the absence of past flood events.
+                  </p>
+                </div>
+              ) : (
+                filteredIncidents.map((inc) => {
+                  const isActive = activeVisualizedIncidentId === inc.id;
 
                 return (
                   <div
@@ -344,7 +353,8 @@ export const HistoricalIntelligencePanel: React.FC<HistoricalIntelligencePanelPr
                     </div>
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
 
             {/* 5. Provenance & Limitations Disclaimer */}

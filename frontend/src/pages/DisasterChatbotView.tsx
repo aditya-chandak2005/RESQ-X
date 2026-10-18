@@ -40,7 +40,7 @@ import { api } from '../services/api';
 import { QuickReviewData, DisasterKnowledgeItem, DisasterEvent } from '../types';
 
 interface DisasterChatbotViewProps {
-  selectedIncidentId?: number;
+  selectedIncidentId?: number | null;
   activeIncident?: DisasterEvent | null;
   onNavigateToLocation?: (lat: number, lng: number, label: string) => void;
   onAssessLocation?: (lat: number, lng: number, label: string) => void;
@@ -71,7 +71,7 @@ interface KnowledgeSearchResult {
 }
 
 export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
-  selectedIncidentId = 1,
+  selectedIncidentId = null,
   activeIncident,
   onNavigateToLocation,
   onAssessLocation,
@@ -106,14 +106,16 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   const [knowledgeSearchResult, setKnowledgeSearchResult] = useState<KnowledgeSearchResult | null>(null);
 
   // Messages state
-  const incidentTitle = activeIncident?.name || (selectedIncidentId === 2 ? 'Assam Floods (Silchar)' : 'Chamoli Flash Flood');
-  const incidentDistrict = activeIncident?.district || (selectedIncidentId === 2 ? 'Cachar' : 'Chamoli');
-  const incidentState = activeIncident?.state || (selectedIncidentId === 2 ? 'Assam' : 'Uttarakhand');
+  const incidentTitle = activeIncident?.name || (selectedIncidentId ? `Incident #${selectedIncidentId}` : 'National Disaster Intelligence');
+  const incidentDistrict = activeIncident?.district || (selectedIncidentId ? 'Assigned District' : 'All Regions');
+  const incidentState = activeIncident?.state || (selectedIncidentId ? 'Assigned State' : 'India');
 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'copilot',
-      text: `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** for **${incidentTitle}** (${incidentDistrict}, ${incidentState}).\n\nClick any **Quick Query** above to inspect detected flood extents, cut-off hamlets, bridge statuses, or ask me any question!`,
+      text: activeIncident
+        ? `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** for **${incidentTitle}** (${incidentDistrict}, ${incidentState}).\n\nClick any **Quick Query** above to inspect detected flood extents, cut-off hamlets, bridge statuses, or ask me any question!`
+        : `### 🛡️ RESQ-X Tactical Disaster Intelligence Assistant\n\nI am your tactical AI disaster advisor, grounded in live **Sentinel-1 SAR telemetry**, **PostGIS topological routing**, and **official NDMA/NDRF guidelines** across India.\n\nSearch for a place in the header, select an operational incident to focus telemetry, or ask any disaster management question!`,
       answerStatus: 'success',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
@@ -131,6 +133,10 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
 
   // Load context-aware quick queries when selected incident changes
   useEffect(() => {
+    if (!selectedIncidentId) {
+      setDynamicQueries([]);
+      return;
+    }
     const fetchQuickQueries = async () => {
       try {
         const qList = await api.getContextQuickQueries(selectedIncidentId);
@@ -159,10 +165,11 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   }, []);
 
   // Fetch quick review when review type OR selected incident changes
-  const fetchQuickReview = async (type: string, id: number = selectedIncidentId) => {
+  const fetchQuickReview = async (type: string, id?: number | null) => {
     setReviewLoading(true);
     try {
-      const data = await api.getQuickReview(id, type);
+      const targetId = id || 1;
+      const data = await api.getQuickReview(targetId, type);
       setQuickReviewData(data);
       if (data.phases) {
         const initialCheck: Record<string, boolean> = {};
@@ -230,7 +237,7 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
         text: m.text.slice(0, 300),
       }));
 
-      const res = await api.queryCopilot(queryText, selectedIncidentId, historyPayload);
+      const res = await api.queryCopilot(queryText, selectedIncidentId || 1, historyPayload);
       const copilotMsg: Message = {
         sender: 'copilot',
         text: res.answer || res.response,

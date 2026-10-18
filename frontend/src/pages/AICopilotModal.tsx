@@ -7,7 +7,7 @@ import { DisasterEvent } from '../types';
 interface AICopilotModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedIncidentId?: number;
+  selectedIncidentId?: number | null;
   activeIncident?: DisasterEvent | null;
   initialQuery?: string;
 }
@@ -15,7 +15,7 @@ interface AICopilotModalProps {
 export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   isOpen,
   onClose,
-  selectedIncidentId = 1,
+  selectedIncidentId = null,
   activeIncident,
   initialQuery,
 }) => {
@@ -24,7 +24,7 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   const [dynamicQueries, setDynamicQueries] = useState<any[]>([]);
   const sentInitialRef = useRef<string | null>(null);
 
-  const incidentTitle = activeIncident?.name || (selectedIncidentId === 2 ? 'Assam Floods (Silchar)' : selectedIncidentId === 8 ? 'Maharashtra Floods 2005 (Mumbai)' : 'Chamoli Flash Flood');
+  const incidentTitle = activeIncident?.name || (selectedIncidentId ? `Incident #${selectedIncidentId}` : 'National Disaster Monitor (Pan-India)');
 
   const [messages, setMessages] = useState<Array<{
     sender: 'user' | 'copilot';
@@ -36,7 +36,9 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   }>>([
     {
       sender: 'copilot',
-      text: `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant for **${incidentTitle}**.\n\nEvery numerical answer is strictly computed from live PostGIS database queries, NetworkX road topology, Sentinel-1 SAR models, and NDMA RAG guidelines.\n\nHow can I support command triage today?`,
+      text: activeIncident
+        ? `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant for **${incidentTitle}**.\n\nEvery numerical answer is strictly computed from live PostGIS database queries, NetworkX road topology, Sentinel-1 SAR models, and NDMA RAG guidelines.\n\nHow can I support command triage today?`
+        : `Greetings. I am **RESQ Copilot**, your emergency spatial intelligence assistant across India.\n\nEvery numerical answer is strictly computed from live PostGIS spatial databases, NetworkX road topology, Sentinel-1 SAR satellite models, and NDMA RAG guidelines.\n\nSearch a place or select a theater to focus telemetry, or ask any disaster management question!`,
       answerStatus: 'success',
     },
   ]);
@@ -44,6 +46,10 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
   // Load context-aware quick queries when modal opens or incident changes
   useEffect(() => {
     if (!isOpen) return;
+    if (!selectedIncidentId) {
+      setDynamicQueries([]);
+      return;
+    }
     const loadQueries = async () => {
       try {
         const list = await api.getContextQuickQueries(selectedIncidentId);
@@ -65,7 +71,7 @@ export const AICopilotModal: React.FC<AICopilotModalProps> = ({
 
     try {
       const history = messages.slice(-3).map((m) => ({ sender: m.sender, text: m.text.slice(0, 200) }));
-      const res = await api.queryCopilot(userText, selectedIncidentId, history);
+      const res = await api.queryCopilot(userText, selectedIncidentId || 1, history);
       setMessages((prev) => [
         ...prev,
         {

@@ -64,6 +64,7 @@ interface HeaderProps {
   setIsInspectMode?: (active: boolean) => void;
   currentAssessment?: LocationAssessment | null;
   onClearAssessment?: () => void;
+  selectedLocation?: GeocodingPlace | null;
   // Map layers
   layers?: any;
   setLayers?: React.Dispatch<React.SetStateAction<any>>;
@@ -96,6 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
   setIsInspectMode,
   currentAssessment,
   onClearAssessment,
+  selectedLocation,
   layers,
   setLayers,
   onToggleLayers,
@@ -386,12 +388,18 @@ export const Header: React.FC<HeaderProps> = ({
               aria-expanded={showIncidentDropdown}
             >
               <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                {activeIncident ? (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </>
+                ) : (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-500" />
+                )}
               </span>
               <span className="text-[10px] text-slate-400 font-mono uppercase hidden sm:inline shrink-0">THEATER:</span>
               <span className="text-white font-mono truncate max-w-[85px] sm:max-w-[130px] md:max-w-[170px] lg:max-w-[220px]">
-                {activeIncident?.name || 'Assam Barak Valley Inundation'}
+                {activeIncident ? activeIncident.name : 'Select Theater / Neutral'}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showIncidentDropdown ? 'rotate-180 text-cyan-400' : ''}`} />
             </button>
@@ -552,7 +560,11 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-2 text-[11px] text-slate-400 truncate">
               <span className="text-cyan-400/90 font-bold">OPERATIONAL REGION:</span>
               <span className="text-slate-300 truncate">
-                {activeIncident?.state || 'Assam'} • {activeIncident?.district || 'Cachar District'} (Barak Basin Monsoonal Drainage)
+                {activeIncident
+                  ? `${activeIncident.state} • ${activeIncident.district} (${activeIncident.name})`
+                  : selectedLocation
+                    ? `${selectedLocation.name}${selectedLocation.state ? ` • ${selectedLocation.state}` : ''} (Resolved Focus)`
+                    : 'National Geographic Grid (India) • Search a place or select a theater'}
               </span>
             </div>
           )}

@@ -1227,8 +1227,8 @@ class ResqCopilot:
                     "generated_at": generated_at,
                     "summary": (
                         f"Monsoonal flood surge along the Brahmaputra/Barak basin in {ctx['district']}, Assam. "
-                        f"{flood_data['total_flooded_area_sqkm']} km² flooded extent verified via Sentinel-1 SAR. "
-                        f"{conn_data['isolated_count']} revenue villages cut off (~{conn_data['isolated_population']:,} civilians). "
+                        f"{flood_data.get('total_flooded_area_sqkm', 'N/A')} km² flooded extent verified via Sentinel-1 SAR. "
+                        f"{conn_data.get('isolated_count', 0)} revenue villages cut off (~{conn_data.get('isolated_population', 0):,} civilians). "
                         f"Embankment breaches and road cuts active in {ctx['district']}."
                     ),
                     "evidence_breakdown": {
@@ -1239,12 +1239,12 @@ class ResqCopilot:
                             "River Basin: Brahmaputra / Barak river system"
                         ],
                         "satellite_observations": [
-                            f"Sentinel-1 SAR verifies {flood_data['total_flooded_area_sqkm']} km² water surface inundation",
-                            f"Validation IoU: {flood_data['validation_iou']} | F1: {flood_data['validation_f1']}"
+                            f"Sentinel-1 SAR verifies {flood_data.get('total_flooded_area_sqkm', 'N/A')} km² water surface inundation",
+                            f"Validation IoU: {flood_data.get('validation_iou', 'N/A')} | F1: {flood_data.get('validation_f1', 'N/A')}"
                         ],
                         "gis_derived_results": [
-                            f"{conn_data['isolated_count']} settlements cut off from all-weather road access",
-                            f"{infra_data['critical_or_destroyed_bridges_count']} river spans or dyke checkposts impassable"
+                            f"{conn_data.get('isolated_count', 0)} settlements cut off from all-weather road access",
+                            f"{infra_data.get('critical_or_destroyed_bridges_count', 0)} river spans or dyke checkposts impassable"
                         ],
                         "model_estimates": [
                             f"Highest priority triage score: {prio_data['highest_priority']['score'] if prio_data['available'] else 91.5:.1f}/100"
@@ -1257,19 +1257,19 @@ class ResqCopilot:
                         ]
                     },
                     "metrics": {
-                        "flooded_area_sqkm": flood_data["total_flooded_area_sqkm"],
-                        "isolated_settlements": conn_data["isolated_count"],
-                        "exposed_population": conn_data["isolated_population"],
-                        "critical_bridges": infra_data["critical_or_destroyed_bridges_count"],
+                        "flooded_area_sqkm": flood_data.get("total_flooded_area_sqkm", "N/A"),
+                        "isolated_settlements": conn_data.get("isolated_count", 0),
+                        "exposed_population": conn_data.get("isolated_population", 0),
+                        "critical_bridges": infra_data.get("critical_or_destroyed_bridges_count", 0),
                         "top_priority_score": prio_data["highest_priority"]["score"] if prio_data["available"] else 91.5
                     },
                     "key_findings": [
-                        f"Sentinel-1 SAR confirms {flood_data['total_flooded_area_sqkm']} km² active inundation zone.",
+                        f"Sentinel-1 SAR confirms {flood_data.get('total_flooded_area_sqkm', 'N/A')} km² active inundation zone.",
                         "Major vulnerability: Embankment breaches and high silt load in riverbeds.",
                         "Primary lifeline roads severed in low-lying riparian sectors."
                     ],
                     "critical_red_flags": [
-                        f"{conn_data['isolated_count']} riverine villages without road access.",
+                        f"{conn_data.get('isolated_count', 0)} riverine villages without road access.",
                         "Secondary flood wave possible if upstream precipitation continues.",
                         "Drinking water sources contaminated by flood surge."
                     ],

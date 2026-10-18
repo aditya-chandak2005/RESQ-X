@@ -277,9 +277,9 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
   onSelectAndLaunchIncident,
   onNavigateTab,
 }) => {
-  // Initial Search Configuration: Assam, All disasters, All incidents, All available years
+  // Initial Search Configuration: Pan-India, All disasters, All incidents, All available years
   const [query, setQuery] = useState('');
-  const [selectedState, setSelectedState] = useState('Assam');
+  const [selectedState, setSelectedState] = useState('All India');
   const [selectedDistrict, setSelectedDistrict] = useState('all');
   const [hazardType, setHazardType] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all'); // all, active, historical, monitoring
@@ -327,9 +327,10 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
       setSearchResults(res);
       setCurrentPage(page);
 
-      // Auto-select first result if none selected
-      if (res.items.length > 0 && (!selectedIncident || !res.items.some(i => i.id === selectedIncident.id))) {
-        handleSelectIncident(res.items[0]);
+      // Only keep selected incident if it is still present in the updated search results
+      if (selectedIncident && !res.items.some(i => i.id === selectedIncident.id)) {
+        setSelectedIncident(null);
+        setDataAvailability(null);
       } else if (res.items.length === 0) {
         setSelectedIncident(null);
         setDataAvailability(null);
@@ -533,7 +534,7 @@ export const ExploreDisastersView: React.FC<ExploreDisastersViewProps> = ({
             <optgroup label="── States of India (28) ──">
               {INDIAN_STATES.map((st) => (
                 <option key={st} value={st}>
-                  {st === 'Assam' ? 'Assam, India (Default)' : st}
+                  {st}
                 </option>
               ))}
             </optgroup>

@@ -435,20 +435,43 @@ class IncidentService:
             if res.get("places"):
                 place = res["places"][0]
             else:
-                place = {
-                    "place_id": place_id,
-                    "name": place_id,
-                    "display_name": place_id,
-                    "feature_type": "state",
-                    "district": None,
-                    "state": "Assam" if "assam" in place_id.lower() else "India",
-                    "country": "India",
-                    "latitude": 26.2006,
-                    "longitude": 92.9376,
-                    "bbox": [89.69, 24.13, 96.02, 28.00],
-                    "boundary_geojson": None,
-                    "provider": "RESQ-X Curated Registry",
-                    "confidence": 0.8
+                return {
+                    "place": {
+                        "place_id": place_id,
+                        "name": place_id,
+                        "display_name": place_id,
+                        "feature_type": "unknown",
+                        "district": None,
+                        "state": None,
+                        "country": "India",
+                        "latitude": 22.5937,
+                        "longitude": 78.9629,
+                        "bbox": [68.1, 8.0, 97.4, 37.1],
+                        "boundary_geojson": None,
+                        "provider": "RESQ-X Neutral Registry",
+                        "confidence": 0.0
+                    },
+                    "period": {
+                        "start_year": 2026 - window_years,
+                        "end_year": 2026,
+                        "start_date": datetime(2026 - window_years, 1, 1).isoformat(),
+                        "end_date": datetime(2026, 12, 31, 23, 59, 59).isoformat(),
+                        "label": f"Historical Range ({2026 - window_years}–2026)",
+                        "years_covered": window_years
+                    },
+                    "summary": {
+                        "total_events": 0,
+                        "total_flooded_area_sqkm": 0.0,
+                        "deaths_reported": 0,
+                        "displaced_reported": 0,
+                        "exposed_population": 0,
+                        "crop_area_hectares": 0.0,
+                        "affected_districts": [],
+                        "major_rivers": [],
+                        "primary_sources": []
+                    },
+                    "incidents": [],
+                    "aggregated_flood_geojson": None
                 }
 
         current_year = 2026

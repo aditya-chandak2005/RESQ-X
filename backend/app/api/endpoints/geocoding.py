@@ -58,7 +58,7 @@ def search_by_geometry(payload: Dict[str, Any]):
         "status": "resolved",
         "geometry_type": geom.get("type", "Polygon"),
         "vertex_count": len(coords[0]) if coords and len(coords) > 0 else 0,
-        "matched_region": "Assam & Northeast India Corridor",
+        "matched_region": "Resolved Boundary Region",
         "attribution": "RESQ-X Spatial Boundary Resolver"
     }
 

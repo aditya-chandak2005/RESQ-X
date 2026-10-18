@@ -39,7 +39,12 @@ import { Bot } from 'lucide-react';
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('command');
   const [incidents, setIncidents] = useState<DisasterEvent[]>([]);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<number>(1);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<GeocodingPlace | null>(null);
+  const [activeFloodOverlay, setActiveFloodOverlay] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [floodResult, setFloodResult] = useState<FloodResult | null>(null);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -114,8 +119,8 @@ export const App: React.FC = () => {
     basemap: 'satellite',
     satellite: true,
     stateBoundaries: true,
-    floodExtent: true,
-    floodSeverity: true,
+    floodExtent: false,
+    floodSeverity: false,
     settlements: true,
     isolatedOnly: false,
     bridges: true,
@@ -131,7 +136,19 @@ export const App: React.FC = () => {
     elevationContours: false,
   });
 
-  const loadAllTelemetry = async (disasterId: number = selectedIncidentId) => {
+  const loadAllTelemetry = async (disasterId: number | null = selectedIncidentId) => {
+    if (disasterId === null) {
+      try {
+        const incidentList = await api.getDisasters().catch(() => []);
+        if (incidentList && incidentList.length > 0) {
+          setIncidents(incidentList);
+        }
+      } catch (e) {
+        console.error('Initial disaster catalog fetch error:', e);
+      }
+      return;
+    }
+
     try {
       const [incidentList, kpiRes, floodRes, setRes, dmgRes, prioRes, teamRes, msnRes, rscRes] = await Promise.all([
         api.getDisasters().catch(() => []),
@@ -164,7 +181,16 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadAllTelemetry(selectedIncidentId);
+    if (selectedIncidentId !== null) {
+      loadAllTelemetry(selectedIncidentId);
+    } else {
+      // Neutral initial state: fetch only the disaster directory for selection
+      api.getDisasters().then((incidentList) => {
+        if (incidentList && incidentList.length > 0) {
+          setIncidents(incidentList);
+        }
+      }).catch((e) => console.error('Failed to load initial disasters catalog:', e));
+    }
   }, [selectedIncidentId]);
 
   const allRoutes = missions.flatMap((m) => m.routes || []);
@@ -177,7 +203,7 @@ export const App: React.FC = () => {
       const assessment = await api.assessLocation({
         latitude: lat,
         longitude: lng,
-        disaster_id: selectedIncidentId,
+        disaster_id: selectedIncidentId || undefined,
         location_label: label,
       });
       setCurrentAssessment(assessment);
@@ -193,7 +219,7 @@ export const App: React.FC = () => {
       const assessment = await api.assessLocation({
         latitude: lat,
         longitude: lng,
-        disaster_id: selectedIncidentId,
+        disaster_id: selectedIncidentId || undefined,
         location_label: label,
       });
       setCurrentAssessment(assessment);
@@ -213,6 +239,7 @@ export const App: React.FC = () => {
     histSummary?: HistoricalFloodSummaryResponse,
     bounds?: [[number, number], [number, number]] | null
   ) => {
+    setSelectedLocation(place);
     setCurrentTab('command');
     setHighlightedStateName(place.state || place.name);
     if (bounds) {
@@ -223,6 +250,7 @@ export const App: React.FC = () => {
     setHistoricalFootprintGeoJSON(null);
     setActiveVisualizedIncidentId(null);
     setIsAggregatedActive(false);
+    setActiveFloodOverlay(false);
 
     if (histSummary) {
       setHistoricalData(histSummary);
@@ -233,11 +261,23 @@ export const App: React.FC = () => {
   const handleVisualizeHistoricalIncident = async (inc: HistoricalIncidentSummary) => {
     try {
       const floodRes = await api.getFloodResult(inc.id);
+      let foundPolygons: FloodPolygon[] = [];
       if (floodRes && floodRes.polygons && floodRes.polygons.length > 0) {
-        setHistoricalPolygons(floodRes.polygons);
+        foundPolygons = floodRes.polygons;
       } else if (inc.flood_polygons && inc.flood_polygons.length > 0) {
-        setHistoricalPolygons(inc.flood_polygons as FloodPolygon[]);
+        foundPolygons = inc.flood_polygons as FloodPolygon[];
       }
+
+      if (foundPolygons.length > 0) {
+        setHistoricalPolygons(foundPolygons);
+        setActiveFloodOverlay(true);
+        setLayers((prev) => ({ ...prev, floodExtent: true }));
+      } else {
+        console.warn(`No verified flood polygons available for incident #${inc.id}`);
+        setHistoricalPolygons([]);
+        setActiveFloodOverlay(false);
+      }
+
       setHistoricalFootprintGeoJSON(null);
       setActiveVisualizedIncidentId(inc.id);
       setIsAggregatedActive(false);
@@ -254,9 +294,13 @@ export const App: React.FC = () => {
       }
     } catch (e) {
       console.error('Failed to visualize historical flood event:', e);
-      if (inc.flood_polygons) {
+      if (inc.flood_polygons && inc.flood_polygons.length > 0) {
         setHistoricalPolygons(inc.flood_polygons as FloodPolygon[]);
         setActiveVisualizedIncidentId(inc.id);
+        setActiveFloodOverlay(true);
+      } else {
+        setHistoricalPolygons([]);
+        setActiveFloodOverlay(false);
       }
     }
   };
@@ -268,6 +312,8 @@ export const App: React.FC = () => {
       setHistoricalPolygons([]);
       setActiveVisualizedIncidentId(null);
       setIsAggregatedActive(true);
+      setActiveFloodOverlay(true);
+      setLayers((prev) => ({ ...prev, floodExtent: true }));
     }
   };
 
@@ -277,15 +323,19 @@ export const App: React.FC = () => {
     setHistoricalPolygons([]);
     setActiveVisualizedIncidentId(null);
     setIsAggregatedActive(false);
+    setActiveFloodOverlay(false);
   };
 
   // Omni-search from Header
   const handleSearchFromHeader = async (query: string) => {
-    const q = query.toLowerCase();
-    
+    if (!query || !query.trim()) return;
+    const q = query.trim();
+    setIsSearching(true);
+    setSearchError(null);
+
     // Check search interpretation service first for full spatial intelligence
     try {
-      const interpretRes = await api.interpretSearch(query);
+      const interpretRes = await api.interpretSearch(q);
       if (interpretRes && interpretRes.resolved_place) {
         const place = interpretRes.resolved_place;
         let bounds: [[number, number], [number, number]] | null = null;
@@ -302,76 +352,59 @@ export const App: React.FC = () => {
           ];
         }
 
+        // Establish location context and boundary; do NOT auto-select incident and do NOT auto-show flood polygons
         handleHistoricalPlaceSelected(place, interpretRes.historical_summary, bounds);
-
-        const firstIncId = interpretRes.matched_incidents?.[0]?.id;
-        if (firstIncId) {
-          setSelectedIncidentId(firstIncId);
-          loadAllTelemetry(firstIncId);
-        }
 
         const isQuestionOrCompare =
           interpretRes.operation === 'compare' ||
           interpretRes.operation === 'summarize' ||
-          q.includes('why') ||
-          q.includes('how') ||
-          q.includes('tell') ||
-          q.includes('explain') ||
-          q.includes('history');
+          q.toLowerCase().startsWith('why') ||
+          q.toLowerCase().startsWith('how') ||
+          q.toLowerCase().startsWith('what') ||
+          q.toLowerCase().startsWith('tell');
 
         if (isQuestionOrCompare) {
-          handleOpenCopilotWithQuery(query, firstIncId);
+          handleOpenCopilotWithQuery(q);
         }
         return;
       }
+
+      // Fallback: direct geocoding place search
+      const geoRes = await api.searchGeocodingPlaces(q, 1);
+      if (geoRes && geoRes.places && geoRes.places.length > 0) {
+        const place = geoRes.places[0];
+        let bounds: [[number, number], [number, number]] | null = null;
+        if (place.bbox && place.bbox.length === 4) {
+          bounds = [
+            [place.bbox[1], place.bbox[0]],
+            [place.bbox[3], place.bbox[2]],
+          ];
+        } else if (place.latitude && place.longitude) {
+          const delta = place.feature_type === 'state' ? 1.8 : place.feature_type === 'district' ? 0.45 : 0.08;
+          bounds = [
+            [place.latitude - delta, place.longitude - delta],
+            [place.latitude + delta, place.longitude + delta],
+          ];
+        }
+
+        let histSummary: HistoricalFloodSummaryResponse | undefined = undefined;
+        try {
+          histSummary = await api.getHistoricalFloodsByPlace(place.place_id, undefined, undefined, 10);
+        } catch (e) {
+          console.warn('Historical records fetch note:', e);
+        }
+
+        handleHistoricalPlaceSelected(place, histSummary, bounds);
+        return;
+      }
+
+      // Unresolvable search query: do NOT fabricate coordinates or move map
+      setSearchError(`Location "${q}" could not be resolved. Please enter a valid place name.`);
     } catch (err) {
       console.warn('Header omni-search interpret note:', err);
-    }
-
-    if (q.includes('mumbai') || q.includes('mithi') || q.includes('2005')) {
-      setSelectedIncidentId(8);
-      loadAllTelemetry(8);
-      handleNavigateToLocation(19.0760, 72.8777, 'Mumbai Metropolitan & Mithi River Basin');
-      handleOpenCopilotWithQuery(
-        'Explain the Mumbai 2005 flood: how the flood happened, what the causes were, how many people got affected, and the recovery response.',
-        8
-      );
-    } else if (q.includes('raini')) {
-      handleNavigateToLocation(30.4912, 79.6841, 'Raini Village North Bank');
-      handleOpenCopilotWithQuery('Provide emergency assessment for Raini Village North Bank in the Chamoli flash flood theater.', 1);
-    } else if (q.includes('tapovan')) {
-      handleNavigateToLocation(30.4945, 79.6278, 'Tapovan Vishnugad Barrage');
-      handleOpenCopilotWithQuery('Provide situation report for Tapovan Vishnugad Barrage and tunnel rescue operations.', 1);
-    } else if (q.includes('joshimath')) {
-      handleNavigateToLocation(30.5580, 79.5645, 'Joshimath Base Hub');
-    } else if (q.includes('suraithota')) {
-      handleNavigateToLocation(30.5284, 79.7431, 'Suraithota Hamlet');
-    } else if (q.includes('helang')) {
-      handleNavigateToLocation(30.5180, 79.5100, 'Helang Confluence Terrace');
-    } else if (
-      q.includes('silchar') ||
-      q.includes('barak') ||
-      q.includes('cachar')
-    ) {
-      setSelectedIncidentId(2);
-      loadAllTelemetry(2);
-      handleNavigateToLocation(24.8333, 92.7789, 'Silchar Urban Plain & Barak Valley');
-      handleOpenCopilotWithQuery('Explain the Silchar Barak Valley floods: how the inundation occurred, breach points, affected population, and response.', 2);
-    } else if (
-      q.includes('nagaon') ||
-      q.includes('barpeta') ||
-      q.includes('golaghat') ||
-      q.includes('kaziranga') ||
-      q.includes('brahmaputra') ||
-      q.includes('kopili') ||
-      q.includes('archive') ||
-      q.includes('history') ||
-      q.includes('historical')
-    ) {
-      setCurrentTab('explore');
-    } else {
-      // General question or search -> open Copilot with query
-      handleOpenCopilotWithQuery(query, selectedIncidentId);
+      setSearchError(`Failed to search location "${q}". Please check network connection.`);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -392,7 +425,7 @@ export const App: React.FC = () => {
     ([k, v]) => k !== 'basemap' && Boolean(v)
   ).length;
 
-  const activeIncident = incidents.find((i) => i.id === selectedIncidentId) || (incidents[0] || null);
+  const activeIncident = selectedIncidentId ? (incidents.find((i) => i.id === selectedIncidentId) || null) : null;
 
   return (
     <div className="flex h-screen w-screen bg-[#070b14] overflow-hidden font-sans select-none text-slate-100">
@@ -417,12 +450,21 @@ export const App: React.FC = () => {
         <Header
           kpis={kpis}
           activeIncident={activeIncident}
+          selectedLocation={selectedLocation}
           incidents={incidents}
           onSelectIncident={(id) => {
             setSelectedIncidentId(id);
             loadAllTelemetry(id);
           }}
-          onRefresh={() => loadAllTelemetry(selectedIncidentId)}
+          onRefresh={() => {
+            if (selectedIncidentId) {
+              loadAllTelemetry(selectedIncidentId);
+            } else {
+              api.getDisasters().then((list) => {
+                if (list && list.length > 0) setIncidents(list);
+              }).catch(() => {});
+            }
+          }}
           onSearchQuery={handleSearchFromHeader}
           onOpenCopilotWithQuery={handleOpenCopilotWithQuery}
           onSelectKpiFilter={handleKpiFilter}
@@ -499,6 +541,7 @@ export const App: React.FC = () => {
               }}
               activeVisualizedIncidentId={activeVisualizedIncidentId}
               isAggregatedActive={isAggregatedActive}
+              activeFloodOverlay={activeFloodOverlay}
             />
           )}
 
@@ -571,7 +614,7 @@ export const App: React.FC = () => {
           {/* AREA 7: Reports & Intelligence */}
           {currentTab === 'reports' && (
             <ReportsIntelligenceView
-              disasterId={selectedIncidentId}
+              disasterId={selectedIncidentId || undefined}
               onNavigateTab={(tab) => setCurrentTab(tab)}
             />
           )}
@@ -644,7 +687,7 @@ export const App: React.FC = () => {
       <SituationReportModal
         isOpen={isSitrepOpen}
         onClose={() => setIsSitrepOpen(false)}
-        disasterId={selectedIncidentId}
+        disasterId={selectedIncidentId || undefined}
       />
 
       {/* 5. Citizen Quick Onboarding Guide Modal */}

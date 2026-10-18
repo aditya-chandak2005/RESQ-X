@@ -74,8 +74,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   // Advanced Location Tools toggle
   const [showLocationTools, setShowLocationTools] = useState(false);
   const [showCoordsForm, setShowCoordsForm] = useState(false);
-  const [coordLat, setCoordLat] = useState('19.0760');
-  const [coordLon, setCoordLon] = useState('72.8777');
+  const [coordLat, setCoordLat] = useState('');
+  const [coordLon, setCoordLon] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -227,10 +227,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Place selection: centers map, assesses location, loads historical data, and activates Copilot
+  // Place selection: centers map, establishes boundary, and retrieves historical data without auto-visualizing
   const handleSelectPlace = async (place: GeocodingPlace) => {
     setIsOpen(false);
     setQuery(place.name);
+    setError(null);
 
     // Calculate targetBounds from bbox or coordinates
     let bounds: [[number, number], [number, number]] | null = null;
@@ -247,21 +248,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       ];
     }
 
-    // Check if place matches an active disaster incident (e.g. Mumbai -> incident 8)
-    const isMumbai = place.name.toLowerCase().includes('mumbai');
-    const matchingInc = incidentMatches.find(
-      (inc) =>
-        inc.name.toLowerCase().includes(place.name.toLowerCase()) ||
-        (inc.district && inc.district.toLowerCase() === place.name.toLowerCase()) ||
-        (inc.place_name && inc.place_name.toLowerCase().includes(place.name.toLowerCase()))
-    );
-
-    const resolvedIncidentId = matchingInc ? matchingInc.id : isMumbai ? 8 : undefined;
-
-    if (resolvedIncidentId && onSelectIncident) {
-      onSelectIncident(resolvedIncidentId);
-    }
-
     if (onLocationSelected) {
       const label = place.district
         ? `${place.name}, ${place.district} (${place.state})`
@@ -269,7 +255,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       onLocationSelected(place.latitude, place.longitude, label);
     }
 
-    // Retrieve historical disaster intelligence for place
+    // Retrieve historical disaster intelligence for place asynchronously
     let histData: HistoricalFloodSummaryResponse | undefined = undefined;
     try {
       histData = await api.getHistoricalFloodsByPlace(place.place_id);
@@ -279,14 +265,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
     if (onHistoricalPlaceSelected) {
       onHistoricalPlaceSelected(place, histData, bounds);
-    }
-
-    // Simultaneously trigger AI Copilot with comprehensive disaster assessment
-    if (onOpenCopilotWithQuery) {
-      const copilotPrompt = (matchingInc || isMumbai)
-        ? `Explain the ${matchingInc?.name || 'Maharashtra Floods 2005 (Mumbai)'}: how the flood happened, what the causes were, how many people got affected, and the recovery response.`
-        : `Provide flood risk and disaster assessment for ${place.name}, ${place.state}: what is the geographic vulnerability, flood history, and emergency response posture?`;
-      onOpenCopilotWithQuery(copilotPrompt, resolvedIncidentId);
     }
   };
 
@@ -301,6 +279,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const interpretRes = await api.interpretSearch(trimmed);
       if (interpretRes && interpretRes.resolved_place) {
@@ -320,11 +299,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
             [place.latitude - delta, place.longitude - delta],
             [place.latitude + delta, place.longitude + delta],
           ];
-        }
-
-        const firstIncId = interpretRes.matched_incidents?.[0]?.id;
-        if (firstIncId && onSelectIncident) {
-          onSelectIncident(firstIncId);
         }
 
         if (onLocationSelected) {
@@ -347,7 +321,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           trimmed.toLowerCase().includes('explain');
 
         if (isQuestionOrCompare && onOpenCopilotWithQuery) {
-          onOpenCopilotWithQuery(trimmed, firstIncId);
+          onOpenCopilotWithQuery(trimmed);
         }
         return;
       }
@@ -357,12 +331,13 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       setIsLoading(false);
     }
 
-    if (incidentMatches.length > 0) {
-      handleSelectIncidentItem(incidentMatches[0]);
-    } else if (places.length > 0) {
+    if (places.length > 0) {
       handleSelectPlace(places[0]);
+    } else if (incidentMatches.length > 0) {
+      handleSelectIncidentItem(incidentMatches[0]);
     } else {
-      handleAskCopilot();
+      setError(`Location "${trimmed}" could not be resolved. Please enter a valid Indian city, district, state, or coordinates.`);
+      setIsOpen(true);
     }
   };
 

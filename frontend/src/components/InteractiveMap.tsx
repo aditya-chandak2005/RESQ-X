@@ -71,6 +71,7 @@ interface InteractiveMapProps {
   historicalFootprintGeoJSON?: any;
   historicalPolygons?: FloodPolygon[];
   onClearHistoricalOverlay?: () => void;
+  activeFloodOverlay?: boolean;
 }
 
 // Custom DivIcon generator
@@ -633,8 +634,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   layers,
   setLayers,
   onSelectItem,
-  center = [24.8333, 92.7789], // Default to Silchar, Assam if unspecified
-  zoom = 12,
+  center = [22.5937, 78.9629], // Neutral All-India extent
+  zoom = 5,
   activeIncident,
   inspectedPoint,
   setInspectedPoint,
@@ -647,6 +648,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   historicalFootprintGeoJSON,
   historicalPolygons,
   onClearHistoricalOverlay,
+  activeFloodOverlay = false,
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
@@ -752,7 +754,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, [activeIncident?.id, inspectedPoint, center, zoom]);
 
-  const activeStateName = (activeIncident?.state || 'Assam').toLowerCase();
+  const activeStateName = (highlightedStateName || activeIncident?.state || '').toLowerCase();
 
   const handleJumpToTheater = (targetCenter: [number, number], targetZoom: number = 11) => {
     setMapCenter(targetCenter);
@@ -813,10 +815,16 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       {/* 1. Tactical HUD Banner (Top Center) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] hidden md:flex items-center space-x-2 bg-[#0e1629]/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-2xl text-xs font-mono select-none">
-        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-        <span className="text-slate-400 font-bold uppercase">THEATER:</span>
+        <span className={`w-2.5 h-2.5 rounded-full ${activeIncident ? 'bg-red-500 animate-pulse' : 'bg-cyan-400'}`} />
+        <span className="text-slate-400 font-bold uppercase">
+          {activeIncident ? 'THEATER:' : highlightedStateName ? 'LOCATION:' : 'GRID:'}
+        </span>
         <span className="text-cyan-300 font-bold uppercase">
-          {activeIncident?.state || 'ASSAM'} • {activeIncident?.district || 'CACHAR'}
+          {activeIncident
+            ? `${activeIncident.state} • ${activeIncident.district || ''}`
+            : highlightedStateName
+            ? highlightedStateName
+            : 'ALL INDIA • MONITORING'}
         </span>
         <span className="text-slate-400">|</span>
         <span className="text-slate-300 text-[11px]">
@@ -827,10 +835,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div className="pl-2 border-l border-slate-700/80 flex items-center space-x-1 text-[10px]">
           <button
             onClick={() => handleJumpToTheater([24.8333, 92.7789], 12)}
-            className="px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 transition-all cursor-pointer font-bold"
+            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all cursor-pointer"
             title="Jump to Silchar & Cachar District, Assam"
           >
-            ⚡ Silchar
+            Silchar
           </button>
           <button
             onClick={() => handleJumpToTheater([26.1445, 91.7362], 12)}
@@ -874,11 +882,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           onRecenter={() => {
             if (activeIncident) {
               handleJumpToTheater([activeIncident.center_lat, activeIncident.center_lon], 11);
+            } else if (inspectedPoint) {
+              handleJumpToTheater([inspectedPoint.lat, inspectedPoint.lng], 12);
             } else {
-              handleJumpToTheater([24.8333, 92.7789], 11);
+              handleJumpToTheater([22.5937, 78.9629], 5);
             }
           }}
-          onJumpIndia={() => handleJumpToTheater([23.5937, 80.9629], 5)}
+          onJumpIndia={() => handleJumpToTheater([22.5937, 78.9629], 5)}
         />
 
         {/* ============================================================== */}
@@ -1029,6 +1039,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         {/* OPERATIONAL SATELLITE FLOOD EXTENT & SEVERITY POLYGONS         */}
         {/* ============================================================== */}
         {layers.floodExtent &&
+          Boolean(activeIncident) &&
           floodPolygons.map((poly) => {
             const coords = poly.geometry_geojson.coordinates[0].map(
               ([lon, lat]) => [lat, lon] as [number, number]
