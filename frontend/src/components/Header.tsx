@@ -64,6 +64,8 @@ interface HeaderProps {
   setIsInspectMode?: (active: boolean) => void;
   currentAssessment?: LocationAssessment | null;
   onClearAssessment?: () => void;
+  onClearLocationSelection?: () => void;
+  searchResetKey?: number;
   selectedLocation?: GeocodingPlace | null;
   // Map layers
   layers?: any;
@@ -93,6 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectBasemap,
   onLocationSelected,
   onHistoricalPlaceSelected,
+  onClearLocationSelection,
+  searchResetKey,
   isInspectMode = false,
   setIsInspectMode,
   currentAssessment,
@@ -424,6 +428,8 @@ export const Header: React.FC<HeaderProps> = ({
             onSearchQuery={onSearchQuery}
             onOpenCopilotWithQuery={onOpenCopilotWithQuery}
             onHistoricalPlaceSelected={onHistoricalPlaceSelected}
+            onClearLocationSelection={onClearLocationSelection}
+            searchResetKey={searchResetKey}
             isInspectMode={isInspectMode}
             setIsInspectMode={setIsInspectMode}
             className="w-full max-w-[480px] min-w-0"
@@ -504,6 +510,8 @@ export const Header: React.FC<HeaderProps> = ({
           onSearchQuery={onSearchQuery}
           onOpenCopilotWithQuery={onOpenCopilotWithQuery}
           onHistoricalPlaceSelected={onHistoricalPlaceSelected}
+          onClearLocationSelection={onClearLocationSelection}
+          searchResetKey={searchResetKey}
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           className="w-full"
@@ -545,11 +553,11 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <span>Intel Report ▾</span>
               </button>
-              {onClearAssessment && (
+              {(onClearLocationSelection || onClearAssessment) && (
                 <button
-                  onClick={onClearAssessment}
+                  onClick={onClearLocationSelection || onClearAssessment}
                   className="text-slate-400 hover:text-red-400 p-0.5 transition-colors cursor-pointer shrink-0"
-                  title="Clear Pin Target"
+                  title="Clear Pin Target and Selection"
                 >
                   <X className="w-3 h-3" />
                 </button>

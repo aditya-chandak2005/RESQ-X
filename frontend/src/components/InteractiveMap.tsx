@@ -80,6 +80,8 @@ interface InteractiveMapProps {
   historicalPolygons?: FloodPolygon[];
   onClearHistoricalOverlay?: () => void;
   activeFloodOverlay?: boolean;
+  resetTrigger?: number;
+  onClearLocationSelection?: () => void;
 }
 
 // Custom DivIcon generator
@@ -273,13 +275,27 @@ const MapController: React.FC<{
   zoom?: number;
   activeIncidentId?: number;
   targetBounds?: [[number, number], [number, number]] | null;
-}> = ({ center, zoom, activeIncidentId, targetBounds }) => {
+  resetTrigger?: number;
+}> = ({ center, zoom, activeIncidentId, targetBounds, resetTrigger }) => {
   const map = useMap();
   const prevCenterRef = useRef<[number, number]>(center);
   const prevIncidentRef = useRef<number | undefined>(undefined);
   const prevBoundsRef = useRef<string | null>(null);
+  const prevResetTriggerRef = useRef<number | undefined>(resetTrigger);
 
   useEffect(() => {
+    // 1. Explicit centralized reset trigger: close all popups & fly to neutral India extent immediately
+    if (resetTrigger !== undefined && resetTrigger !== prevResetTriggerRef.current) {
+      prevResetTriggerRef.current = resetTrigger;
+      prevBoundsRef.current = null;
+      prevIncidentRef.current = undefined;
+      prevCenterRef.current = [22.5937, 78.9629];
+      map.closePopup();
+      map.flyTo([22.5937, 78.9629], 5, { duration: 1.2 });
+      return;
+    }
+
+    // 2. Target bounds handling
     if (targetBounds && targetBounds.length === 2) {
       const boundsKey = JSON.stringify(targetBounds);
       if (boundsKey !== prevBoundsRef.current) {
@@ -291,19 +307,25 @@ const MapController: React.FC<{
       prevBoundsRef.current = null;
     }
 
-    const latDiff = Math.abs(center[0] - prevCenterRef.current[0]);
-    const lonDiff = Math.abs(center[1] - prevCenterRef.current[1]);
+    // 3. Dynamic flying / panning
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+    const targetZoom = zoom || 5;
+
+    const latDiff = Math.abs(center[0] - currentCenter.lat);
+    const lonDiff = Math.abs(center[1] - currentCenter.lng);
+    const zoomDiff = Math.abs(targetZoom - currentZoom);
     const incidentChanged = activeIncidentId !== undefined && prevIncidentRef.current !== activeIncidentId;
 
-    if (incidentChanged || latDiff > 0.05 || lonDiff > 0.05) {
+    if (incidentChanged || latDiff > 0.05 || lonDiff > 0.05 || zoomDiff >= 1) {
       prevIncidentRef.current = activeIncidentId;
       prevCenterRef.current = center;
-      map.flyTo(center, zoom || 12, { duration: 1.4 });
+      map.flyTo(center, targetZoom, { duration: 1.4 });
     } else {
       map.panTo(center);
       prevCenterRef.current = center;
     }
-  }, [center, zoom, activeIncidentId, targetBounds, map]);
+  }, [center, zoom, activeIncidentId, targetBounds, resetTrigger, map]);
 
   return null;
 };
@@ -631,6 +653,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   historicalPolygons,
   onClearHistoricalOverlay,
   activeFloodOverlay = false,
+  resetTrigger,
+  onClearLocationSelection,
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
@@ -789,11 +813,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <span className="text-amber-200 font-bold text-[11px]">
             {historicalFootprintGeoJSON ? '10-Year Aggregated Flood Footprint' : 'Historical Flood Extent Active'}
           </span>
-          {onClearHistoricalOverlay && (
+          {(onClearLocationSelection || onClearHistoricalOverlay) && (
             <button
-              onClick={onClearHistoricalOverlay}
+              onClick={onClearLocationSelection || onClearHistoricalOverlay}
               className="ml-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] cursor-pointer"
-              title="Clear historical flood overlay"
+              title="Clear historical flood overlay and selection"
             >
               Clear
             </button>
@@ -932,7 +956,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoomControl={false}
         doubleClickZoom={false}
       >
-        <MapController center={mapCenter} zoom={mapZoom} activeIncidentId={activeIncident?.id} targetBounds={targetBounds} />
+        <MapController center={mapCenter} zoom={mapZoom} activeIncidentId={activeIncident?.id} targetBounds={targetBounds} resetTrigger={resetTrigger} />
         <MapEventsHandler
           onMapDoubleClick={onMapDoubleClick}
           onMapClick={onMapClick}
@@ -1474,7 +1498,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           <InspectPinMarker
             point={inspectedPoint}
             assessment={currentAssessment}
-            onClear={setInspectedPoint ? () => setInspectedPoint(null) : undefined}
+            onClear={
+              onClearLocationSelection
+                ? onClearLocationSelection
+                : setInspectedPoint
+                ? () => setInspectedPoint(null)
+                : undefined
+            }
           />
         )}
       </MapContainer>

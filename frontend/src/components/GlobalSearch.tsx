@@ -31,6 +31,8 @@ interface GlobalSearchProps {
     historicalData?: HistoricalFloodSummaryResponse,
     targetBounds?: [[number, number], [number, number]] | null
   ) => void;
+  onClearLocationSelection?: () => void;
+  searchResetKey?: number;
   isInspectMode?: boolean;
   setIsInspectMode?: (active: boolean) => void;
   className?: string;
@@ -56,6 +58,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   onSearchQuery,
   onOpenCopilotWithQuery,
   onHistoricalPlaceSelected,
+  onClearLocationSelection,
+  searchResetKey,
   isInspectMode = false,
   setIsInspectMode,
   className = '',
@@ -81,6 +85,21 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<any>(null);
   const requestIdRef = useRef<number>(0);
+  const prevResetKeyRef = useRef<number | undefined>(searchResetKey);
+
+  // Respond immediately to centralized application reset
+  useEffect(() => {
+    if (searchResetKey !== undefined && searchResetKey !== prevResetKeyRef.current) {
+      prevResetKeyRef.current = searchResetKey;
+      setQuery('');
+      setPlaces([]);
+      setIncidentMatches([]);
+      setError(null);
+      setIsOpen(false);
+      setIsLoading(false);
+      requestIdRef.current += 1;
+    }
+  }, [searchResetKey]);
 
   // Parse if input looks like coordinates: e.g. "19.0760, 72.8777"
   const parseCoordinates = (text: string): { lat: number; lon: number } | null => {
@@ -637,11 +656,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                 setQuery('');
                 setPlaces([]);
                 setIncidentMatches([]);
+                setError(null);
+                setIsOpen(false);
+                setIsLoading(false);
+                requestIdRef.current += 1;
+                onClearLocationSelection?.();
                 inputRef.current?.focus();
               }}
               className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
-              title="Clear search query"
-              aria-label="Clear search query"
+              title="Clear search query and reset location selection"
+              aria-label="Clear search query and reset location selection"
             >
               <X className="w-3.5 h-3.5" />
             </button>

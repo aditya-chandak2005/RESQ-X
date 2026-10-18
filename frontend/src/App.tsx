@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { CommandCenterView } from './pages/CommandCenterView';
@@ -55,6 +55,10 @@ export const App: React.FC = () => {
   const [teams, setTeams] = useState<RescueTeam[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+
+  // Centralized Request Invalidation & Reset Token System
+  const locationRequestIdRef = useRef<number>(0);
+  const [searchResetKey, setSearchResetKey] = useState<number>(0);
 
   // Historical Disaster Intelligence State (Stage A & Stage B)
   const [historicalData, setHistoricalData] = useState<HistoricalFloodSummaryResponse | null>(null);
@@ -185,7 +189,17 @@ export const App: React.FC = () => {
     if (selectedIncidentId !== null) {
       loadAllTelemetry(selectedIncidentId);
     } else {
-      // Neutral initial state: fetch only the disaster directory for selection
+      // Neutral initial state: clear active incident telemetry & fetch disaster directory
+      setFloodResult(null);
+      setKpis(null);
+      setSettlements([]);
+      setBridges([]);
+      setRoads([]);
+      setAssets([]);
+      setPriorities([]);
+      setTeams([]);
+      setMissions([]);
+      setResources([]);
       api.getDisasters().then((incidentList) => {
         if (incidentList && incidentList.length > 0) {
           setIncidents(incidentList);
@@ -197,6 +211,7 @@ export const App: React.FC = () => {
   const allRoutes = missions.flatMap((m) => m.routes || []);
 
   const handleMapClick = async (lat: number, lng: number) => {
+    const currentReqId = ++locationRequestIdRef.current;
     const label = `Pinned Point [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
     setInspectedPoint({ lat, lng, label });
     setCurrentAssessment(null);
@@ -207,13 +222,17 @@ export const App: React.FC = () => {
         disaster_id: selectedIncidentId || undefined,
         location_label: label,
       });
+      if (currentReqId !== locationRequestIdRef.current) return;
       setCurrentAssessment(assessment);
     } catch (err) {
-      console.error('Map click assessment error:', err);
+      if (currentReqId === locationRequestIdRef.current) {
+        console.error('Map click assessment error:', err);
+      }
     }
   };
 
   const handleNavigateToLocation = async (lat: number, lng: number, label: string) => {
+    const currentReqId = ++locationRequestIdRef.current;
     setInspectedPoint({ lat, lng, label });
     setCurrentTab('command');
     if (!selectedLocation) {
@@ -241,9 +260,12 @@ export const App: React.FC = () => {
         disaster_id: selectedIncidentId || undefined,
         location_label: label,
       });
+      if (currentReqId !== locationRequestIdRef.current) return;
       setCurrentAssessment(assessment);
     } catch (err) {
-      console.error('Location navigation error:', err);
+      if (currentReqId === locationRequestIdRef.current) {
+        console.error('Location navigation error:', err);
+      }
     }
   };
 
@@ -258,6 +280,9 @@ export const App: React.FC = () => {
     histSummary?: HistoricalFloodSummaryResponse,
     bounds?: [[number, number], [number, number]] | null
   ) => {
+    // Invalidate any previously pending requests with a fresh token
+    const currentReqId = ++locationRequestIdRef.current;
+
     setSelectedLocation(place);
     setIsLocationPanelOpen(true);
     setCurrentTab('command');
@@ -296,8 +321,12 @@ export const App: React.FC = () => {
         state: place.state,
         district: place.district,
       })
-        .then((data) => setHistoricalData(data))
+        .then((data) => {
+          if (currentReqId !== locationRequestIdRef.current) return;
+          setHistoricalData(data);
+        })
         .catch((err) => {
+          if (currentReqId !== locationRequestIdRef.current) return;
           console.warn('Historical flood query note:', err);
           setHistoricalData({
             place,
@@ -323,7 +352,11 @@ export const App: React.FC = () => {
             aggregated_flood_geojson: null,
           });
         })
-        .finally(() => setIsLoadingHistory(false));
+        .finally(() => {
+          if (currentReqId === locationRequestIdRef.current) {
+            setIsLoadingHistory(false);
+          }
+        });
     }
 
     // Query point assessment asynchronously for DEM and local facility telemetry
@@ -333,8 +366,10 @@ export const App: React.FC = () => {
       longitude: place.longitude,
       location_label: label,
     }).then((assessment) => {
+      if (currentReqId !== locationRequestIdRef.current) return;
       setCurrentAssessment(assessment);
     }).catch((err) => {
+      if (currentReqId !== locationRequestIdRef.current) return;
       console.warn('Location assessment query note:', err);
     });
   };
@@ -430,16 +465,61 @@ export const App: React.FC = () => {
     setActiveFloodOverlay(false);
   };
 
-  // Completely clear selected location, pin, and overlays
-  const handleClearSelectedLocation = () => {
+  // Single centralized clear-search and location reset workflow
+  const clearLocationSelection = useCallback(() => {
+    // 1. Invalidate pending in-flight requests so late responses cannot restore state
+    locationRequestIdRef.current += 1;
+
+    // 2. Clear selected-location, identifier, and pin state
     setSelectedLocation(null);
     setIsLocationPanelOpen(false);
     setInspectedPoint(null);
+    setIsInspectMode(false);
+
+    // 3. Clear location-dependent results, derived metrics, and DEM telemetry
     setCurrentAssessment(null);
+
+    // 4. Clear historical incident intelligence & event flood overlays
     setHistoricalData(null);
-    handleClearHistoricalOverlay();
+    setHistoricalPolygons([]);
+    setHistoricalFootprintGeoJSON(null);
+    setActiveVisualizedIncidentId(null);
+    setIsAggregatedActive(false);
+    setActiveFloodOverlay(false);
+
+    // 5. Clear selected disaster incident and associated temporary annotations
+    setSelectedIncidentId(null);
+    setFloodResult(null);
+    setSettlements([]);
+    setBridges([]);
+    setRoads([]);
+    setAssets([]);
+    setPriorities([]);
+    setTeams([]);
+    setMissions([]);
+    setResources([]);
+    setKpis(null);
+
+    // 6. Clear highlight states and inspection items
     setHighlightedStateName(undefined);
-  };
+    setSelectedItem(null);
+
+    // 7. Reset search loading, error, and pending states
+    setIsSearching(false);
+    setIsLoadingHistory(false);
+    setSearchError(null);
+
+    // 8. Safely reset Copilot location context without clearing user messages
+    setCopilotInitialQuery('');
+
+    // 9. Reset map bounds and trigger smooth camera return to neutral All-India extent
+    setTargetBounds(null);
+
+    // 10. Increment searchResetKey to notify all GlobalSearch instances to reset inputs and suggestions
+    setSearchResetKey((k) => k + 1);
+  }, []);
+
+  const handleClearSelectedLocation = clearLocationSelection;
 
   // Open Copilot with location context and automatically request comprehensive intelligence briefing
   const handleOpenInformationFromPanel = (place: GeocodingPlace) => {
@@ -457,12 +537,14 @@ export const App: React.FC = () => {
   const handleSearchFromHeader = async (query: string) => {
     if (!query || !query.trim()) return;
     const q = query.trim();
+    const currentReqId = ++locationRequestIdRef.current;
     setIsSearching(true);
     setSearchError(null);
 
     // Check search interpretation service first for full spatial intelligence
     try {
       const interpretRes = await api.interpretSearch(q);
+      if (currentReqId !== locationRequestIdRef.current) return;
       if (interpretRes && interpretRes.resolved_place) {
         const place = interpretRes.resolved_place;
         let bounds: [[number, number], [number, number]] | null = null;
@@ -486,6 +568,7 @@ export const App: React.FC = () => {
 
       // Fallback: direct geocoding place search
       const geoRes = await api.searchGeocodingPlaces(q, 1);
+      if (currentReqId !== locationRequestIdRef.current) return;
       if (geoRes && geoRes.places && geoRes.places.length > 0) {
         const place = geoRes.places[0];
         let bounds: [[number, number], [number, number]] | null = null;
@@ -510,10 +593,14 @@ export const App: React.FC = () => {
       // Unresolvable search query: do NOT fabricate coordinates or move map
       setSearchError(`Location "${q}" could not be resolved. Please enter a valid place name.`);
     } catch (err) {
-      console.warn('Header omni-search interpret note:', err);
-      setSearchError(`Failed to search location "${q}". Please check network connection.`);
+      if (currentReqId === locationRequestIdRef.current) {
+        console.warn('Header omni-search interpret note:', err);
+        setSearchError(`Failed to search location "${q}". Please check network connection.`);
+      }
     } finally {
-      setIsSearching(false);
+      if (currentReqId === locationRequestIdRef.current) {
+        setIsSearching(false);
+      }
     }
   };
 
@@ -596,10 +683,9 @@ export const App: React.FC = () => {
           isInspectMode={isInspectMode}
           setIsInspectMode={setIsInspectMode}
           currentAssessment={currentAssessment}
-          onClearAssessment={() => {
-            setInspectedPoint(null);
-            setCurrentAssessment(null);
-          }}
+          onClearAssessment={clearLocationSelection}
+          onClearLocationSelection={clearLocationSelection}
+          searchResetKey={searchResetKey}
           activeBasemap={layers.basemap}
           onSelectBasemap={(bm) => setLayers((prev) => ({ ...prev, basemap: bm }))}
           layers={layers}
@@ -637,7 +723,8 @@ export const App: React.FC = () => {
               selectedLocation={selectedLocation}
               isLocationPanelOpen={isLocationPanelOpen}
               setIsLocationPanelOpen={setIsLocationPanelOpen}
-              onClearSelectedLocation={handleClearSelectedLocation}
+              onClearSelectedLocation={clearLocationSelection}
+              resetTrigger={searchResetKey}
               onOpenInformation={handleOpenInformationFromPanel}
               isLoadingHistory={isLoadingHistory}
               highlightedStateName={highlightedStateName}

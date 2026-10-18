@@ -74,6 +74,7 @@ interface CommandCenterViewProps {
   onClearSelectedLocation?: () => void;
   onOpenInformation?: (place: GeocodingPlace) => void;
   isLoadingHistory?: boolean;
+  resetTrigger?: number;
 }
 
 export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
@@ -118,6 +119,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   onClearSelectedLocation,
   onOpenInformation,
   isLoadingHistory = false,
+  resetTrigger,
 }) => {
   const [isContextCollapsed, setIsContextCollapsed] = useState(false);
 
@@ -161,6 +163,8 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
             historicalFootprintGeoJSON={historicalFootprintGeoJSON}
             historicalPolygons={historicalPolygons}
             onClearHistoricalOverlay={onClearHistoricalOverlay}
+            resetTrigger={resetTrigger}
+            onClearLocationSelection={onClearSelectedLocation}
           />
 
           {/* Unified Selected-Location Intelligence Panel */}
@@ -173,7 +177,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
               isLoadingAssessment={false}
               activeVisualizedIncidentId={activeVisualizedIncidentId}
               isAggregatedActive={isAggregatedActive}
-              onClose={() => setIsLocationPanelOpen?.(false)}
+              onClose={onClearSelectedLocation || (() => setIsLocationPanelOpen?.(false))}
               onClearLocation={onClearSelectedLocation || (() => {})}
               onOpenInformation={onOpenInformation || (() => onNavigateTab('copilot'))}
               onSelectHistoricalEvent={onVisualizeHistoricalIncident || (() => {})}
