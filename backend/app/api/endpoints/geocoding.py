@@ -83,6 +83,11 @@ def get_place_historical_floods(
     year_from: Optional[int] = Query(None, description="Start year for historical window"),
     year_to: Optional[int] = Query(None, description="End year for historical window"),
     window_years: int = Query(10, ge=1, le=50, description="Rolling historical window in years (default 10)"),
+    latitude: Optional[float] = Query(None, description="Optional latitude for instant coordinate resolution"),
+    longitude: Optional[float] = Query(None, description="Optional longitude for instant coordinate resolution"),
+    place_name: Optional[str] = Query(None, description="Optional place name for instant text resolution"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
     db: Session = Depends(get_db)
 ):
     """Retrieve comprehensive historical flood intelligence for a place over the rolling 10-year window."""
@@ -91,5 +96,10 @@ def get_place_historical_floods(
         place_id=place_id,
         year_from=year_from,
         year_to=year_to,
-        window_years=window_years
+        window_years=window_years,
+        latitude=latitude,
+        longitude=longitude,
+        place_name=place_name,
+        state=state,
+        district=district
     )

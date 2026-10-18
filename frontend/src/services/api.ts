@@ -356,12 +356,18 @@ export const api = {
     placeId: string,
     yearFrom?: number,
     yearTo?: number,
-    windowYears: number = 10
+    windowYears: number = 10,
+    coords?: { lat?: number; lon?: number; name?: string; state?: string; district?: string }
   ): Promise<HistoricalFloodSummaryResponse> {
     const params = new URLSearchParams();
     if (yearFrom) params.append('year_from', yearFrom.toString());
     if (yearTo) params.append('year_to', yearTo.toString());
     if (windowYears) params.append('window_years', windowYears.toString());
+    if (coords?.lat !== undefined) params.append('latitude', coords.lat.toString());
+    if (coords?.lon !== undefined) params.append('longitude', coords.lon.toString());
+    if (coords?.name) params.append('place_name', coords.name);
+    if (coords?.state) params.append('state', coords.state);
+    if (coords?.district) params.append('district', coords.district);
 
     const res = await fetch(`${API_BASE}/places/${encodeURIComponent(placeId)}/historical-floods?${params.toString()}`);
     if (!res.ok) throw new Error(`Failed to fetch historical floods for place: ${placeId}`);

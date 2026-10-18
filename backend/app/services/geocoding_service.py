@@ -622,8 +622,688 @@ CURATED_PLACES: List[Dict[str, Any]] = [
         "provider": "Central Water Commission (CWC)",
         "confidence": 0.99,
         "keywords": ["periyar", "periyar river", "aluva", "idukki", "kerala flood"]
+    },
+    # --- National Capital Region & Major Indian Metros ---
+    {
+        "place_id": "in-dl-delhi",
+        "name": "Delhi",
+        "display_name": "Delhi (National Capital Territory), India",
+        "feature_type": "city",
+        "district": "Central Delhi",
+        "state": "Delhi",
+        "country": "India",
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "bbox": [76.84, 28.40, 77.35, 28.88],
+        "boundary_geojson": None,
+        "provider": "Survey of India / DDMA",
+        "confidence": 1.0,
+        "keywords": ["delhi", "new delhi", "nct", "ncr", "dilli", "yamuna", "ito", "kashmere gate"]
+    },
+    {
+        "place_id": "in-ka-bengaluru",
+        "name": "Bengaluru",
+        "display_name": "Bengaluru Urban, Karnataka, India",
+        "feature_type": "city",
+        "district": "Bengaluru Urban",
+        "state": "Karnataka",
+        "country": "India",
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "bbox": [77.46, 12.83, 77.74, 13.14],
+        "boundary_geojson": None,
+        "provider": "BBMP / KSNDMC",
+        "confidence": 1.0,
+        "keywords": ["bengaluru", "bangalore", "whitefield", "koramangala", "bellandur", "indiranagar"]
+    },
+    {
+        "place_id": "in-wb-kolkata",
+        "name": "Kolkata",
+        "display_name": "Kolkata Metropolitan Area, West Bengal, India",
+        "feature_type": "city",
+        "district": "Kolkata",
+        "state": "West Bengal",
+        "country": "India",
+        "latitude": 22.5726,
+        "longitude": 88.3639,
+        "bbox": [88.25, 22.45, 88.48, 22.68],
+        "boundary_geojson": None,
+        "provider": "KMC / WBSDMA",
+        "confidence": 1.0,
+        "keywords": ["kolkata", "calcutta", "howrah", "hooghly", "salt lake", "alipore"]
+    },
+    {
+        "place_id": "in-tn-chennai",
+        "name": "Chennai",
+        "display_name": "Chennai Metropolitan Area, Tamil Nadu, India",
+        "feature_type": "city",
+        "district": "Chennai",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "latitude": 13.0827,
+        "longitude": 80.2707,
+        "bbox": [80.12, 12.92, 80.35, 13.24],
+        "boundary_geojson": None,
+        "provider": "GCC / TNDMA",
+        "confidence": 1.0,
+        "keywords": ["chennai", "madras", "adyar", "cooum", "velachery", "tambaram"]
+    },
+    {
+        "place_id": "in-tg-hyderabad",
+        "name": "Hyderabad",
+        "display_name": "Hyderabad Metropolitan Development Area, Telangana, India",
+        "feature_type": "city",
+        "district": "Hyderabad",
+        "state": "Telangana",
+        "country": "India",
+        "latitude": 17.3850,
+        "longitude": 78.4867,
+        "bbox": [78.30, 17.25, 78.62, 17.55],
+        "boundary_geojson": None,
+        "provider": "GHMC / TSDMA",
+        "confidence": 1.0,
+        "keywords": ["hyderabad", "secunderabad", "cyberabad", "musi river", "hitec city"]
+    },
+    {
+        "place_id": "in-gj-ahmedabad",
+        "name": "Ahmedabad",
+        "display_name": "Ahmedabad Municipal Corporation, Gujarat, India",
+        "feature_type": "city",
+        "district": "Ahmedabad",
+        "state": "Gujarat",
+        "country": "India",
+        "latitude": 23.0225,
+        "longitude": 72.5714,
+        "bbox": [72.46, 22.92, 72.68, 23.14],
+        "boundary_geojson": None,
+        "provider": "AMC / GSDMA",
+        "confidence": 1.0,
+        "keywords": ["ahmedabad", "amdavad", "sabarmati", "maninagar", "bopal"]
+    },
+    {
+        "place_id": "in-mh-pune",
+        "name": "Pune",
+        "display_name": "Pune Municipal Corporation, Maharashtra, India",
+        "feature_type": "city",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 18.5204,
+        "longitude": 73.8567,
+        "bbox": [73.73, 18.42, 73.98, 18.62],
+        "boundary_geojson": None,
+        "provider": "PMC / MSDMA",
+        "confidence": 1.0,
+        "keywords": ["pune", "poona", "mula mutha", "kothrud", "pcmc", "pimpri"]
+    },
+    {
+        "place_id": "in-rj-jaipur",
+        "name": "Jaipur",
+        "display_name": "Jaipur City (Pink City), Rajasthan, India",
+        "feature_type": "city",
+        "district": "Jaipur",
+        "state": "Rajasthan",
+        "country": "India",
+        "latitude": 26.9124,
+        "longitude": 75.7873,
+        "bbox": [75.68, 26.80, 75.92, 27.02],
+        "boundary_geojson": None,
+        "provider": "JDA / Rajasthan SDMA",
+        "confidence": 1.0,
+        "keywords": ["jaipur", "pink city", "amer", "sanganer", "mansarovar", "vaishali nagar"]
+    },
+    {
+        "place_id": "in-up-lucknow",
+        "name": "Lucknow",
+        "display_name": "Lucknow Capital City, Uttar Pradesh, India",
+        "feature_type": "city",
+        "district": "Lucknow",
+        "state": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 26.8467,
+        "longitude": 80.9462,
+        "bbox": [80.84, 26.75, 81.04, 26.95],
+        "boundary_geojson": None,
+        "provider": "LMC / UPSDMA",
+        "confidence": 1.0,
+        "keywords": ["lucknow", "gomti", "hazratganj", "gomti nagar", "alambagh"]
+    },
+    {
+        "place_id": "in-up-kanpur",
+        "name": "Kanpur",
+        "display_name": "Kanpur Metropolitan City, Uttar Pradesh, India",
+        "feature_type": "city",
+        "district": "Kanpur Nagar",
+        "state": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 26.4499,
+        "longitude": 80.3319,
+        "bbox": [80.22, 26.36, 80.44, 26.54],
+        "boundary_geojson": None,
+        "provider": "KMC / UPSDMA",
+        "confidence": 1.0,
+        "keywords": ["kanpur", "cawnpore", "ganga", "kalyanpur", "shyam nagar"]
+    },
+    {
+        "place_id": "in-up-varanasi",
+        "name": "Varanasi",
+        "display_name": "Varanasi (Kashi / Banaras), Uttar Pradesh, India",
+        "feature_type": "city",
+        "district": "Varanasi",
+        "state": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 25.3176,
+        "longitude": 82.9739,
+        "bbox": [82.90, 25.25, 83.05, 25.38],
+        "boundary_geojson": None,
+        "provider": "VMC / UPSDMA",
+        "confidence": 1.0,
+        "keywords": ["varanasi", "kashi", "banaras", "ganga", "assighat", "dashashwamedh"]
+    },
+    {
+        "place_id": "in-up-prayagraj",
+        "name": "Prayagraj",
+        "display_name": "Prayagraj (Allahabad), Uttar Pradesh, India",
+        "feature_type": "city",
+        "district": "Prayagraj",
+        "state": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 25.4358,
+        "longitude": 81.8463,
+        "bbox": [81.76, 25.38, 81.94, 25.50],
+        "boundary_geojson": None,
+        "provider": "PMC / UPSDMA",
+        "confidence": 1.0,
+        "keywords": ["prayagraj", "allahabad", "sangam", "triveni sangam", "civil lines"]
+    },
+    {
+        "place_id": "in-br-patna",
+        "name": "Patna",
+        "display_name": "Patna Capital City, Bihar, India",
+        "feature_type": "city",
+        "district": "Patna",
+        "state": "Bihar",
+        "country": "India",
+        "latitude": 25.5941,
+        "longitude": 85.1376,
+        "bbox": [85.04, 25.52, 85.24, 25.66],
+        "boundary_geojson": None,
+        "provider": "PMC / BSDMA",
+        "confidence": 1.0,
+        "keywords": ["patna", "patliputra", "ganga", "kankarbagh", "danapur", "rajendra nagar"]
+    },
+    {
+        "place_id": "in-mp-bhopal",
+        "name": "Bhopal",
+        "display_name": "Bhopal Capital City, Madhya Pradesh, India",
+        "feature_type": "city",
+        "district": "Bhopal",
+        "state": "Madhya Pradesh",
+        "country": "India",
+        "latitude": 23.2599,
+        "longitude": 77.4126,
+        "bbox": [77.32, 23.16, 77.52, 23.34],
+        "boundary_geojson": None,
+        "provider": "BMC / MPSDMA",
+        "confidence": 1.0,
+        "keywords": ["bhopal", "upper lake", "kolar", "arera colony", "mp nagar"]
+    },
+    {
+        "place_id": "in-mp-indore",
+        "name": "Indore",
+        "display_name": "Indore Municipal Corporation, Madhya Pradesh, India",
+        "feature_type": "city",
+        "district": "Indore",
+        "state": "Madhya Pradesh",
+        "country": "India",
+        "latitude": 22.7196,
+        "longitude": 75.8577,
+        "bbox": [75.76, 22.64, 75.95, 22.80],
+        "boundary_geojson": None,
+        "provider": "IMC / MPSDMA",
+        "confidence": 1.0,
+        "keywords": ["indore", "rajwada", "vijay nagar", "palasia", "kanadia"]
+    },
+    {
+        "place_id": "in-ch-chandigarh",
+        "name": "Chandigarh",
+        "display_name": "Chandigarh Capital City Complex, India",
+        "feature_type": "city",
+        "district": "Chandigarh",
+        "state": "Chandigarh",
+        "country": "India",
+        "latitude": 30.7333,
+        "longitude": 76.7794,
+        "bbox": [76.70, 30.66, 76.85, 30.80],
+        "boundary_geojson": None,
+        "provider": "Chandigarh Administration",
+        "confidence": 1.0,
+        "keywords": ["chandigarh", "mohali", "panchkula", "tricity", "sukhna lake"]
+    },
+    {
+        "place_id": "in-uk-dehradun",
+        "name": "Dehradun",
+        "display_name": "Dehradun Interim Capital, Uttarakhand, India",
+        "feature_type": "city",
+        "district": "Dehradun",
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.3165,
+        "longitude": 78.0322,
+        "bbox": [77.96, 30.24, 78.12, 30.40],
+        "boundary_geojson": None,
+        "provider": "DMC / USDMA",
+        "confidence": 1.0,
+        "keywords": ["dehradun", "doon", "rajpur", "mussoorie road", "rispana", "bindal"]
+    },
+    {
+        "place_id": "in-hp-shimla",
+        "name": "Shimla",
+        "display_name": "Shimla Municipal Corporation, Himachal Pradesh, India",
+        "feature_type": "city",
+        "district": "Shimla",
+        "state": "Himachal Pradesh",
+        "country": "India",
+        "latitude": 31.1048,
+        "longitude": 77.1734,
+        "bbox": [77.12, 31.06, 77.22, 31.15],
+        "boundary_geojson": None,
+        "provider": "SMC / HPSDMA",
+        "confidence": 1.0,
+        "keywords": ["shimla", "simla", "mall road", "sanjauli", "chotta shimla"]
+    },
+    {
+        "place_id": "in-jk-srinagar",
+        "name": "Srinagar",
+        "display_name": "Srinagar Municipal Corporation, Kashmir, India",
+        "feature_type": "city",
+        "district": "Srinagar",
+        "state": "Jammu and Kashmir",
+        "country": "India",
+        "latitude": 34.0837,
+        "longitude": 74.7973,
+        "bbox": [74.72, 34.02, 74.88, 34.15],
+        "boundary_geojson": None,
+        "provider": "SMC / JKSDMA",
+        "confidence": 1.0,
+        "keywords": ["srinagar", "dal lake", "jhelum", "lal chowk", "rajbagh", "kashmir flood"]
+    },
+    {
+        "place_id": "in-od-bhubaneswar",
+        "name": "Bhubaneswar",
+        "display_name": "Bhubaneswar Capital City, Odisha, India",
+        "feature_type": "city",
+        "district": "Khurda",
+        "state": "Odisha",
+        "country": "India",
+        "latitude": 20.2961,
+        "longitude": 85.8245,
+        "bbox": [85.74, 20.22, 85.90, 20.37],
+        "boundary_geojson": None,
+        "provider": "BMC / OSDMA",
+        "confidence": 1.0,
+        "keywords": ["bhubaneswar", "cuttack", "khurda", "puri", "mahanadi"]
+    },
+    {
+        "place_id": "in-jh-ranchi",
+        "name": "Ranchi",
+        "display_name": "Ranchi Capital City, Jharkhand, India",
+        "feature_type": "city",
+        "district": "Ranchi",
+        "state": "Jharkhand",
+        "country": "India",
+        "latitude": 23.3441,
+        "longitude": 85.3096,
+        "bbox": [85.22, 23.27, 85.39, 23.42],
+        "boundary_geojson": None,
+        "provider": "RMC / JSDMA",
+        "confidence": 1.0,
+        "keywords": ["ranchi", "subarnarekha", "doranda", "morabadi", "hatia"]
+    },
+    {
+        "place_id": "in-kl-thiruvananthapuram",
+        "name": "Thiruvananthapuram",
+        "display_name": "Thiruvananthapuram (Trivandrum), Kerala, India",
+        "feature_type": "city",
+        "district": "Thiruvananthapuram",
+        "state": "Kerala",
+        "country": "India",
+        "latitude": 8.5241,
+        "longitude": 76.9366,
+        "bbox": [76.88, 8.44, 77.02, 8.59],
+        "boundary_geojson": None,
+        "provider": "TMC / Kerala SDMA",
+        "confidence": 1.0,
+        "keywords": ["thiruvananthapuram", "trivandrum", "technopark", "kovalam", "karamana"]
+    },
+    {
+        "place_id": "in-ap-visakhapatnam",
+        "name": "Visakhapatnam",
+        "display_name": "Visakhapatnam (Vizag), Andhra Pradesh, India",
+        "feature_type": "city",
+        "district": "Visakhapatnam",
+        "state": "Andhra Pradesh",
+        "country": "India",
+        "latitude": 17.6868,
+        "longitude": 83.2185,
+        "bbox": [83.15, 17.62, 83.35, 17.82],
+        "boundary_geojson": None,
+        "provider": "GVMC / APSDMA",
+        "confidence": 1.0,
+        "keywords": ["visakhapatnam", "vizag", "waltair", "gajuwaka", "rushikonda"]
+    },
+    {
+        "place_id": "in-gj-surat",
+        "name": "Surat",
+        "display_name": "Surat Municipal Corporation, Gujarat, India",
+        "feature_type": "city",
+        "district": "Surat",
+        "state": "Gujarat",
+        "country": "India",
+        "latitude": 21.1702,
+        "longitude": 72.8311,
+        "bbox": [72.74, 21.10, 72.92, 21.26],
+        "boundary_geojson": None,
+        "provider": "SMC / GSDMA",
+        "confidence": 1.0,
+        "keywords": ["surat", "tapi river", "adajan", "varachha", "katargam", "surat flood"]
+    },
+    {
+        "place_id": "in-mh-nagpur",
+        "name": "Nagpur",
+        "display_name": "Nagpur Municipal Corporation, Maharashtra, India",
+        "feature_type": "city",
+        "district": "Nagpur",
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 21.1458,
+        "longitude": 79.0882,
+        "bbox": [79.00, 21.05, 79.18, 21.22],
+        "boundary_geojson": None,
+        "provider": "NMC / MSDMA",
+        "confidence": 1.0,
+        "keywords": ["nagpur", "orange city", "dharampeth", "sitabuldi", "nag river"]
+    },
+    # --- Indian States & Union Territories ---
+    {
+        "place_id": "in-state-maharashtra",
+        "name": "Maharashtra",
+        "display_name": "Maharashtra State, Western India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Maharashtra",
+        "country": "India",
+        "latitude": 19.7515,
+        "longitude": 75.7139,
+        "bbox": [72.60, 15.60, 80.90, 22.00],
+        "boundary_geojson": None,
+        "provider": "Survey of India / MSDMA",
+        "confidence": 1.0,
+        "keywords": ["maharashtra", "mh", "konkan", "vidarbha", "marathwada"]
+    },
+    {
+        "place_id": "in-state-karnataka",
+        "name": "Karnataka",
+        "display_name": "Karnataka State, Southern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Karnataka",
+        "country": "India",
+        "latitude": 15.3173,
+        "longitude": 75.7139,
+        "bbox": [74.00, 11.50, 78.60, 18.50],
+        "boundary_geojson": None,
+        "provider": "Survey of India / KSDMA",
+        "confidence": 1.0,
+        "keywords": ["karnataka", "ka", "mysore state", "coastal karnataka"]
+    },
+    {
+        "place_id": "in-state-tamilnadu",
+        "name": "Tamil Nadu",
+        "display_name": "Tamil Nadu State, Southern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Tamil Nadu",
+        "country": "India",
+        "latitude": 11.1271,
+        "longitude": 78.6569,
+        "bbox": [76.20, 8.00, 80.30, 13.60],
+        "boundary_geojson": None,
+        "provider": "Survey of India / TNDMA",
+        "confidence": 1.0,
+        "keywords": ["tamil nadu", "tn", "tamilnadu", "coromandel"]
+    },
+    {
+        "place_id": "in-state-westbengal",
+        "name": "West Bengal",
+        "display_name": "West Bengal State, Eastern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "West Bengal",
+        "country": "India",
+        "latitude": 22.9868,
+        "longitude": 87.8550,
+        "bbox": [85.80, 21.50, 89.90, 27.20],
+        "boundary_geojson": None,
+        "provider": "Survey of India / WBSDMA",
+        "confidence": 1.0,
+        "keywords": ["west bengal", "wb", "bengal", "ganga delta"]
+    },
+    {
+        "place_id": "in-state-rajasthan",
+        "name": "Rajasthan",
+        "display_name": "Rajasthan State, Western India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Rajasthan",
+        "country": "India",
+        "latitude": 27.0238,
+        "longitude": 74.2179,
+        "bbox": [69.50, 23.00, 78.30, 30.20],
+        "boundary_geojson": None,
+        "provider": "Survey of India / RSDMA",
+        "confidence": 1.0,
+        "keywords": ["rajasthan", "rj", "thar desert", "marwar", "mewar"]
+    },
+    {
+        "place_id": "in-state-uttarpradesh",
+        "name": "Uttar Pradesh",
+        "display_name": "Uttar Pradesh State, Northern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 26.8467,
+        "longitude": 80.9462,
+        "bbox": [77.10, 23.80, 84.70, 30.40],
+        "boundary_geojson": None,
+        "provider": "Survey of India / UPSDMA",
+        "confidence": 1.0,
+        "keywords": ["uttar pradesh", "up", "ganga basin", "awadh", "purvanchal"]
+    },
+    {
+        "place_id": "in-state-gujarat",
+        "name": "Gujarat",
+        "display_name": "Gujarat State, Western India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Gujarat",
+        "country": "India",
+        "latitude": 22.2587,
+        "longitude": 71.1924,
+        "bbox": [68.10, 20.10, 74.50, 24.70],
+        "boundary_geojson": None,
+        "provider": "Survey of India / GSDMA",
+        "confidence": 1.0,
+        "keywords": ["gujarat", "gj", "saurashtra", "kutch", "kathiawar"]
+    },
+    {
+        "place_id": "in-state-kerala",
+        "name": "Kerala",
+        "display_name": "Kerala State, Malabar Coast, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Kerala",
+        "country": "India",
+        "latitude": 10.8505,
+        "longitude": 76.2711,
+        "bbox": [74.80, 8.20, 77.50, 12.80],
+        "boundary_geojson": None,
+        "provider": "Survey of India / Kerala SDMA",
+        "confidence": 1.0,
+        "keywords": ["kerala", "kl", "malabar", "travancore", "gods own country"]
+    },
+    {
+        "place_id": "in-state-bihar",
+        "name": "Bihar",
+        "display_name": "Bihar State, Gangetic Plain, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Bihar",
+        "country": "India",
+        "latitude": 25.0961,
+        "longitude": 85.3131,
+        "bbox": [83.30, 24.30, 88.30, 27.50],
+        "boundary_geojson": None,
+        "provider": "Survey of India / BSDMA",
+        "confidence": 1.0,
+        "keywords": ["bihar", "br", "kosi", "mithila", "magadh", "bihar flood"]
+    },
+    {
+        "place_id": "in-state-madhyapradesh",
+        "name": "Madhya Pradesh",
+        "display_name": "Madhya Pradesh State, Central India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Madhya Pradesh",
+        "country": "India",
+        "latitude": 22.9734,
+        "longitude": 78.6569,
+        "bbox": [74.00, 21.00, 82.80, 26.90],
+        "boundary_geojson": None,
+        "provider": "Survey of India / MPSDMA",
+        "confidence": 1.0,
+        "keywords": ["madhya pradesh", "mp", "malwa", "bundelkhand", "narmada"]
+    },
+    {
+        "place_id": "in-state-punjab",
+        "name": "Punjab",
+        "display_name": "Punjab State, Northern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Punjab",
+        "country": "India",
+        "latitude": 31.1471,
+        "longitude": 75.3412,
+        "bbox": [73.80, 29.50, 76.90, 32.50],
+        "boundary_geojson": None,
+        "provider": "Survey of India / PSDMA",
+        "confidence": 1.0,
+        "keywords": ["punjab", "pb", "sutlej", "beas", "majha", "malwa"]
+    },
+    {
+        "place_id": "in-state-haryana",
+        "name": "Haryana",
+        "display_name": "Haryana State, Northern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Haryana",
+        "country": "India",
+        "latitude": 29.0588,
+        "longitude": 76.0856,
+        "bbox": [74.40, 27.60, 77.60, 30.90],
+        "boundary_geojson": None,
+        "provider": "Survey of India / HSDMA",
+        "confidence": 1.0,
+        "keywords": ["haryana", "hr", "ncr", "ghaggar", "kurukshetra"]
+    },
+    {
+        "place_id": "in-state-himachal",
+        "name": "Himachal Pradesh",
+        "display_name": "Himachal Pradesh State, Western Himalayas, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Himachal Pradesh",
+        "country": "India",
+        "latitude": 31.1048,
+        "longitude": 77.1734,
+        "bbox": [75.60, 30.40, 79.00, 33.20],
+        "boundary_geojson": None,
+        "provider": "Survey of India / HPSDMA",
+        "confidence": 1.0,
+        "keywords": ["himachal pradesh", "hp", "himachal", "himalayas", "beas", "kullu"]
+    },
+    {
+        "place_id": "in-state-odisha",
+        "name": "Odisha",
+        "display_name": "Odisha State, Eastern Coast, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Odisha",
+        "country": "India",
+        "latitude": 20.9517,
+        "longitude": 85.0985,
+        "bbox": [81.40, 17.80, 87.50, 22.60],
+        "boundary_geojson": None,
+        "provider": "Survey of India / OSDMA",
+        "confidence": 1.0,
+        "keywords": ["odisha", "orissa", "od", "mahanadi", "cyclone coast"]
+    },
+    {
+        "place_id": "in-state-jharkhand",
+        "name": "Jharkhand",
+        "display_name": "Jharkhand State, Chota Nagpur, India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Jharkhand",
+        "country": "India",
+        "latitude": 23.6102,
+        "longitude": 85.2799,
+        "bbox": [83.30, 21.90, 87.90, 25.30],
+        "boundary_geojson": None,
+        "provider": "Survey of India / JSDMA",
+        "confidence": 1.0,
+        "keywords": ["jharkhand", "jh", "chota nagpur", "damodar"]
+    },
+    {
+        "place_id": "in-state-chhattisgarh",
+        "name": "Chhattisgarh",
+        "display_name": "Chhattisgarh State, Central India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Chhattisgarh",
+        "country": "India",
+        "latitude": 21.2787,
+        "longitude": 81.8661,
+        "bbox": [80.20, 17.80, 84.40, 24.10],
+        "boundary_geojson": None,
+        "provider": "Survey of India / CGSDMA",
+        "confidence": 1.0,
+        "keywords": ["chhattisgarh", "cg", "bastar", "mahanadi"]
+    },
+    {
+        "place_id": "in-state-uttarakhand",
+        "name": "Uttarakhand",
+        "display_name": "Uttarakhand Himalayan State, Northern India",
+        "feature_type": "state",
+        "district": None,
+        "state": "Uttarakhand",
+        "country": "India",
+        "latitude": 30.0668,
+        "longitude": 79.0193,
+        "bbox": [77.50, 28.70, 81.10, 31.50],
+        "boundary_geojson": None,
+        "provider": "Survey of India / USDMA",
+        "confidence": 1.0,
+        "keywords": ["uttarakhand", "uk", "uttaranchal", "garhwal", "kumaon"]
     }
 ]
+
+
+# Fast O(1) index of all known places by place_id
+_KNOWN_PLACES_BY_ID: Dict[str, Dict[str, Any]] = {}
+for _p in CURATED_PLACES:
+    _KNOWN_PLACES_BY_ID[_p["place_id"]] = _p
 
 
 class GeocodingService:
@@ -723,6 +1403,7 @@ class GeocodingService:
                 res_obj = dict(item)
                 res_obj.pop("keywords", None)
                 scored_places.append((score, res_obj))
+                _KNOWN_PLACES_BY_ID[res_obj["place_id"]] = res_obj
 
         # Sort places by score descending
         scored_places.sort(key=lambda x: x[0], reverse=True)
@@ -754,6 +1435,7 @@ class GeocodingService:
                 # Avoid duplicate coordinates or names
                 if not any(abs(ep["latitude"] - r["latitude"]) < 0.01 and abs(ep["longitude"] - r["longitude"]) < 0.01 for r in results):
                     results.append(ep)
+                    _KNOWN_PLACES_BY_ID[ep["place_id"]] = ep
 
         # Store in Cache
         _GEOCODE_CACHE[q_clean] = (time.time(), results)
@@ -768,17 +1450,58 @@ class GeocodingService:
     @staticmethod
     def get_place_by_id(place_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve full details, boundary, and bounding box for a place ID."""
+        if not place_id:
+            return None
+
+        # 1. Check known places fast index
+        if place_id in _KNOWN_PLACES_BY_ID:
+            res = dict(_KNOWN_PLACES_BY_ID[place_id])
+            res.pop("keywords", None)
+            return res
+
+        # 2. Check in CURATED_PLACES
         for item in CURATED_PLACES:
             if item["place_id"] == place_id:
                 res = dict(item)
                 res.pop("keywords", None)
+                _KNOWN_PLACES_BY_ID[place_id] = item
                 return res
 
-        # Check in cache
+        # 3. Check in query cache
         for _, (_, cached_places) in _GEOCODE_CACHE.items():
             for p in cached_places:
                 if p["place_id"] == place_id:
+                    _KNOWN_PLACES_BY_ID[place_id] = p
                     return p
+
+        # 4. Check if place_id encodes coordinates (e.g. "coord-28.6139-77.2090" or "sector-...")
+        import re
+        coord_match = re.search(r'[-_](-?\d+\.\d+)[-_](-?\d+\.\d+)', place_id)
+        if coord_match:
+            try:
+                lat = float(coord_match.group(1))
+                lon = float(coord_match.group(2))
+                resolved = GeocodingService.resolve_coordinates(lat, lon)
+                synth = {
+                    "place_id": place_id,
+                    "name": resolved.get("nearest_place") or f"Point [{lat:.4f}, {lon:.4f}]",
+                    "display_name": f"{resolved.get('nearest_place', 'Location')}, {resolved.get('state', 'India')}",
+                    "feature_type": resolved.get("feature_type", "locality"),
+                    "district": resolved.get("district"),
+                    "state": resolved.get("state"),
+                    "country": "India",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "bbox": [lon - 0.08, lat - 0.08, lon + 0.08, lat + 0.08],
+                    "boundary_geojson": None,
+                    "provider": "RESQ-X Coordinate Resolver",
+                    "confidence": 0.9
+                }
+                _KNOWN_PLACES_BY_ID[place_id] = synth
+                return synth
+            except Exception:
+                pass
+
         return None
 
     @staticmethod

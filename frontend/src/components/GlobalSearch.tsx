@@ -227,8 +227,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Place selection: centers map, establishes boundary, and retrieves historical data without auto-visualizing
-  const handleSelectPlace = async (place: GeocodingPlace) => {
+  // Place selection: centers map, establishes boundary, and immediately opens the floating location panel
+  const handleSelectPlace = (place: GeocodingPlace) => {
     setIsOpen(false);
     setQuery(place.name);
     setError(null);
@@ -251,20 +251,13 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     if (onLocationSelected) {
       const label = place.district
         ? `${place.name}, ${place.district} (${place.state})`
-        : `${place.name}, ${place.state}`;
+        : `${place.name}, ${place.state || 'India'}`;
       onLocationSelected(place.latitude, place.longitude, label);
     }
 
-    // Retrieve historical disaster intelligence for place asynchronously
-    let histData: HistoricalFloodSummaryResponse | undefined = undefined;
-    try {
-      histData = await api.getHistoricalFloodsByPlace(place.place_id);
-    } catch (e) {
-      console.warn('Historical flood query note:', e);
-    }
-
+    // Call onHistoricalPlaceSelected immediately so the floating window opens in 0ms
     if (onHistoricalPlaceSelected) {
-      onHistoricalPlaceSelected(place, histData, bounds);
+      onHistoricalPlaceSelected(place, undefined, bounds);
     }
   };
 
@@ -324,41 +317,131 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     } else if (incidentMatches.length > 0) {
       handleSelectIncidentItem(incidentMatches[0]);
     } else {
+      // Fallback: try direct geocoding place search
+      try {
+        setIsLoading(true);
+        const geoRes = await api.searchGeocodingPlaces(trimmed, 1);
+        if (geoRes && geoRes.places && geoRes.places.length > 0) {
+          handleSelectPlace(geoRes.places[0]);
+          return;
+        }
+      } catch (err) {
+        console.warn('Direct geocoding fallback error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+
       setError(`Location "${trimmed}" could not be resolved. Please enter a valid Indian city, district, state, or coordinates.`);
       setIsOpen(true);
     }
   };
 
-  // Incident selection: selects incident, centers map, and loads telemetry
+  // Incident selection: selects incident, centers map, and opens location intel floating panel
   const handleSelectIncidentItem = (inc: IncidentDetail) => {
     setIsOpen(false);
     setQuery(inc.name);
     if (onSelectIncident) {
       onSelectIncident(inc.id);
     }
-    if (onLocationSelected && inc.center_lat && inc.center_lon) {
-      onLocationSelected(inc.center_lat, inc.center_lon, `${inc.name} [${inc.state}]`);
+
+    if (inc.center_lat && inc.center_lon) {
+      const place: GeocodingPlace = {
+        place_id: `inc-${inc.id}`,
+        name: inc.name,
+        display_name: `${inc.name}, ${inc.district ? `${inc.district}, ` : ''}${inc.state}, India`,
+        feature_type: inc.disaster_type || 'disaster',
+        district: inc.district,
+        state: inc.state,
+        country: 'India',
+        latitude: inc.center_lat,
+        longitude: inc.center_lon,
+        confidence: 1.0,
+        provider: 'RESQ-X Disaster Registry',
+      };
+
+      const delta = 0.15;
+      const bounds: [[number, number], [number, number]] = [
+        [inc.center_lat - delta, inc.center_lon - delta],
+        [inc.center_lat + delta, inc.center_lon + delta],
+      ];
+
+      if (onLocationSelected) {
+        onLocationSelected(inc.center_lat, inc.center_lon, `${inc.name} [${inc.state}]`);
+      }
+
+      if (onHistoricalPlaceSelected) {
+        onHistoricalPlaceSelected(place, undefined, bounds);
+      }
     }
   };
 
-  // Operational Sector 1-click jump
+  // Operational Sector 1-click jump: immediately centers map and opens location intel floating panel
   const handleSelectSector = (sector: typeof OPERATIONAL_SECTORS[0]) => {
     setIsOpen(false);
     setQuery(sector.name);
     if (sector.incidentId && onSelectIncident) {
       onSelectIncident(sector.incidentId);
     }
+
+    const place: GeocodingPlace = {
+      place_id: `sector-${sector.lat}-${sector.lon}`,
+      name: sector.name,
+      display_name: `${sector.name}, ${sector.desc}, ${sector.state}, India`,
+      feature_type: sector.type,
+      district: sector.desc,
+      state: sector.state,
+      country: 'India',
+      latitude: sector.lat,
+      longitude: sector.lon,
+      confidence: 1.0,
+      provider: 'RESQ-X Operational Sector',
+    };
+
+    const delta = 0.08;
+    const bounds: [[number, number], [number, number]] = [
+      [sector.lat - delta, sector.lon - delta],
+      [sector.lat + delta, sector.lon + delta],
+    ];
+
     if (onLocationSelected) {
       onLocationSelected(sector.lat, sector.lon, `${sector.name} [${sector.state}]`);
     }
+
+    if (onHistoricalPlaceSelected) {
+      onHistoricalPlaceSelected(place, undefined, bounds);
+    }
   };
 
-  // Coordinate jump
+  // Coordinate jump: creates clean location anchor and opens location intel floating panel
   const handleSelectParsedCoord = (lat: number, lon: number) => {
     setIsOpen(false);
     const label = `Coordinates [${lat.toFixed(4)}, ${lon.toFixed(4)}]`;
+    const place: GeocodingPlace = {
+      place_id: `coord-${lat.toFixed(4)}-${lon.toFixed(4)}`,
+      name: `Point [${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E]`,
+      display_name: `Coordinates ${lat.toFixed(4)}, ${lon.toFixed(4)}, India`,
+      feature_type: 'coordinate',
+      district: undefined,
+      state: 'India',
+      country: 'India',
+      latitude: lat,
+      longitude: lon,
+      confidence: 1.0,
+      provider: 'GPS Coordinates',
+    };
+
+    const delta = 0.05;
+    const bounds: [[number, number], [number, number]] = [
+      [lat - delta, lon - delta],
+      [lat + delta, lon + delta],
+    ];
+
     if (onLocationSelected) {
       onLocationSelected(lat, lon, label);
+    }
+
+    if (onHistoricalPlaceSelected) {
+      onHistoricalPlaceSelected(place, undefined, bounds);
     }
   };
 
@@ -472,10 +555,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         setQuery(`GPS [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
-        setIsOpen(false);
-        if (onLocationSelected) {
-          onLocationSelected(lat, lon, `Device GPS [${lat.toFixed(4)}, ${lon.toFixed(4)}]`);
-        }
+        handleSelectParsedCoord(lat, lon);
       },
       (err) => {
         setIsLoading(false);
@@ -541,38 +621,39 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full h-9 pl-9 pr-20 py-2 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none focus:shadow-[0_0_12px_rgba(6,182,212,0.22)] text-xs text-slate-100 placeholder:text-slate-400 font-sans shadow-inner transition-all flex items-center"
+          className="w-full h-9 pl-9 pr-24 py-2 rounded-lg bg-slate-900/95 border border-slate-700/80 hover:border-cyan-500/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500/30 focus:outline-none focus:shadow-[0_0_12px_rgba(6,182,212,0.22)] text-xs text-slate-100 placeholder:text-slate-400 font-sans shadow-inner transition-all flex items-center"
         />
 
-        {/* Loading Spinner */}
-        {isLoading && (
-          <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-16 top-1/2 -translate-y-1/2 pointer-events-none" />
-        )}
+        {/* Right Action Controls: Spinner, Clear 'X' Button, FIND Button */}
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10">
+          {isLoading && (
+            <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0 pointer-events-none" />
+          )}
 
-        {/* Clear Button */}
-        {query && (
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setPlaces([]);
+                setIncidentMatches([]);
+                inputRef.current?.focus();
+              }}
+              className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              title="Clear search query"
+              aria-label="Clear search query"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           <button
-            type="button"
-            onClick={() => {
-              setQuery('');
-              setPlaces([]);
-              setIncidentMatches([]);
-              inputRef.current?.focus();
-            }}
-            className="absolute right-13 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer transition-colors flex items-center justify-center"
-            title="Clear search query"
+            type="submit"
+            className="px-2.5 py-1 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0 active:scale-95"
           >
-            <X className="w-3.5 h-3.5" />
+            FIND
           </button>
-        )}
-
-        {/* Compact FIND Action Button */}
-        <button
-          type="submit"
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 h-6 rounded bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-[10px] font-mono font-bold text-white transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0 active:scale-95"
-        >
-          FIND
-        </button>
+        </div>
       </form>
 
       {/* 2. Autocomplete Popover (Floating cleanly on top of map with z-[2500]) */}

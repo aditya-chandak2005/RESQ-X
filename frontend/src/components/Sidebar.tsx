@@ -13,8 +13,6 @@ import {
   Search,
   PanelLeftClose,
   ChevronRight,
-  ChevronLeft,
-  X,
 } from 'lucide-react';
 
 export type AppArea =
@@ -220,28 +218,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <p className="text-[10px] text-slate-400 tracking-tight">Disaster Response Intel</p>
                 </div>
               </div>
-
-              {/* Action Controls: Collapse Rail & Hide Sidebar */}
-              <div className="flex items-center space-x-1">
-                {setIsCollapsed && (
-                  <button
-                    onClick={() => setIsCollapsed(true)}
-                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 transition-colors cursor-pointer"
-                    title="Collapse to compact icon rail"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                {setIsHidden && (
-                  <button
-                    onClick={() => setIsHidden(true)}
-                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-950 text-slate-400 hover:text-red-300 border border-slate-800 transition-colors cursor-pointer"
-                    title="Hide Navigation Sidebar completely"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
             </div>
           )}
 
@@ -396,15 +372,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="shrink-0">
           {isCollapsed ? (
             /* Collapsed Bottom Action Icons */
-            <div className="p-2 border-t border-slate-800/80 bg-[#0c1322] flex flex-col items-center space-y-2">
-              <button
-                onClick={openCopilot}
-                className="w-10 h-10 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/60 text-cyan-400 flex items-center justify-center cursor-pointer transition-all shadow-sm"
-                title="Quick RESQ Copilot"
-              >
-                <Bot className="w-4 h-4" />
-              </button>
-
+            <div className="p-2 border-t border-slate-800/80 bg-[#0c1322] flex flex-col items-center">
               <button
                 onClick={openSitrep}
                 className="w-10 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-slate-200 flex items-center justify-center cursor-pointer transition-all"
@@ -415,24 +383,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             /* Expanded Bottom Actions */
-            <div className="p-3 border-t border-slate-800/80 bg-[#0c1322] space-y-2">
-              <button
-                onClick={openCopilot}
-                className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/60 text-cyan-200 text-xs font-semibold transition-all shadow-sm cursor-pointer"
-              >
-                <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Quick RESQ Copilot</span>
-              </button>
-
+            <div className="p-3 border-t border-slate-800/80 bg-[#0c1322] space-y-2.5">
               <button
                 onClick={openSitrep}
-                className="w-full flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 text-xs font-medium transition-all cursor-pointer"
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-slate-100 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:border-cyan-500/50"
               >
-                <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
+                <FileCheck2 className="w-4 h-4 text-cyan-400" />
                 <span>Export Situation Report</span>
               </button>
 
-              <div className="pt-1 flex items-center justify-between text-[9px] text-slate-400 font-mono px-1">
+              <div className="pt-0.5 flex items-center justify-between text-[9px] text-slate-400 font-mono px-1">
                 <span>COPERNICUS S1/S2</span>
                 <span className="text-emerald-400 flex items-center gap-1 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

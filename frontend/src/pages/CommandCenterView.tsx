@@ -26,7 +26,6 @@ import {
   Compass,
   Layers,
   ChevronRight,
-  ChevronLeft,
   Bot,
   MapPin,
   ExternalLink,

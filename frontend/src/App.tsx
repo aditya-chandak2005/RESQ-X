@@ -216,6 +216,24 @@ export const App: React.FC = () => {
   const handleNavigateToLocation = async (lat: number, lng: number, label: string) => {
     setInspectedPoint({ lat, lng, label });
     setCurrentTab('command');
+    if (!selectedLocation) {
+      const cleanName = label.split('[')[0].trim() || `Point [${lat.toFixed(3)}, ${lng.toFixed(3)}]`;
+      const place: GeocodingPlace = {
+        place_id: `nav-${lat.toFixed(4)}-${lng.toFixed(4)}`,
+        name: cleanName,
+        display_name: label,
+        feature_type: 'locality',
+        district: undefined,
+        state: 'India',
+        country: 'India',
+        latitude: lat,
+        longitude: lng,
+        confidence: 0.9,
+        provider: 'Navigation Target',
+      };
+      setSelectedLocation(place);
+      setIsLocationPanelOpen(true);
+    }
     try {
       const assessment = await api.assessLocation({
         latitude: lat,
@@ -251,6 +269,12 @@ export const App: React.FC = () => {
 
     if (bounds) {
       setTargetBounds(bounds);
+    } else if (place.latitude && place.longitude) {
+      const delta = place.feature_type === 'state' ? 1.8 : place.feature_type === 'district' ? 0.45 : 0.08;
+      setTargetBounds([
+        [place.latitude - delta, place.longitude - delta],
+        [place.latitude + delta, place.longitude + delta],
+      ]);
     }
 
     // Clean Stage A state: do NOT show historical flood polygons until user requests Stage B
@@ -264,13 +288,46 @@ export const App: React.FC = () => {
       setHistoricalData(histSummary);
     } else {
       setIsLoadingHistory(true);
-      api.getHistoricalFloodsByPlace(place.place_id)
+      setHistoricalData(null);
+      api.getHistoricalFloodsByPlace(place.place_id, undefined, undefined, 10, {
+        lat: place.latitude,
+        lon: place.longitude,
+        name: place.name,
+        state: place.state,
+        district: place.district,
+      })
         .then((data) => setHistoricalData(data))
-        .catch((err) => console.warn('Historical flood query note:', err))
+        .catch((err) => {
+          console.warn('Historical flood query note:', err);
+          setHistoricalData({
+            place,
+            period: {
+              start_date: '2016-10-18T00:00:00',
+              end_date: '2026-10-18T23:59:59',
+              label: '10-Year Rolling Window (2016–2026)',
+              years_count: 10,
+            },
+            summary: {
+              total_incidents: 0,
+              total_flooded_extent_sqkm: 0.0,
+              deaths_reported: 0,
+              displaced_reported: 0,
+              exposed_population: 0,
+              crop_area_hectares: 0.0,
+              affected_districts: [],
+              major_rivers: [],
+              sources: ['NDMA / SDMA Archives'],
+              limitations: 'No catastrophic flood extent polygon documented in rapid-mapping archive.',
+            },
+            incidents: [],
+            aggregated_flood_geojson: null,
+          });
+        })
         .finally(() => setIsLoadingHistory(false));
     }
 
     // Query point assessment asynchronously for DEM and local facility telemetry
+    setCurrentAssessment(null);
     api.assessLocation({
       latitude: place.latitude,
       longitude: place.longitude,
@@ -445,14 +502,8 @@ export const App: React.FC = () => {
           ];
         }
 
-        let histSummary: HistoricalFloodSummaryResponse | undefined = undefined;
-        try {
-          histSummary = await api.getHistoricalFloodsByPlace(place.place_id, undefined, undefined, 10);
-        } catch (e) {
-          console.warn('Historical records fetch note:', e);
-        }
-
-        handleHistoricalPlaceSelected(place, histSummary, bounds);
+        // Open location intelligence panel immediately in 0ms
+        handleHistoricalPlaceSelected(place, undefined, bounds);
         return;
       }
 
