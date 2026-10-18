@@ -228,10 +228,13 @@ class SimulationRequest(BaseModel):
 
 # Copilot Schemas
 class CopilotQueryRequest(BaseModel):
-    disaster_id: Optional[int] = 1
+    disaster_id: Optional[int] = None
     query: str
     category: Optional[str] = None
     conversation_history: Optional[List[Dict[str, str]]] = None
+    selected_location: Optional[Dict[str, Any]] = None
+    mode: Optional[str] = "selected_location" # "selected_location" | "global"
+    filters: Optional[Dict[str, Any]] = None
 
 class CopilotQueryResponse(BaseModel):
     query: str
@@ -242,6 +245,9 @@ class CopilotQueryResponse(BaseModel):
     answer_status: str = "success"
     grounded_data: Dict[str, Any]
     data_used: Dict[str, Any] = Field(default_factory=dict)
+    evidence_breakdown: Optional[Dict[str, Any]] = None
+    matched_events: Optional[List[Dict[str, Any]]] = None
+    nearby_facilities: Optional[List[Dict[str, Any]]] = None
     sources: List[Dict[str, Any]] = Field(default_factory=list)
     limitations: List[str] = Field(default_factory=list)
     suggested_queries: Optional[List[str]] = None
@@ -249,8 +255,27 @@ class CopilotQueryResponse(BaseModel):
     featured_locations: Optional[List[Dict[str, Any]]] = None
     quick_review: Optional[Dict[str, Any]] = None
     model_info: Optional[Dict[str, Any]] = None
+    mode: Optional[str] = "selected_location"
+    retrieval_latency_ms: Optional[float] = None
+    synthesis_latency_ms: Optional[float] = None
+    total_latency_ms: Optional[float] = None
+    disambiguation_candidates: Optional[List[Dict[str, Any]]] = None
     timestamp: str
     generated_at: str
+
+class CopilotStagedSearchResponse(BaseModel):
+    query: str
+    status: str = "staged_results_ready"
+    parsed_entities: Dict[str, Any]
+    search_constraints: Dict[str, Any] = Field(default_factory=dict)
+    mode: str
+    matched_events: List[Dict[str, Any]] = Field(default_factory=list)
+    nearby_facilities: List[Dict[str, Any]] = Field(default_factory=list)
+    facilities: List[Dict[str, Any]] = Field(default_factory=list)
+    sources_preview: List[Dict[str, Any]] = Field(default_factory=list)
+    retrieval_latency_ms: float
+    latency_ms: float = 0.0
+
 
 class KnowledgeSearchRequest(BaseModel):
     query: str

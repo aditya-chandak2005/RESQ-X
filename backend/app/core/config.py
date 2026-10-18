@@ -34,8 +34,13 @@ class Settings(BaseSettings):
     AI_INFERENCE_DEVICE: str = "cpu"
     AI_CONFIDENCE_THRESHOLD: float = 0.65
     
-    # External APIs
+    # External APIs & LLM Provider Configuration
     GEMINI_API_KEY: str = ""
+    COPILOT_LLM_PROVIDER: str = os.getenv("COPILOT_LLM_PROVIDER", "gemini")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    GEMINI_TEMPERATURE: float = float(os.getenv("GEMINI_TEMPERATURE", "0.2"))
+    GEMINI_TIMEOUT_SECONDS: float = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "8.0"))
+    COPILOT_MAX_RETRIEVAL_DOCS: int = int(os.getenv("COPILOT_MAX_RETRIEVAL_DOCS", "5"))
     COPICUS_API_KEY: str = ""
     SENTINEL_HUB_CLIENT_ID: str = ""
     SENTINEL_HUB_CLIENT_SECRET: str = ""

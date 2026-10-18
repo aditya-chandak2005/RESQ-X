@@ -36,6 +36,8 @@ import {
   ArrowRight,
   CornerDownRight,
   Activity,
+  Globe,
+  X,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { QuickReviewData, DisasterKnowledgeItem, DisasterEvent, HistoricalFloodSummaryResponse } from '../types';
@@ -62,6 +64,9 @@ interface Message {
   suggestedFollowUp?: string[];
   quickReview?: QuickReviewData;
   modelInfo?: any;
+  matchedEvents?: any[];
+  nearbyFacilities?: any[];
+  latencies?: { retrieval?: number; synthesis?: number; total?: number };
   timestamp: string;
 }
 
@@ -94,6 +99,25 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [copiedReview, setCopiedReview] = useState(false);
 
+  // Active Location & Search Mode state
+  const [activeLocationContext, setActiveLocationContext] = useState<any>(selectedLocation || null);
+  const [searchMode, setSearchMode] = useState<'selected_location' | 'global'>(selectedLocation ? 'selected_location' : 'global');
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<number>(0);
+
+  // Synchronize when selectedLocation prop changes
+  useEffect(() => {
+    if (selectedLocation) {
+      setActiveLocationContext(selectedLocation);
+      setSearchMode('selected_location');
+    }
+  }, [selectedLocation]);
+
+  const handleClearLocationContext = () => {
+    setActiveLocationContext(null);
+    setSearchMode('global');
+  };
+
   // Quick Queries state
   const [quickQueriesCategory, setQuickQueriesCategory] = useState<string>('all');
   const [dynamicQueries, setDynamicQueries] = useState<any[]>([]);
@@ -121,7 +145,7 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
   const incidentDistrict = activeIncident?.district || (selectedIncidentId ? 'Assigned District' : 'All Regions');
   const incidentState = activeIncident?.state || (selectedIncidentId ? 'Assigned State' : 'India');
 
-  const locationName = selectedLocation?.label || selectedLocation?.name;
+  const locationName = activeLocationContext?.label || activeLocationContext?.name;
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -146,22 +170,19 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
     scrollToBottom();
   }, [messages, loading]);
 
-  // Load context-aware quick queries when selected incident changes
+  // Load context-aware quick queries when selected incident or location changes
   useEffect(() => {
-    if (!selectedIncidentId) {
-      setDynamicQueries([]);
-      return;
-    }
     const fetchQuickQueries = async () => {
       try {
-        const qList = await api.getContextQuickQueries(selectedIncidentId);
+        const placeParam = activeLocationContext ? (activeLocationContext.label || activeLocationContext.name) : undefined;
+        const qList = await api.getContextQuickQueries(selectedIncidentId, placeParam);
         setDynamicQueries(qList || []);
       } catch (err) {
         console.error('Failed to load context quick queries:', err);
       }
     };
     fetchQuickQueries();
-  }, [selectedIncidentId]);
+  }, [selectedIncidentId, activeLocationContext]);
 
   // Load disaster knowledge catalog on mount
   useEffect(() => {
@@ -237,6 +258,14 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
     }
   };
 
+  const handleCancelRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setLoading(false);
+  };
+
   const handleSend = async (textToSend: string) => {
     const queryText = textToSend.trim();
     if (!queryText || loading) return;
@@ -246,13 +275,31 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
     setQuery('');
     setLoading(true);
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentReqId = ++requestIdRef.current;
+
     try {
       const historyPayload = messages.slice(-4).map((m) => ({
         sender: m.sender,
         text: m.text.slice(0, 300),
       }));
 
-      const res = await api.queryCopilot(queryText, selectedIncidentId || 1, historyPayload);
+      const res = await api.queryCopilot(
+        queryText,
+        selectedIncidentId,
+        historyPayload,
+        activeLocationContext,
+        searchMode,
+        controller.signal
+      );
+
+      // Stale response guard
+      if (currentReqId !== requestIdRef.current) return;
+
       const copilotMsg: Message = {
         sender: 'copilot',
         text: res.answer || res.response,
@@ -263,6 +310,13 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
         suggestedFollowUp: res.suggested_follow_up || res.suggested_queries || [],
         quickReview: res.quick_review,
         modelInfo: res.model_info,
+        matchedEvents: res.matched_events || [],
+        nearbyFacilities: res.nearby_facilities || [],
+        latencies: {
+          retrieval: res.retrieval_latency_ms,
+          synthesis: res.synthesis_latency_ms,
+          total: res.total_latency_ms,
+        },
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, copilotMsg]);
@@ -272,18 +326,33 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
         const utter = new SpeechSynthesisUtterance(clean);
         window.speechSynthesis.speak(utter);
       }
-    } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'copilot',
-          text: '⚠️ Communication with GIS and telemetry database interrupted. Please verify backend connection.',
-          answerStatus: 'error',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: 'copilot',
+            text: 'Query cancelled by user.',
+            answerStatus: 'info',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: 'copilot',
+            text: `⚠️ Communication with GIS and telemetry database interrupted: ${e.message || 'Please verify backend connection.'}`,
+            answerStatus: 'error',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }
     } finally {
-      setLoading(false);
+      if (currentReqId === requestIdRef.current) {
+        setLoading(false);
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -381,13 +450,52 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
               <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60 font-bold">
                 GROUNDED COGNITIVE ENGINE
               </span>
+              <button
+                onClick={() => setSearchMode((prev) => (prev === 'selected_location' ? 'global' : 'selected_location'))}
+                className={`text-[9px] uppercase font-mono px-2 py-0.5 rounded border transition-colors flex items-center space-x-1 cursor-pointer ${
+                  searchMode === 'selected_location'
+                    ? 'bg-cyan-950/80 text-cyan-300 border-cyan-600/70 hover:bg-cyan-900'
+                    : 'bg-purple-950/80 text-purple-300 border-purple-600/70 hover:bg-purple-900'
+                }`}
+                title="Click to toggle between Selected-Location scope and Global search"
+              >
+                {searchMode === 'selected_location' ? (
+                  <>
+                    <MapPin className="w-2.5 h-2.5" />
+                    <span>LOCATION MODE</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-2.5 h-2.5" />
+                    <span>GLOBAL MODE</span>
+                  </>
+                )}
+              </button>
             </div>
-            <p className="text-[11px] text-slate-400 font-sans flex items-center gap-1.5">
-              <span>{activeIncident ? 'Active Incident:' : locationName ? 'Selected Location:' : 'Theater:'}</span>
-              <span className="text-cyan-300 font-mono font-bold">{activeIncident ? incidentTitle : locationName ? locationName : 'National Disaster Monitor (Pan-India)'}</span>
+            <div className="text-[11px] text-slate-400 font-sans flex items-center gap-1.5 flex-wrap">
+              {locationName ? (
+                <div className="flex items-center space-x-1 text-[10px] font-mono bg-cyan-950/60 border border-cyan-700/70 px-2 py-0.5 rounded text-cyan-200">
+                  <MapPin className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                  <span className="font-bold">{locationName}</span>
+                  <button
+                    onClick={handleClearLocationContext}
+                    className="hover:text-red-300 text-slate-400 ml-1 p-0.5 cursor-pointer"
+                    title="Clear location context (Switch to Global Search)"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              ) : (
+                <span>
+                  {activeIncident ? 'Active Incident:' : 'Theater:'}{' '}
+                  <strong className="text-cyan-300 font-mono">
+                    {activeIncident ? incidentTitle : 'National Disaster Monitor (Pan-India)'}
+                  </strong>
+                </span>
+              )}
               <span className="text-slate-600">|</span>
               <span>Strictly grounded in Copernicus SAR, PostGIS topology, and NDMA RAG</span>
-            </p>
+            </div>
           </div>
         </div>
 
@@ -693,6 +801,70 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
                       })}
                     </div>
 
+                    {/* Matched Disaster Incidents Badge/Card */}
+                    {m.matchedEvents && m.matchedEvents.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-command-border/60">
+                        <span className="text-[10px] font-mono uppercase text-cyan-400 font-bold block mb-1.5 flex items-center gap-1">
+                          <Activity className="w-3 h-3 text-cyan-400" />
+                          Matched Disaster Incidents ({m.matchedEvents.length}):
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {m.matchedEvents.map((ev: any, evIdx: number) => (
+                            <div
+                              key={evIdx}
+                              className="p-2 rounded bg-black/40 border border-cyan-900/60 text-[10px] font-mono text-slate-300 space-y-1"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-cyan-200 truncate">{ev.name}</span>
+                                {ev.hazard_type && (
+                                  <span className="text-[9px] px-1 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800">
+                                    {ev.hazard_type}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-slate-400">
+                                {ev.district}, {ev.state} • {ev.incident_date ? ev.incident_date.slice(0, 10) : ''}
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-400 pt-0.5">
+                                {ev.flooded_area_sqkm ? <span>Area: <b className="text-cyan-300">{ev.flooded_area_sqkm} km²</b></span> : null}
+                                {ev.deaths_reported !== undefined ? <span>Casualties: <b className="text-red-300">{ev.deaths_reported}</b></span> : null}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nearby Healthcare & Shelters List */}
+                    {m.nearbyFacilities && m.nearbyFacilities.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-command-border/60">
+                        <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block mb-1.5 flex items-center gap-1">
+                          <HeartPulse className="w-3 h-3 text-emerald-400" />
+                          Nearby Facilities (GIS Proximity):
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                          {m.nearbyFacilities.map((f: any, fIdx: number) => (
+                            <div
+                              key={fIdx}
+                              className="flex items-center justify-between text-[10px] font-mono text-slate-300 bg-black/40 border border-emerald-900/40 px-2 py-1.5 rounded"
+                            >
+                              <div className="truncate mr-2">
+                                <span className="font-bold text-slate-200">
+                                  {f.asset_type === 'hospital' ? '🏥 ' : '🏕️ '}
+                                  {f.name}
+                                </span>
+                                {f.capacity && <div className="text-[9px] text-slate-500">Cap: {f.capacity} beds/units</div>}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-cyan-300 font-bold">{f.distance_km} km</span>
+                                <div className="text-[9px] text-emerald-400">{f.status}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Grounded Telemetry Data Chips */}
                     {m.data && m.sender === 'copilot' && (
                       <div className="mt-3 pt-2.5 border-t border-command-border/60 flex flex-wrap items-center gap-2 text-[10px] font-mono text-cyan-400">
@@ -713,6 +885,11 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
                         {m.data.isolated_population > 0 && (
                           <div className="px-2 py-0.5 rounded bg-black/40 border border-slate-700 text-slate-300">
                             Pop: <span className="font-bold text-amber-300">~{m.data.isolated_population.toLocaleString()} trapped</span>
+                          </div>
+                        )}
+                        {m.latencies?.total !== undefined && (
+                          <div className="px-2 py-0.5 rounded bg-black/40 border border-slate-700 text-slate-400">
+                            Latency: <span className="text-cyan-300 font-bold">{m.latencies.total.toFixed(0)}ms</span>
                           </div>
                         )}
                       </div>
@@ -792,9 +969,18 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
 
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-[#0d1424] p-3.5 rounded-xl border border-cyan-500/40 text-cyan-400 font-mono text-xs flex items-center space-x-2.5 shadow-hud">
-                    <Sparkles className="w-4 h-4 animate-spin" />
-                    <span>Querying Sentinel-1 SAR extent, PostGIS graph, and NDMA RAG...</span>
+                  <div className="bg-[#0d1424] p-3.5 rounded-xl border border-cyan-500/40 text-cyan-400 font-mono text-xs flex items-center justify-between shadow-hud w-full max-w-lg">
+                    <div className="flex items-center space-x-2.5">
+                      <Sparkles className="w-4 h-4 animate-spin text-cyan-400 shrink-0" />
+                      <span>Retrieving multi-source disaster telemetry & synthesizing...</span>
+                    </div>
+                    <button
+                      onClick={handleCancelRequest}
+                      className="px-2 py-0.5 rounded bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 text-[10px] font-mono cursor-pointer transition-colors shrink-0"
+                      title="Cancel current search request"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
@@ -817,14 +1003,25 @@ export const DisasterChatbotView: React.FC<DisasterChatbotViewProps> = ({
                 placeholder={`Ask RESQ Copilot about ${incidentDistrict} (${incidentState}) flood extent, bridges, routes, NDMA SOPs...`}
                 className="flex-1 bg-command-bg border border-command-border rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-sans text-xs disabled:opacity-50"
               />
-              <button
-                disabled={!query.trim() || loading}
-                onClick={() => handleSend(query)}
-                className="px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-slate-950 font-bold font-mono text-xs flex items-center space-x-1.5 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm"
-              >
-                <span>SEND</span>
-                <Send className="w-3.5 h-3.5" />
-              </button>
+              {loading ? (
+                <button
+                  onClick={handleCancelRequest}
+                  className="px-4 py-2.5 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-300 font-mono font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+                  title="Cancel search request"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>CANCEL</span>
+                </button>
+              ) : (
+                <button
+                  disabled={!query.trim() || loading}
+                  onClick={() => handleSend(query)}
+                  className="px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-slate-950 font-bold font-mono text-xs flex items-center space-x-1.5 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm"
+                >
+                  <span>SEND</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         )}

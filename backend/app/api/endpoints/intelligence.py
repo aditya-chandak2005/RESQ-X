@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from backend.app.db.session import get_db
-from backend.app.schemas.schemas import SimulationRequest, CopilotQueryRequest, CopilotQueryResponse, LocationAssessmentRequest, KnowledgeSearchRequest
+from backend.app.schemas.schemas import (
+    SimulationRequest,
+    CopilotQueryRequest,
+    CopilotQueryResponse,
+    CopilotStagedSearchResponse,
+    LocationAssessmentRequest,
+    KnowledgeSearchRequest
+)
 from backend.app.services.simulation.what_if import WhatIfSimulator
 from backend.app.services.copilot_service import CopilotService
 from backend.app.services.knowledge_service import KnowledgeService
@@ -23,16 +30,40 @@ def run_scenario_simulation(payload: SimulationRequest, db: Session = Depends(ge
     return WhatIfSimulator.simulate_scenario(db, payload.disaster_id, payload.scenario_type, params)
 
 @router.post("/copilot/query", response_model=CopilotQueryResponse)
+@router.post("/copilot/chat", response_model=CopilotQueryResponse)
 def query_resq_copilot(payload: CopilotQueryRequest, db: Session = Depends(get_db)):
     """Query the RESQ Copilot grounded in database and GIS outputs."""
-    disaster_id = payload.disaster_id or 1
-    result = CopilotService.ask(db, disaster_id, payload.query, payload.conversation_history)
+    result = CopilotService.ask(
+        db=db,
+        query=payload.query,
+        disaster_id=payload.disaster_id,
+        conversation_history=payload.conversation_history,
+        selected_location=payload.selected_location,
+        mode=payload.mode or "selected_location",
+        filters=payload.filters
+    )
     return result
 
+@router.post("/copilot/staged-search", response_model=CopilotStagedSearchResponse)
+def staged_search_resq_copilot(payload: CopilotQueryRequest, db: Session = Depends(get_db)):
+    """Fast staged search returning parsed constraints, matched incidents, and GIS facilities within ~15ms."""
+    return CopilotService.staged_search(
+        db=db,
+        query=payload.query,
+        disaster_id=payload.disaster_id,
+        selected_location=payload.selected_location,
+        mode=payload.mode or "selected_location"
+    )
+
 @router.get("/copilot/quick-queries/{disaster_id}")
-def get_copilot_quick_queries(disaster_id: int, db: Session = Depends(get_db)):
-    """Retrieve dynamic, context-aware query suggestions for active incident."""
-    return CopilotService.get_quick_queries(db, disaster_id)
+def get_copilot_quick_queries(
+    disaster_id: int,
+    place_name: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Retrieve dynamic, context-aware query suggestions for active incident or place."""
+    loc_ctx = {"name": place_name, "label": place_name} if place_name else None
+    return CopilotService.get_quick_queries(db, disaster_id=disaster_id, selected_location=loc_ctx)
 
 @router.get("/copilot/quick-review/{disaster_id}")
 def get_copilot_quick_review(disaster_id: int, review_type: str = "executive", db: Session = Depends(get_db)):

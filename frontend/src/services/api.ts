@@ -110,18 +110,61 @@ export const api = {
     return res.json();
   },
 
-  async queryCopilot(query: string, disasterId: number = 1, conversationHistory?: any[]): Promise<any> {
+  async queryCopilot(
+    query: string,
+    disasterId?: number | null,
+    conversationHistory?: any[],
+    selectedLocation?: any,
+    mode: 'selected_location' | 'global' = 'selected_location',
+    signal?: AbortSignal
+  ): Promise<any> {
     const res = await fetch(`${API_BASE}/copilot/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, disaster_id: disasterId, conversation_history: conversationHistory }),
+      body: JSON.stringify({
+        query,
+        disaster_id: disasterId || undefined,
+        conversation_history: conversationHistory,
+        selected_location: selectedLocation,
+        mode,
+      }),
+      signal,
     });
-    if (!res.ok) throw new Error('Copilot query failed');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Copilot query failed' }));
+      throw new Error(err.detail || 'Copilot query failed');
+    }
     return res.json();
   },
 
-  async getContextQuickQueries(disasterId: number = 1): Promise<any> {
-    const res = await fetch(`${API_BASE}/copilot/quick-queries/${disasterId}`);
+  async stagedCopilotSearch(
+    query: string,
+    disasterId?: number | null,
+    selectedLocation?: any,
+    mode: 'selected_location' | 'global' = 'selected_location',
+    signal?: AbortSignal
+  ): Promise<any> {
+    const res = await fetch(`${API_BASE}/copilot/staged-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        disaster_id: disasterId || undefined,
+        selected_location: selectedLocation,
+        mode,
+      }),
+      signal,
+    });
+    if (!res.ok) throw new Error('Staged copilot search failed');
+    return res.json();
+  },
+
+  async getContextQuickQueries(disasterId?: number | null, placeName?: string): Promise<any> {
+    const id = disasterId || 0;
+    const url = placeName
+      ? `${API_BASE}/copilot/quick-queries/${id}?place_name=${encodeURIComponent(placeName)}`
+      : `${API_BASE}/copilot/quick-queries/${id}`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch context quick queries');
     return res.json();
   },
